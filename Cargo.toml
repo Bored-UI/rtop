@@ -1,0 +1,20 @@
+[package]
+name = "rtop"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+libproc = "0.14.10"
+sysinfo = { version = "0.33.1", default-features = false, features = [
+    "component",
+    "disk",
+    "network",
+    "system",
+    "user",
+    "linux-netdevs",
+    "linux-tmpfs",
+    "windows"
+] }
+battery = "0.7.8"
+ratatui = "0.29.0"
+chrono = "0.4.40"

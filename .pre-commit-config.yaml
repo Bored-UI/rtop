@@ -1,0 +1,51 @@
+repos:
+  - repo: local
+    hooks:
+      - id: rustfmt
+        name: Rust Formatter
+        entry: cargo fmt --all
+        language: system
+        pass_filenames: false
+        stages: [pre-commit]
+
+      - id: rust-clippy-fix-unused-imports
+        name: Rust Fix Unused Imports
+        entry: cargo clippy --no-deps -- -A clippy::all -A warnings -D unused_imports
+        language: system
+        pass_filenames: false
+        stages: [pre-commit]
+
+      - id: rust-clippy-fix-unused_mut
+        name: Rust Fix Unnecessary Mutability
+        entry: sh -c "cargo clippy --allow-dirty --allow-staged --fix -- -A clippy::all -W unused_mut && git add ."
+        language: system
+        pass_filenames: false
+        stages: [pre-commit]
+
+      - id: rust-clippy-fix-redundant-field-names
+        name: Rust Fix Redundant Field Names
+        entry: sh -c "cargo clippy --allow-dirty --allow-staged --fix -- -A clippy::all -W clippy::redundant_field_names && git add ."
+        language: system
+        pass_filenames: false
+        stages: [pre-commit]
+
+      - id: rust-clippy-fix-inefficient-to-string
+        name: Rust Fix Inefficient ToString
+        entry: sh -c "cargo clippy --allow-dirty --allow-staged --fix -- -A clippy::all -W clippy::inefficient_to_string && git add ."
+        language: system
+        pass_filenames: false
+        stages: [pre-commit]
+
+      - id: rust-clippy-fix-dead-code
+        name: Rust Fix Dead Code
+        entry: sh -c "cargo clippy --allow-dirty --allow-staged --fix -- -A clippy::all -W dead_code && git add ."
+        language: system
+        pass_filenames: false
+        stages: [pre-commit]
+
+      - id: rust-clippy-fix-redundant-clone
+        name: Rust Fix Redundant Clone
+        entry: sh -c "cargo clippy --allow-dirty --allow-staged --fix -- -A clippy::all -W clippy::redundant_clone && git add ."
+        language: system
+        pass_filenames: false
+        stages: [pre-commit]
