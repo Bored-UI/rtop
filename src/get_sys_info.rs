@@ -5,6 +5,9 @@ use std::{
 use crate::types::{CCpuData, CMemoryData, CSysInfo};
 use sysinfo::System;
 
+
+const TO_GB:f64 = 1_073_741_824.0;
+
 pub fn spawn_system_info_collector(
     tick_receiver: Receiver<u32>,
     tx: Sender<CSysInfo>,
@@ -63,11 +66,11 @@ pub fn spawn_system_info_collector(
                 // -------------------------------------------
                 
                 sys.refresh_memory();
-                let total_memory = ((sys.total_memory() as f64 / 1_073_741_824.0)* 100.0).round() / 100.0;
-                let available_memory = ((sys.available_memory() as f64 / 1_073_741_824.0)* 100.0).round() / 100.0;
-                let used_memory = ((sys.used_memory() as f64 / 1_073_741_824.0)* 100.0).round() / 100.0;
-                let used_swap = ((sys.used_swap() as f64 / 1_073_741_824.0)* 100.0).round() / 100.0;
-                let free_memory = ((sys.free_memory() as f64 / 1_073_741_824.0)* 100.0).round() / 100.0;
+                let total_memory = ((sys.total_memory() as f64 / TO_GB)* 100.0).round() / 100.0;
+                let available_memory = ((sys.available_memory() as f64 / TO_GB)* 100.0).round() / 100.0;
+                let used_memory = ((sys.used_memory() as f64 / TO_GB)* 100.0).round() / 100.0;
+                let used_swap = ((sys.used_swap() as f64 / TO_GB)* 100.0).round() / 100.0;
+                let free_memory = ((sys.free_memory() as f64 / TO_GB)* 100.0).round() / 100.0;
                 let cached_memory = get_cached_memory();
                 
                 let memory_data = CMemoryData {
@@ -110,13 +113,31 @@ fn get_cached_memory() -> f64 {
     {
         let macos_cache = get_macos_cache_memory();
         if let Some(cache) = macos_cache {
-            cached_memory = ((cache as f64 / 1_073_741_824.0)* 100.0).round() / 100.0;
+            cached_memory = ((cache as f64 / TO_GB)* 100.0).round() / 100.0;
         }
     }
+    
+    #[cfg(target_os = "linux")]
+    {
+        let linux_cache = get_linux_cached_memory();
+        if let Some(cache) = linux_cache {
+            cached_memory = ((cache as f64 / TO_GB)* 100.0).round() / 100.0;
+        }
+    }
+    
+    #[cfg(target_os = "windows")]
+    {
+        let windows_cache = get_windows_cached_memory();
+        if let Some(cache) = windows_cache {
+            cached_memory = ((cache as f64 / TO_GB)* 100.0).round() / 100.0;
+        }
+    }
+    
     
     return cached_memory
 }
 
+#[cfg(target_os = "macos")]
 fn get_macos_cache_memory() -> Option<u64> {
     let output = Command::new("sh")
         .arg("-c")
@@ -126,4 +147,57 @@ fn get_macos_cache_memory() -> Option<u64> {
 
     let cache_str = String::from_utf8_lossy(&output.stdout).trim().to_string();
     cache_str.parse::<u64>().ok()
+}
+
+#[cfg(target_os = "linux")]
+fn get_linux_cached_memory() -> Option<u64> {
+    use std::fs;
+    let data = fs::read_to_string("/proc/meminfo").ok()?;
+    for line in data.lines() {
+        if line.starts_with("Cached:") {
+            let parts: Vec<&str> = line.split_whitespace().collect();
+            if let Some(value) = parts.get(1) {
+                return value.parse::<u64>().ok().map(|kb| kb * 1024); // kB to bytes
+            }
+        }
+    }
+    None
+}
+
+#[cfg(target_os = "windows")]
+fn get_window_cached_memory() -> Option<u64> {
+    use windows::Win32::System::Performance::*;
+    use windows::Win32::Foundation::*;
+    use std::ptr;
+
+    unsafe {
+        let mut query: isize = 0;
+        let mut counter: isize = 0;
+
+        if PdhOpenQueryA(ptr::null(), 0, &mut query) != ERROR_SUCCESS {
+            return None;
+        }
+
+        if PdhAddCounterA(query, b"\\Memory\\System Cache Resident Bytes\0".as_ptr(), 0, &mut counter) != ERROR_SUCCESS {
+            PdhCloseQuery(query);
+            return None;
+        }
+
+        if PdhCollectQueryData(query) != ERROR_SUCCESS {
+            PdhCloseQuery(query);
+            return None;
+        }
+
+        let mut value = PDH_FMT_COUNTERVALUE {
+            CStatus: 0,
+            value: PDH_FMT_COUNTERVALUE_0 { largeValue: 0 },
+        };
+        if PdhGetFormattedCounterValue(counter, PDH_FMT_LARGE, ptr::null_mut(), &mut value) != ERROR_SUCCESS {
+            PdhCloseQuery(query);
+            return None;
+        }
+
+        PdhCloseQuery(query);
+        Some(value.value.largeValue) // Bytes
+    }
 }

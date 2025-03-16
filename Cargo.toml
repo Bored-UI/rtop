@@ -23,3 +23,8 @@ sysinfo = { version = "0.33.1", default-features = false, features = [
 battery = "0.7.8"
 ratatui = "0.29.0"
 chrono = "0.4.40"
+windows = { version = "0.60", features = [
+    "Win32_System_Performance",
+    "Win32_Foundation",
+    "Win32_System_Diagnostics_Debug",
+] }
