@@ -298,26 +298,15 @@ impl App {
 
 pub fn process_sys_info(current_sys_info: &mut SysInfo, collected_sys_info: CSysInfo) {
     // process for each cpu
-    let mut total_usage = 0.0;
-    let total_cpu_cores = collected_sys_info.cpus.len() as f32;
-    let mut brand = String::new();
     if current_sys_info.cpus.len() == 0 {
         for cpu in collected_sys_info.cpus.iter() {
-            total_usage += cpu.usage;
-            brand = cpu.brand.clone();
             let cpu = CpuData::new(cpu.id as i8, cpu.brand.clone(), cpu.usage);
             current_sys_info.cpus.push(cpu);
         }
-        let cpu_avg = ((total_usage / total_cpu_cores) * 100.0).round() / 100.0;
-        let cpu = CpuData::new(-1, brand.clone(), cpu_avg);
-        current_sys_info.cpus.insert(0, cpu);
     } else {
         for cpu in collected_sys_info.cpus.iter() {
-            total_usage += cpu.usage;
             current_sys_info.cpus[cpu.id as usize + 1].update(cpu.id as i8, cpu.usage);
         }
-        let cpu_avg = ((total_usage / total_cpu_cores) * 100.0).round() / 100.0;
-        current_sys_info.cpus[0].update(-1, cpu_avg);
     }
 
     drop(collected_sys_info);

@@ -50,7 +50,7 @@ pub struct CSysInfo {
 }
 
 pub struct CCpuData {
-    pub id: u8,
+    pub id: i8,
     pub brand: String,
     pub usage: f32,
 }
