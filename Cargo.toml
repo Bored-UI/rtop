@@ -2,6 +2,11 @@
 name = "rtop"
 version = "0.1.0"
 edition = "2021"
+authors = ["Goh Yu Han <gohyuhan123456@gmail.com>"]
+
+description = "A lightweight, terminal-based system monitoring tool built in Rust, inspired by top and btop."
+license = "MIT"
+repository = "https://github.com/gohyuhan/rtop"
 
 [dependencies]
 libproc = "0.14.10"

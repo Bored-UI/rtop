@@ -1,6 +1,6 @@
 use std::{
     sync::mpsc::{self, Receiver, Sender},
-    thread,
+    thread::{self},
     time::Duration,
 };
 
@@ -21,8 +21,9 @@ use ratatui::{
 
 use crate::{
     cpu::draw_cpu_info,
-    get_sys_info::spawn_cpu_info_collector,
-    types::{CSysInfo, CpuData, SysInfo},
+    get_sys_info::spawn_system_info_collector,
+    memory::draw_memory_and_disk_info,
+    types::{CSysInfo, CpuData, MemoryData, SysInfo},
 };
 
 #[derive(PartialEq)]
@@ -53,6 +54,7 @@ struct App {
     selected_container: SelectedContainer,
     state: AppState,
     cpu_graph_shown_range: usize,
+    memory_graph_shown_range: usize,
     cpu_selected_state: ListState,
     is_renderable: bool,
 }
@@ -72,9 +74,19 @@ pub struct AppColorInfo {
     pub cpu_high_usage_color: Color,
     pub cpu_graph_color: Color,
     pub cpu_info_border_color: Color,
+
+    // for memory
+    pub memory_container_selected_color: Color,
+    pub memory_main_block_color: Color,
+    pub memory_selected_color: Color,
+    pub used_memory_graph_color: Color,
+    pub available_memory_graph_color: Color,
+    pub free_memory_graph_color: Color,
+    pub cached_memory_graph_color: Color,
+    pub swap_memory_graph_color: Color,
 }
 
-const MIN_HEIGHT: u16 = 30;
+const MIN_HEIGHT: u16 = 25;
 const MIN_WIDTH: u16 = 90;
 
 pub fn tui() {
@@ -89,10 +101,14 @@ pub fn tui() {
         tx,
         rx,
         tick_tx,
-        sys_info: SysInfo { cpus: vec![] },
+        sys_info: SysInfo {
+            cpus: vec![],
+            memory: MemoryData::default(),
+        },
         selected_container: SelectedContainer::None,
         state: AppState::View,
         cpu_graph_shown_range: 100,
+        memory_graph_shown_range: 100,
         cpu_selected_state: ListState::default(),
         is_renderable: true,
     };
@@ -100,32 +116,38 @@ pub fn tui() {
     let app_color_info = AppColorInfo {
         // Background color: A dark grayish-blue for the entire terminal
         background_color: Color::Rgb(20, 30, 40), // Dark grayish-blue
-
         // Text color: A soft white for general text readability
         text_color: Color::Rgb(220, 220, 220), // Soft white
-
-        // Key text color: A bright magenta for key text (e.g., "C" in "Cpu") to highlight functionality triggers
+        // Key text color: A bright magenta for key text (e.g., "C" in "Cpu")
         key_text_color: Color::Rgb(200, 50, 200), // Bright magenta
 
-        // CPU container selected color: A bright cyan for selected container (e.g., main_block when selected)
+        // CPU container selected color: A bright cyan for selected container
         cpu_container_selected_color: Color::Rgb(0, 255, 255), // Cyan
-
         // CPU main block: A slightly lighter grayish-blue to contrast with the background
         cpu_main_block_color: Color::Rgb(40, 50, 60), // Darker grayish-blue
-
         // CPU selected color: A bright teal for selected CPU items in the list
         cpu_selected_color: Color::Rgb(0, 200, 200), // Teal
-
         // CPU usage colors: Gradient from green to red
         cpu_low_usage_color: Color::Rgb(50, 200, 50), // Green for low usage (< 30%)
         cpu_medium_usage_color: Color::Rgb(200, 200, 50), // Yellow for medium usage (30-70%)
         cpu_high_usage_color: Color::Rgb(200, 50, 50), // Red for high usage (> 70%)
-
         // CPU graph color: A muted blue to represent graph lines
         cpu_graph_color: Color::Rgb(70, 130, 180), // Steel blue
-
         // CPU info border color: A subtle silver for borders
         cpu_info_border_color: Color::Rgb(150, 150, 150), // Silver
+
+        // Memory container selected color: A bright cyan for selected container
+        memory_container_selected_color: Color::Rgb(0, 255, 255), // Cyan
+        // Memory main block: A slightly lighter grayish-blue to contrast with the background
+        memory_main_block_color: Color::Rgb(40, 50, 60), // Darker grayish-blue
+        // Memory selected color: A bright teal for selected Memory items in the list
+        memory_selected_color: Color::Rgb(0, 200, 200), // Teal
+        // Memory related graph color
+        used_memory_graph_color: Color::Rgb(180, 80, 80), // Muted reddish coral
+        available_memory_graph_color: Color::Rgb(80, 160, 160), // Muted teal
+        free_memory_graph_color: Color::Rgb(80, 180, 80), // Muted green
+        cached_memory_graph_color: Color::Rgb(120, 100, 180), // Muted purple-blue
+        swap_memory_graph_color: Color::Rgb(180, 140, 60), // Muted golden orange
     };
     app.run(&mut terminal, tick_rx, app_color_info);
     disable_raw_mode().unwrap();
@@ -140,11 +162,16 @@ impl App {
         tick_rx: Receiver<u32>,
         app_color_info: AppColorInfo,
     ) {
-        spawn_cpu_info_collector(tick_rx, self.tx.clone(), self.tick);
-        thread::sleep(Duration::from_millis(self.tick as u64 + 100));
+        // when the program start, we let the info collector to collect at 100ms
+        // only after the initial collection, we reset to the user selected tick ( this will be able to be configure at a later stage )
+        spawn_system_info_collector(tick_rx, self.tx.clone(), 100);
+        thread::sleep(Duration::from_millis(200));
         let c_sys_info = self.rx.try_recv().unwrap();
         process_sys_info(&mut self.sys_info, c_sys_info);
         self.cpu_selected_state.select(Some(0));
+
+        let _ = self.tick_tx.send(self.tick);
+
         while !self.is_quit {
             let c_sys_info = self.rx.try_recv();
             if c_sys_info.is_ok() {
@@ -160,16 +187,42 @@ impl App {
     }
 
     fn draw(&mut self, frame: &mut Frame, app_color_info: &AppColorInfo) {
-        let top_and_bottom =
-            Layout::vertical([Constraint::Percentage(40), Constraint::Percentage(60)]);
-        // let down_left_and_right = Layout::horizontal([Constraint::Percentage(45), Constraint::Percentage(55)]);
-        let [top, _] = top_and_bottom.areas(frame.area());
-        // let [bottom_left, bottom_right] = down_left_and_right.areas(bottom);
+        //
+        //                       The TUI Layout
+        //
+        //   ------------------------------------------------------------
+        //   |                                                          |
+        //   |                  CPU INFO (top 30.0%)                    |
+        //   |                                                          |
+        //   ------------------------------------------------------------
+        //   |   (MEMORY AND DIKS)     |                                |
+        //   |    Bottom left (45%)    |   (PROCESS bottom right 55%)   |
+        //   |      & top (65%)        |                                |
+        //   |--------------------(BOTTOM 70%)                          |
+        //   |      (NETWORK)          |                                |
+        //   |    Bottom left (45%)    |                                |
+        //   |     & bottom (35%)      |                                |
+        //   ------------------------------------------------------------
 
+        let top_and_bottom =
+            Layout::vertical([Constraint::Percentage(30), Constraint::Percentage(70)]);
+        let [cpu_area, bottom] = top_and_bottom.areas(frame.area());
+        let [bottom_left, process_area] =
+            Layout::horizontal([Constraint::Percentage(45), Constraint::Percentage(55)])
+                .areas(bottom);
+        let [memory_disk_area, network_area] =
+            Layout::vertical([Constraint::Percentage(65), Constraint::Percentage(35)])
+                .areas(bottom_left);
+        let [memory_area, disk_area] =
+            Layout::horizontal([Constraint::Percentage(50), Constraint::Percentage(50)])
+                .areas(memory_disk_area);
+
+        // set the bg
         let background =
             Block::default().style(Style::default().bg(app_color_info.background_color)); // Set your desired background color
         frame.render_widget(background, frame.area());
 
+        // check if the terminal size is valid
         let view_rect = frame.area();
         if view_rect.width < MIN_WIDTH || view_rect.height < MIN_HEIGHT {
             self.is_renderable = false;
@@ -183,7 +236,7 @@ impl App {
             draw_cpu_info(
                 self.tick as u64,
                 &self.sys_info.cpus,
-                top,
+                cpu_area,
                 frame,
                 &mut self.cpu_selected_state,
                 self.cpu_graph_shown_range,
@@ -194,6 +247,20 @@ impl App {
                 },
                 app_color_info,
             );
+
+            draw_memory_and_disk_info(
+                &self.sys_info.memory,
+                memory_area,
+                frame,
+                self.memory_graph_shown_range,
+                if self.selected_container == SelectedContainer::Memory {
+                    true
+                } else {
+                    false
+                },
+                app_color_info,
+                false
+            )
         }
     }
 
@@ -264,6 +331,10 @@ impl App {
                     if self.cpu_graph_shown_range > 100 {
                         self.cpu_graph_shown_range -= 10;
                     }
+                } else if self.selected_container == SelectedContainer::Memory {
+                    if self.memory_graph_shown_range > 100 {
+                        self.memory_graph_shown_range -= 10;
+                    }
                 }
             }
             KeyCode::Right => {
@@ -271,11 +342,19 @@ impl App {
                     if self.cpu_graph_shown_range < 10000 {
                         self.cpu_graph_shown_range += 10;
                     }
+                } else if self.selected_container == SelectedContainer::Memory {
+                    if self.memory_graph_shown_range < 10000 {
+                        self.memory_graph_shown_range += 10;
+                    }
                 }
             }
+            
+            // c and C for selecting the Cpu Block
             KeyCode::Char('c') => {
                 if self.state == AppState::View {
-                    if self.selected_container == SelectedContainer::None {
+                    if self.selected_container == SelectedContainer::None
+                        || self.selected_container != SelectedContainer::Cpu
+                    {
                         self.selected_container = SelectedContainer::Cpu;
                     } else {
                         self.selected_container = SelectedContainer::None;
@@ -284,8 +363,34 @@ impl App {
             }
             KeyCode::Char('C') => {
                 if self.state == AppState::View {
-                    if self.selected_container == SelectedContainer::None {
+                    if self.selected_container == SelectedContainer::None
+                        || self.selected_container != SelectedContainer::Cpu
+                    {
                         self.selected_container = SelectedContainer::Cpu;
+                    } else {
+                        self.selected_container = SelectedContainer::None;
+                    }
+                }
+            }
+            
+            // m and M for selecting the Memory Block
+            KeyCode::Char('m') => {
+                if self.state == AppState::View {
+                    if self.selected_container == SelectedContainer::None
+                        || self.selected_container != SelectedContainer::Memory
+                    {
+                        self.selected_container = SelectedContainer::Memory;
+                    } else {
+                        self.selected_container = SelectedContainer::None;
+                    }
+                }
+            }
+            KeyCode::Char('M') => {
+                if self.state == AppState::View {
+                    if self.selected_container == SelectedContainer::None
+                        || self.selected_container != SelectedContainer::Memory
+                    {
+                        self.selected_container = SelectedContainer::Memory;
                     } else {
                         self.selected_container = SelectedContainer::None;
                     }
@@ -307,6 +412,27 @@ pub fn process_sys_info(current_sys_info: &mut SysInfo, collected_sys_info: CSys
         for cpu in collected_sys_info.cpus.iter() {
             current_sys_info.cpus[cpu.id as usize + 1].update(cpu.id as i8, cpu.usage);
         }
+    }
+
+    // process for memory
+    if current_sys_info.memory.total_memory == -0.1 {
+        current_sys_info.memory = MemoryData::new(
+            collected_sys_info.memory.total_memory,
+            collected_sys_info.memory.available_memory,
+            collected_sys_info.memory.used_memory,
+            collected_sys_info.memory.used_swap,
+            collected_sys_info.memory.free_memory,
+            collected_sys_info.memory.cached_memory,
+        );
+    } else {
+        current_sys_info.memory.update(
+            collected_sys_info.memory.total_memory,
+            collected_sys_info.memory.available_memory,
+            collected_sys_info.memory.used_memory,
+            collected_sys_info.memory.used_swap,
+            collected_sys_info.memory.free_memory,
+            collected_sys_info.memory.cached_memory,
+        );
     }
 
     drop(collected_sys_info);

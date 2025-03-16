@@ -1,7 +1,7 @@
 use chrono::Local;
 use ratatui::{
     layout::{Constraint, Layout, Rect},
-    style::{Color, Style, Stylize},
+    style::{Style, Stylize},
     symbols::{border, Marker},
     text::{Line, Span},
     widgets::{Axis, Block, Chart, Dataset, GraphType, List, ListItem, ListState},
@@ -39,7 +39,7 @@ pub fn draw_cpu_info(
     ]);
     let select_instruction = Line::from(vec![
         Span::styled(" ", Style::default().fg(app_color_info.text_color)),
-        Span::styled("C", Style::default().fg(Color::Red))
+        Span::styled("C", Style::default().fg(app_color_info.key_text_color))
             .bold()
             .underlined(),
         Span::styled("pu ", Style::default().fg(app_color_info.text_color)),
@@ -57,7 +57,6 @@ pub fn draw_cpu_info(
             .style(app_color_info.cpu_container_selected_color)
             .border_set(border::DOUBLE);
     }
-    frame.render_widget(main_block, size);
 
     // Constrain the block to have space at the right and left
     let [_, constraint_block, _] = Layout::horizontal([
@@ -119,7 +118,7 @@ pub fn draw_cpu_info(
     let dataset = Dataset::default()
         .name("")
         .data(&data_points)
-        .graph_type(GraphType::Line)
+        .graph_type(GraphType::Bar)
         .marker(Marker::Braille)
         .style(Style::default().fg(app_color_info.cpu_graph_color));
 
@@ -129,7 +128,7 @@ pub fn draw_cpu_info(
 
     // Define the x-axis (CPU Usage) and y-axis (Time)
     let y_axis = Axis::default()
-        .title("Usage (%)")
+        .title(Line::from("Usage (%)").style(app_color_info.text_color))
         .style(Style::default().fg(app_color_info.text_color))
         .bounds([0.0, 100.0])
         .labels(vec![
@@ -152,9 +151,6 @@ pub fn draw_cpu_info(
         .x_axis(x_axis)
         .y_axis(y_axis)
         .bg(app_color_info.background_color);
-
-    // Render the chart in the left area
-    frame.render_widget(chart, constraint_inner_left);
 
     // --------------------------------------------------
     //    Rendering for CPU info on the right
@@ -221,8 +217,13 @@ pub fn draw_cpu_info(
         .highlight_style(Style::default().fg(app_color_info.cpu_selected_color))
         .highlight_symbol(">> ");
 
+    // Render the main cpu block container
+    frame.render_widget(main_block, size);
+    // Render the chart in the left area
+    frame.render_widget(chart, constraint_inner_left);
     // Render the combined list with state
     frame.render_stateful_widget(cpu_info_list, cpu_info_inner_container, cpu_selected_state);
+
     drop(data_points);
     drop(cpu_usage_history);
 }
