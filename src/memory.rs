@@ -86,7 +86,7 @@ pub fn draw_memory_and_disk_info(
     ])
     .areas(bottom_graphs);
     
-    if area.height >= MEDIUM_HEIGHT && area.height < LARGE_HEIGHT {
+    if area.height >= MEDIUM_HEIGHT {
         let [new_used_memory_layout, new_available_memory_layout, new_free_memory_layout, new_swap_memory_layout] = Layout::vertical([
             Constraint::Percentage(25),
             Constraint::Percentage(25),
@@ -98,7 +98,8 @@ pub fn draw_memory_and_disk_info(
         available_memory_layout = new_available_memory_layout;
         free_memory_layout = new_free_memory_layout;
         swap_memory_layout = new_swap_memory_layout;
-    } else if area.height >= LARGE_HEIGHT {
+    }
+    if area.height >= LARGE_HEIGHT {
         let [new_used_memory_layout, new_available_memory_layout, new_free_memory_layout, new_cached_memory_layout, new_swap_memory_layout] =
             Layout::vertical([
                 Constraint::Percentage(20),

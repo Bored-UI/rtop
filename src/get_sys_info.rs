@@ -137,6 +137,7 @@ fn get_cached_memory() -> f64 {
     return cached_memory
 }
 
+// A hack, it gets the job done
 #[cfg(target_os = "macos")]
 fn get_macos_cache_memory() -> Option<u64> {
     let output = Command::new("sh")
@@ -173,7 +174,6 @@ fn get_window_cached_memory() -> Option<u64> {
         perf_info.cb = mem::size_of::<PERFORMANCE_INFORMATION>() as u32;
 
         if GetPerformanceInfo(&mut perf_info as *mut PERFORMANCE_INFORMATION, perf_info.cb) != 0 {
-            // Page size * (Standby + Modified) gives cached memory in bytes
             let page_size = perf_info.PageSize as u64;
             let cached_pages = perf_info.SystemCache as u64;
             Some(page_size * cached_pages)
