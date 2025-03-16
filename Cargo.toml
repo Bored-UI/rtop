@@ -23,6 +23,7 @@ battery = "0.7.8"
 ratatui = "0.29.0"
 chrono = "0.4.40"
 winapi = { version = "0.3.9", features = ["psapi", "minwindef"] }
+libc = "0.2.171"
 
 
 [target.'cfg(any(target_os = "macos", target_os = "linux"))'.dependencies]

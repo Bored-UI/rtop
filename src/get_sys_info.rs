@@ -140,15 +140,33 @@ fn get_cached_memory() -> f64 {
 // A hack, it gets the job done
 #[cfg(target_os = "macos")]
 fn get_macos_cache_memory() -> Option<u64> {
+    use libc::sysconf;
+    use libc::_SC_PAGESIZE;
+    
+    let page_size = unsafe {
+        let size = sysconf(_SC_PAGESIZE);
+        if size <=0 {
+            16384 // Default page size if sysconf fails
+        } else {
+            size
+        }
+    };
+
+    // Execute the vm_stat command to get cached memory information
     let output = Command::new("sh")
         .arg("-c")
-        .arg("vm_stat | awk '/File-backed pages/ {print $3 * 16384}'")
+        .arg("vm_stat | awk '/File-backed pages/ {print $3*1}'")
         .output()
         .ok()?;
 
+    // Parse the output to get the number of cached pages
     let cache_str = String::from_utf8_lossy(&output.stdout).trim().to_string();
-    cache_str.parse::<u64>().ok()
+    let pages = cache_str.parse::<u64>().ok()?;
+
+    // Calculate the cached memory in bytes
+    return Some(pages * page_size as u64);
 }
+
 
 #[cfg(target_os = "linux")]
 fn get_linux_cached_memory() -> Option<u64> {
@@ -162,7 +180,7 @@ fn get_linux_cached_memory() -> Option<u64> {
             }
         }
     }
-    None
+    return None;
 }
 
 #[cfg(target_os = "windows")]
@@ -176,9 +194,12 @@ fn get_window_cached_memory() -> Option<u64> {
         if GetPerformanceInfo(&mut perf_info as *mut PERFORMANCE_INFORMATION, perf_info.cb) != 0 {
             let page_size = perf_info.PageSize as u64;
             let cached_pages = perf_info.SystemCache as u64;
-            Some(page_size * cached_pages)
+            return Some(page_size * cached_pages);
         } else {
-            None
+           return  None;
         }
     }
 }
+// Get-WmiObject -Class Win32_PerfFormattedData_PerfOS_Memory | Select-Object CacheBytes
+// Get-CimInstance -ClassName Win32_OperatingSystem | Select-Object FreePhysicalMemory, TotalVisibleMemorySize, TotalVisibleMemorySize -Property *
+//Get-CimInstance -ClassName Win32_PerfFormattedData_PerfOS_Memory | Select-Object CacheBytes
