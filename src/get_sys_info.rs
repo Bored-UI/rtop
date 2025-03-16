@@ -157,14 +157,19 @@ fn get_macos_cache_memory() -> Option<u64> {
         .arg("-c")
         .arg("vm_stat | awk '/File-backed pages/ {print $3*1}'")
         .output()
-        .ok()?;
-
-    // Parse the output to get the number of cached pages
-    let cache_str = String::from_utf8_lossy(&output.stdout).trim().to_string();
-    let pages = cache_str.parse::<u64>().ok()?;
-
-    // Calculate the cached memory in bytes
-    return Some(pages * page_size as u64);
+        .ok();
+    
+    match output {
+        Some(output) => {
+            // Parse the output to get the number of cached pages
+            let cache_str = String::from_utf8_lossy(&output.stdout).trim().to_string();
+            let pages = cache_str.parse::<u64>().ok()?;
+        
+            // Calculate the cached memory in bytes
+            return Some(pages * page_size as u64);
+        },
+        None => return None
+    }
 }
 
 
