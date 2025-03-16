@@ -9,7 +9,6 @@ license = "MIT"
 repository = "https://github.com/gohyuhan/rtop"
 
 [dependencies]
-libproc = "0.14.10"
 sysinfo = { version = "0.33.1", default-features = false, features = [
     "component",
     "disk",
@@ -23,8 +22,8 @@ sysinfo = { version = "0.33.1", default-features = false, features = [
 battery = "0.7.8"
 ratatui = "0.29.0"
 chrono = "0.4.40"
-windows = { version = "0.60", features = [
-    "Win32_System_Performance",
-    "Win32_Foundation",
-    "Win32_System_Diagnostics_Debug",
-] }
+winapi = { version = "0.3.9", features = ["psapi", "minwindef"] }
+
+
+[target.'cfg(any(target_os = "macos", target_os = "linux"))'.dependencies]
+libproc = "0.14.10"

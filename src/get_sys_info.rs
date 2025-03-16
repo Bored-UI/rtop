@@ -127,7 +127,7 @@ fn get_cached_memory() -> f64 {
     
     #[cfg(target_os = "windows")]
     {
-        let windows_cache = get_windows_cached_memory();
+        let windows_cache = get_window_cached_memory();
         if let Some(cache) = windows_cache {
             cached_memory = ((cache as f64 / TO_GB)* 100.0).round() / 100.0;
         }
@@ -166,38 +166,19 @@ fn get_linux_cached_memory() -> Option<u64> {
 
 #[cfg(target_os = "windows")]
 fn get_window_cached_memory() -> Option<u64> {
-    use windows::Win32::System::Performance::*;
-    use windows::Win32::Foundation::*;
-    use std::ptr;
-
+    use std::mem;
+    use winapi::um::psapi::{PERFORMANCE_INFORMATION, GetPerformanceInfo};
     unsafe {
-        let mut query: isize = 0;
-        let mut counter: isize = 0;
+        let mut perf_info: PERFORMANCE_INFORMATION = mem::zeroed();
+        perf_info.cb = mem::size_of::<PERFORMANCE_INFORMATION>() as u32;
 
-        if PdhOpenQueryA(ptr::null(), 0, &mut query) != ERROR_SUCCESS {
-            return None;
+        if GetPerformanceInfo(&mut perf_info as *mut PERFORMANCE_INFORMATION, perf_info.cb) != 0 {
+            // Page size * (Standby + Modified) gives cached memory in bytes
+            let page_size = perf_info.PageSize as u64;
+            let cached_pages = perf_info.SystemCache as u64;
+            Some(page_size * cached_pages)
+        } else {
+            None
         }
-
-        if PdhAddCounterA(query, b"\\Memory\\System Cache Resident Bytes\0".as_ptr(), 0, &mut counter) != ERROR_SUCCESS {
-            PdhCloseQuery(query);
-            return None;
-        }
-
-        if PdhCollectQueryData(query) != ERROR_SUCCESS {
-            PdhCloseQuery(query);
-            return None;
-        }
-
-        let mut value = PDH_FMT_COUNTERVALUE {
-            CStatus: 0,
-            value: PDH_FMT_COUNTERVALUE_0 { largeValue: 0 },
-        };
-        if PdhGetFormattedCounterValue(counter, PDH_FMT_LARGE, ptr::null_mut(), &mut value) != ERROR_SUCCESS {
-            PdhCloseQuery(query);
-            return None;
-        }
-
-        PdhCloseQuery(query);
-        Some(value.value.largeValue) // Bytes
     }
 }

@@ -65,7 +65,7 @@ pub fn draw_memory_and_disk_info(
 
     let total_memory_label = Line::from("Total:").style(app_color_info.text_color);
     let total_memory =
-        Line::from(format!("{}GiB", memory.total_memory)).style(app_color_info.text_color);
+        Line::from(format!("{} GiB", memory.total_memory)).style(app_color_info.text_color);
     let top_inner_block = Block::new()
         .title(total_memory_label.left_aligned())
         .title(total_memory.right_aligned())
@@ -130,7 +130,7 @@ pub fn draw_memory_and_disk_info(
     };
 
     let usage = Line::from(format!(
-        "{}GiB",
+        "{} GiB",
         memory.used_memory_vec[memory.used_memory_vec.len() - 1]
     ))
     .style(app_color_info.text_color);
@@ -199,7 +199,7 @@ pub fn draw_memory_and_disk_info(
     };
 
     let usage = Line::from(format!(
-        "{}GiB",
+        "{} GiB",
         memory.available_memory_vec[memory.available_memory_vec.len() - 1]
     ))
     .style(app_color_info.text_color);
@@ -268,7 +268,7 @@ pub fn draw_memory_and_disk_info(
     };
 
     let usage = Line::from(format!(
-        "{}GiB",
+        "{} GiB",
         memory.free_memory_vec[memory.free_memory_vec.len() - 1]
     ))
     .style(app_color_info.text_color);
@@ -338,7 +338,7 @@ pub fn draw_memory_and_disk_info(
         };
     
         let usage = Line::from(format!(
-            "{}GiB",
+            "{} GiB",
             memory.used_swap_vec[memory.used_swap_vec.len() - 1]
         ))
         .style(app_color_info.text_color);
@@ -409,7 +409,7 @@ pub fn draw_memory_and_disk_info(
         };
     
         let usage = Line::from(format!(
-            "{}GiB",
+            "{} GiB",
             memory.cached_memory_vec[memory.cached_memory_vec.len() - 1]
         ))
         .style(app_color_info.text_color);

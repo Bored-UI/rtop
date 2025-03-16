@@ -57,6 +57,7 @@ struct App {
     memory_graph_shown_range: usize,
     cpu_selected_state: ListState,
     is_renderable: bool,
+    is_init: bool,
 }
 
 pub struct AppColorInfo {
@@ -111,6 +112,7 @@ pub fn tui() {
         memory_graph_shown_range: 100,
         cpu_selected_state: ListState::default(),
         is_renderable: true,
+        is_init: false,
     };
 
     let app_color_info = AppColorInfo {
@@ -165,9 +167,16 @@ impl App {
         // when the program start, we let the info collector to collect at 100ms
         // only after the initial collection, we reset to the user selected tick ( this will be able to be configure at a later stage )
         spawn_system_info_collector(tick_rx, self.tx.clone(), 100);
-        thread::sleep(Duration::from_millis(200));
-        let c_sys_info = self.rx.try_recv().unwrap();
-        process_sys_info(&mut self.sys_info, c_sys_info);
+        
+        while !self.is_init {
+            match self.rx.try_recv() {
+                Ok(c_sys_info) => {
+                    process_sys_info(&mut self.sys_info, c_sys_info);
+                    self.is_init = true;
+                }
+                Err(_) => {}
+            }
+        }
         self.cpu_selected_state.select(Some(0));
 
         let _ = self.tick_tx.send(self.tick);
