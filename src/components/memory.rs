@@ -20,6 +20,7 @@ const SMALL_WIDGET_PERCENTAGE: f64 = 25.0;
 const BIG_WIDGET_PERCENTAGE: f64 = 100.0;
 
 pub fn draw_memory_info(
+    tick: u64,
     memory: &MemoryData,
     area: Rect,
     frame: &mut Frame,
@@ -50,6 +51,21 @@ pub fn draw_memory_info(
         main_block = main_block
             .style(app_color_info.memory_container_selected_color)
             .border_set(border::DOUBLE);
+    }
+    
+    if is_full_screen {
+        let refresh_tick = Line::from(vec![
+            Span::styled("| ", Style::default().fg(app_color_info.text_color)),
+            Span::styled("-", Style::default().fg(app_color_info.key_text_color)).bold(),
+            Span::styled(
+                format!(" {}ms ", tick),
+                Style::default().fg(app_color_info.text_color),
+            ),
+            Span::styled("+", Style::default().fg(app_color_info.key_text_color)).bold(),
+            Span::styled(" |", Style::default().fg(app_color_info.text_color)),
+        ]);
+        
+        main_block = main_block.title(refresh_tick.right_aligned());
     }
 
     let [_, bottom_border, _] = Layout::vertical([

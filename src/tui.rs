@@ -16,13 +16,13 @@ use crate::{
 
 #[derive(PartialEq)]
 pub enum SelectedContainer {
-    None,
     Cpu,
     Memory,
     Disk,
     Network,
     Process,
     Menu,
+    None,
 }
 
 #[derive(PartialEq)]
@@ -46,6 +46,7 @@ struct App {
     cpu_selected_state: ListState,
     is_renderable: bool,
     is_init: bool,
+    container_full_screen: bool,
 }
 
 pub struct AppColorInfo {
@@ -102,6 +103,7 @@ pub fn tui() {
         cpu_selected_state: ListState::default(),
         is_renderable: true,
         is_init: false,
+        container_full_screen: false,
     };
 
     let app_color_info = AppColorInfo {
@@ -221,8 +223,8 @@ impl App {
         frame.render_widget(background, frame.area());
 
         // check if the terminal size is valid
-        let view_rect = frame.area();
-        if view_rect.width < MIN_WIDTH || view_rect.height < MIN_HEIGHT {
+        let full_frame_view_rect = frame.area();
+        if full_frame_view_rect.width < MIN_WIDTH || full_frame_view_rect.height < MIN_HEIGHT {
             self.is_renderable = false;
             draw_not_renderable_message(frame, app_color_info);
             return;
@@ -231,34 +233,70 @@ impl App {
         }
 
         if self.is_renderable {
-            draw_cpu_info(
-                self.tick as u64,
-                &self.sys_info.cpus,
-                cpu_area,
-                frame,
-                &mut self.cpu_selected_state,
-                self.cpu_graph_shown_range,
+            // handling for full screen mode
+            if self.container_full_screen{
                 if self.selected_container == SelectedContainer::Cpu {
-                    true
-                } else {
-                    false
-                },
-                app_color_info,
-            );
-
-            draw_memory_info(
-                &self.sys_info.memory,
-                memory_area,
-                frame,
-                self.memory_graph_shown_range,
-                if self.selected_container == SelectedContainer::Memory {
-                    true
-                } else {
-                    false
-                },
-                app_color_info,
-                false,
-            )
+                    draw_cpu_info(
+                        self.tick as u64,
+                        &self.sys_info.cpus,
+                        full_frame_view_rect,
+                        frame,
+                        &mut self.cpu_selected_state,
+                        self.cpu_graph_shown_range,
+                        if self.selected_container == SelectedContainer::Cpu {
+                            true
+                        } else {
+                            false
+                        },
+                        app_color_info,
+                    );
+                } else if self.selected_container == SelectedContainer::Memory {
+                    draw_memory_info(
+                        self.tick as u64,
+                        &self.sys_info.memory,
+                        full_frame_view_rect,
+                        frame,
+                        self.memory_graph_shown_range,
+                        if self.selected_container == SelectedContainer::Memory {
+                            true
+                        } else {
+                            false
+                        },
+                        app_color_info,
+                        true,
+                    )
+                }
+            } else {
+                draw_cpu_info(
+                    self.tick as u64,
+                    &self.sys_info.cpus,
+                    cpu_area,
+                    frame,
+                    &mut self.cpu_selected_state,
+                    self.cpu_graph_shown_range,
+                    if self.selected_container == SelectedContainer::Cpu {
+                        true
+                    } else {
+                        false
+                    },
+                    app_color_info,
+                );
+    
+                draw_memory_info(
+                    self.tick as u64,
+                    &self.sys_info.memory,
+                    memory_area,
+                    frame,
+                    self.memory_graph_shown_range,
+                    if self.selected_container == SelectedContainer::Memory {
+                        true
+                    } else {
+                        false
+                    },
+                    app_color_info,
+                    false,
+                )
+            }
         }
     }
 
@@ -282,7 +320,11 @@ impl App {
                 if self.selected_container == SelectedContainer::None {
                     self.is_quit = true;
                 } else {
-                    self.selected_container = SelectedContainer::None;
+                    if self.container_full_screen {
+                        self.container_full_screen = false;
+                    } else {
+                        self.selected_container = SelectedContainer::None;
+                    }
                 }
             }
             KeyCode::Char('-') => {
@@ -355,6 +397,7 @@ impl App {
                     {
                         self.selected_container = SelectedContainer::Cpu;
                     } else {
+                        self.container_full_screen = false;
                         self.selected_container = SelectedContainer::None;
                     }
                 }
@@ -366,6 +409,7 @@ impl App {
                     {
                         self.selected_container = SelectedContainer::Cpu;
                     } else {
+                        self.container_full_screen = false;
                         self.selected_container = SelectedContainer::None;
                     }
                 }
@@ -379,6 +423,7 @@ impl App {
                     {
                         self.selected_container = SelectedContainer::Memory;
                     } else {
+                        self.container_full_screen = false;
                         self.selected_container = SelectedContainer::None;
                     }
                 }
@@ -390,8 +435,17 @@ impl App {
                     {
                         self.selected_container = SelectedContainer::Memory;
                     } else {
+                        self.container_full_screen = false;
                         self.selected_container = SelectedContainer::None;
                     }
+                }
+            }
+            KeyCode::Tab => {
+                // for a container to be full screen, it need to be selected first
+                if self.container_full_screen && self.selected_container!=SelectedContainer::None {
+                    self.container_full_screen = false;
+                } else if !self.container_full_screen && self.selected_container!=SelectedContainer::None {
+                    self.container_full_screen = true;
                 }
             }
             _ => {}
