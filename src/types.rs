@@ -2,6 +2,7 @@
 pub struct SysInfo {
     pub cpus: Vec<CpuData>,
     pub memory: MemoryData,
+    pub disk: Vec<DiskData>
 }
 
 const MAXIMUM_DATA_COLLECTION: usize = 10000;
@@ -21,6 +22,23 @@ pub struct MemoryData {
     pub used_swap_vec: Vec<f64>,
     pub free_memory_vec: Vec<f64>, // free means memory that is not used at all
     pub cached_memory_vec: Vec<f64>,
+}
+
+pub struct DiskData {
+    pub name: String,
+    pub total_space: f64,
+    pub available_space: f64,
+    pub used_space: f64,
+    pub total_written_bytes: f64,    // Total number of written bytes.
+    pub written_bytes_vec: Vec<f64>, // Number of written bytes since the last refresh. in MB with 3 decimal places
+    pub total_read_bytes: f64,       // Total number of read bytes.
+    pub read_bytes_vec: Vec<f64>,    // Number of read bytes since the last refresh. in MB with 3 decimal places
+    pub file_system: String, // file system used on this disk (so for example: EXT4, NTFS, etc…).
+    pub mount_point: String, // mount point of the disk (/ for example). And mount point will also served as the unique identifier for the disk
+    pub kind: String,        // kind of disk.( SSD for example )
+    pub last_written_bytes: f64, // in MB with 3 decimal places
+    pub last_read_bytes: f64, // in MB with 3 decimal places
+    pub is_updated: bool, // this was to keep tracked of exsiting disk data we collected was still connected to the system
 }
 
 impl CpuData {
@@ -119,11 +137,78 @@ impl MemoryData {
     }
 }
 
+impl DiskData {
+    pub fn new(
+        name: String,
+        total_space: f64,
+        available_space: f64,
+        used_space: f64,
+        total_written_bytes: f64,
+        written_bytes: f64,
+        total_read_bytes: f64,
+        read_bytes: f64,
+        file_system: String,
+        mount_point: String,
+        kind: String,
+    ) -> DiskData {
+        DiskData {
+            name,
+            total_space,
+            available_space,
+            used_space,
+            total_written_bytes,
+            written_bytes_vec: vec![],
+            total_read_bytes,
+            read_bytes_vec: vec![],
+            file_system,
+            mount_point,
+            kind,
+            last_written_bytes: written_bytes,
+            last_read_bytes: read_bytes,
+            is_updated: true
+        }
+    }
+
+    pub fn update(
+        &mut self,
+        name: String,
+        total_space: f64,
+        available_space: f64,
+        used_space: f64,
+        total_written_bytes: f64,
+        written_bytes: f64,
+        total_read_bytes: f64,
+        read_bytes: f64,
+        file_system: String,
+        mount_point: String,
+        kind: String,
+    ) {
+        if mount_point == self.mount_point {
+            self.name = name;
+            self.total_space = total_space;
+            self.available_space = available_space;
+            self.used_space = used_space;
+            self.total_written_bytes = total_written_bytes;
+            self.total_read_bytes = total_read_bytes;
+            self.file_system = file_system;
+            self.kind = kind;
+            let actual_written_byte = written_bytes - self.last_written_bytes;
+            let actual_read_byte = read_bytes - self.last_read_bytes;
+            self.written_bytes_vec.push(if actual_written_byte > 0.0 {actual_written_byte} else {0.0});
+            self.read_bytes_vec.push(if actual_read_byte > 0.0 {actual_read_byte} else {0.0});
+            self.last_written_bytes = written_bytes;
+            self.last_read_bytes = read_bytes;
+            self.is_updated = true;
+        }
+    }
+}
+
 // the structure of info collected from a seperated thread
 // a C infront mean Collected
 pub struct CSysInfo {
     pub cpus: Vec<CCpuData>,
     pub memory: CMemoryData,
+    pub disks: Vec<CDiskData>,
 }
 
 pub struct CCpuData {
@@ -137,6 +222,20 @@ pub struct CMemoryData {
     pub available_memory: f64, // available is the combination of free memory, cached memory and ready to be reused memory
     pub used_memory: f64,
     pub used_swap: f64,
-    pub free_memory: f64,   // free means memory that is not used at all
-    pub cached_memory: f64, 
+    pub free_memory: f64, // free means memory that is not used at all
+    pub cached_memory: f64,
+}
+
+pub struct CDiskData {
+    pub name: String,
+    pub total_space: f64,
+    pub available_space: f64,
+    pub used_space: f64,
+    pub total_written_bytes: f64, // Total number of written bytes.
+    pub written_bytes: f64,   // Number of written bytes since the last refresh. Will be return in MB with 3 decimal places
+    pub total_read_bytes: f64,    // Total number of read bytes.
+    pub read_bytes: f64,          // Number of read bytes since the last refresh. Will be return in MB with 3 decimal places
+    pub file_system: String, // file system used on this disk (so for example: EXT4, NTFS, etc…).
+    pub mount_point: String, // mount point of the disk (/ for example).
+    pub kind: String,        // kind of disk.( SSD for example )
 }

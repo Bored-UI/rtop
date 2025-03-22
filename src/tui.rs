@@ -1,8 +1,4 @@
-use std::{
-    sync::mpsc::{self, Receiver, Sender},
-    thread::{self},
-    time::Duration,
-};
+use std::sync::mpsc::{self, Receiver, Sender};
 
 use ratatui::{
     crossterm::{
@@ -22,7 +18,7 @@ use ratatui::{
 use crate::{
     cpu::draw_cpu_info,
     get_sys_info::spawn_system_info_collector,
-    memory::draw_memory_and_disk_info,
+    memory::draw_memory_info,
     types::{CSysInfo, CpuData, MemoryData, SysInfo},
 };
 
@@ -105,6 +101,7 @@ pub fn tui() {
         sys_info: SysInfo {
             cpus: vec![],
             memory: MemoryData::default(),
+            disk: vec![],
         },
         selected_container: SelectedContainer::None,
         state: AppState::View,
@@ -167,7 +164,7 @@ impl App {
         // when the program start, we let the info collector to collect at 100ms
         // only after the initial collection, we reset to the user selected tick ( this will be able to be configure at a later stage )
         spawn_system_info_collector(tick_rx, self.tx.clone(), 100);
-        
+
         while !self.is_init {
             match self.rx.try_recv() {
                 Ok(c_sys_info) => {
@@ -257,7 +254,7 @@ impl App {
                 app_color_info,
             );
 
-            draw_memory_and_disk_info(
+            draw_memory_info(
                 &self.sys_info.memory,
                 memory_area,
                 frame,
@@ -268,7 +265,7 @@ impl App {
                     false
                 },
                 app_color_info,
-                false
+                false,
             )
         }
     }
@@ -357,7 +354,7 @@ impl App {
                     }
                 }
             }
-            
+
             // c and C for selecting the Cpu Block
             KeyCode::Char('c') => {
                 if self.state == AppState::View {
@@ -381,7 +378,7 @@ impl App {
                     }
                 }
             }
-            
+
             // m and M for selecting the Memory Block
             KeyCode::Char('m') => {
                 if self.state == AppState::View {
