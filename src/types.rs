@@ -1,8 +1,10 @@
+use std::collections::HashMap;
+
 // the main type structture for the application
 pub struct SysInfo {
     pub cpus: Vec<CpuData>,
     pub memory: MemoryData,
-    pub disk: Vec<DiskData>
+    pub disks: HashMap<String, DiskData>
 }
 
 const MAXIMUM_DATA_COLLECTION: usize = 10000;

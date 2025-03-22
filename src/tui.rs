@@ -1,4 +1,4 @@
-use std::sync::mpsc::{self, Receiver, Sender};
+use std::{collections::HashMap, sync::mpsc::{self, Receiver, Sender}};
 
 use ratatui::{
     crossterm::{
@@ -93,7 +93,7 @@ pub fn tui() {
         sys_info: SysInfo {
             cpus: vec![],
             memory: MemoryData::default(),
-            disk: vec![],
+            disks: HashMap::new(),
         },
         selected_container: SelectedContainer::None,
         state: AppState::View,
