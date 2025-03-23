@@ -111,7 +111,7 @@ pub fn draw_cpu_info(
         .data(&data_points)
         .graph_type(GraphType::Bar)
         .marker(Marker::Braille)
-        .style(Style::default().fg(app_color_info.cpu_graph_color));
+        .style(Style::default().fg(app_color_info.cpu_base_graph_color));
 
     let x_axis = Axis::default()
         .style(Style::default().fg(app_color_info.text_color))

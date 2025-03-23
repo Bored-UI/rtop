@@ -77,25 +77,25 @@ pub struct AppColorInfo {
     pub cpu_low_usage_color: Color,
     pub cpu_medium_usage_color: Color,
     pub cpu_high_usage_color: Color,
-    pub cpu_graph_color: Color,
+    pub cpu_base_graph_color: Color,
     pub cpu_info_border_color: Color,
 
     // for memory
     pub memory_container_selected_color: Color,
     pub memory_main_block_color: Color,
     pub memory_selected_color: Color,
-    pub used_memory_graph_color: Color,
-    pub available_memory_graph_color: Color,
-    pub free_memory_graph_color: Color,
-    pub cached_memory_graph_color: Color,
-    pub swap_memory_graph_color: Color,
+    pub used_memory_base_graph_color: Color,
+    pub available_memory_base_graph_color: Color,
+    pub free_memory_base_graph_color: Color,
+    pub cached_memory_base_graph_color: Color,
+    pub swap_memory_base_graph_color: Color,
 
     // for disk
     pub disk_container_selected_color: Color,
     pub disk_main_block_color: Color,
     pub disk_selected_color: Color,
-    pub disk_bytes_written_graph_color: Color,
-    pub disk_bytes_read_graph_color: Color,
+    pub disk_bytes_written_base_graph_color: Color,
+    pub disk_bytes_read_base_graph_color: Color,
 }
 
 const MIN_HEIGHT: u16 = 25;
@@ -149,7 +149,7 @@ pub fn tui() {
         cpu_medium_usage_color: Color::Rgb(200, 200, 50), // Yellow for medium usage (30-70%)
         cpu_high_usage_color: Color::Rgb(200, 50, 50), // Red for high usage (> 70%)
         // CPU graph color: A muted blue to represent graph lines
-        cpu_graph_color: Color::Rgb(70, 130, 180), // Steel blue
+        cpu_base_graph_color: Color::Rgb(70, 130, 180), // Steel blue
         // CPU info border color: A subtle silver for borders
         cpu_info_border_color: Color::Rgb(150, 150, 150), // Silver
 
@@ -160,11 +160,11 @@ pub fn tui() {
         // Memory selected color: A bright teal for selected Memory items in the list
         memory_selected_color: Color::Rgb(0, 200, 200), // Teal
         // Memory related graph color
-        used_memory_graph_color: Color::Rgb(180, 80, 80), // Muted reddish coral
-        available_memory_graph_color: Color::Rgb(80, 160, 160), // Muted teal
-        free_memory_graph_color: Color::Rgb(80, 180, 80), // Muted green
-        cached_memory_graph_color: Color::Rgb(120, 100, 180), // Muted purple-blue
-        swap_memory_graph_color: Color::Rgb(180, 140, 60), // Muted golden orange
+        used_memory_base_graph_color: Color::Rgb(180, 80, 80), // Muted reddish coral
+        available_memory_base_graph_color: Color::Rgb(80, 160, 160), // Muted teal
+        free_memory_base_graph_color: Color::Rgb(80, 180, 80), // Muted green
+        cached_memory_base_graph_color: Color::Rgb(120, 100, 180), // Muted purple-blue
+        swap_memory_base_graph_color: Color::Rgb(180, 140, 60), // Muted golden orange
 
         // Disk container selected color: A bright cyan for selected container
         disk_container_selected_color: Color::Rgb(0, 255, 255), // Cyan
@@ -172,8 +172,8 @@ pub fn tui() {
         disk_main_block_color: Color::Rgb(40, 50, 60), // Darker grayish-blue
         // Disk selected color: A bright teal for selected Memory items in the list
         disk_selected_color: Color::Rgb(0, 200, 200), // Teal
-        disk_bytes_written_graph_color: Color::Rgb(180, 80, 80), // Muted reddish coral
-        disk_bytes_read_graph_color: Color::Rgb(80, 160, 160), // Muted teal
+        disk_bytes_written_base_graph_color: Color::Rgb(180, 80, 80), // Muted reddish coral
+        disk_bytes_read_base_graph_color: Color::Rgb(80, 160, 160), // Muted teal
     };
     app.run(&mut terminal, tick_rx, app_color_info);
     disable_raw_mode().unwrap();

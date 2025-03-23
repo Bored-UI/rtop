@@ -186,7 +186,7 @@ pub fn draw_memory_info(
         .data(&used_memory_data_points)
         .graph_type(GraphType::Bar)
         .marker(Marker::Braille)
-        .style(Style::default().fg(app_color_info.used_memory_graph_color));
+        .style(Style::default().fg(app_color_info.used_memory_base_graph_color));
 
     let x_axis = Axis::default().bounds([0.0, num_points_to_display as f64]);
 
@@ -250,7 +250,7 @@ pub fn draw_memory_info(
         .data(&available_memory_data_points)
         .graph_type(GraphType::Bar)
         .marker(Marker::Braille)
-        .style(Style::default().fg(app_color_info.available_memory_graph_color));
+        .style(Style::default().fg(app_color_info.available_memory_base_graph_color));
 
     let x_axis = Axis::default().bounds([0.0, num_points_to_display as f64]);
 
@@ -314,7 +314,7 @@ pub fn draw_memory_info(
         .data(&free_memory_data_points)
         .graph_type(GraphType::Bar)
         .marker(Marker::Braille)
-        .style(Style::default().fg(app_color_info.free_memory_graph_color));
+        .style(Style::default().fg(app_color_info.free_memory_base_graph_color));
 
     let x_axis = Axis::default().bounds([0.0, num_points_to_display as f64]);
 
@@ -380,7 +380,7 @@ pub fn draw_memory_info(
             .data(&swap_memory_data_points)
             .graph_type(GraphType::Bar)
             .marker(Marker::Braille)
-            .style(Style::default().fg(app_color_info.swap_memory_graph_color));
+            .style(Style::default().fg(app_color_info.swap_memory_base_graph_color));
 
         let x_axis = Axis::default().bounds([0.0, num_points_to_display as f64]);
 
@@ -447,7 +447,7 @@ pub fn draw_memory_info(
             .data(&cached_memory_data_points)
             .graph_type(GraphType::Bar)
             .marker(Marker::Braille)
-            .style(Style::default().fg(app_color_info.cached_memory_graph_color));
+            .style(Style::default().fg(app_color_info.cached_memory_base_graph_color));
 
         let x_axis = Axis::default().bounds([0.0, num_points_to_display as f64]);
 

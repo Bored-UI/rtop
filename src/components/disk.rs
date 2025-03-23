@@ -338,7 +338,7 @@ pub fn draw_disk_info(
         .data(&bytes_written_data_points)
         .graph_type(GraphType::Bar)
         .marker(Marker::Braille)
-        .style(Style::default().fg(app_color_info.disk_bytes_written_graph_color));
+        .style(Style::default().fg(app_color_info.disk_bytes_written_base_graph_color));
 
     let x_axis = Axis::default().bounds([0.0, num_points_to_display as f64]);
 
@@ -425,7 +425,7 @@ pub fn draw_disk_info(
         .data(&bytes_read_data_points)
         .graph_type(GraphType::Bar)
         .marker(Marker::Braille)
-        .style(Style::default().fg(app_color_info.disk_bytes_read_graph_color));
+        .style(Style::default().fg(app_color_info.disk_bytes_read_base_graph_color));
 
     let x_axis = Axis::default().bounds([0.0, num_points_to_display as f64]);
 
