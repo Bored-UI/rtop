@@ -38,6 +38,8 @@ pub struct DiskData {
     pub file_system: String, // file system used on this disk (so for example: EXT4, NTFS, etc…).
     pub mount_point: String, // mount point of the disk (/ for example). And mount point will also served as the unique identifier for the disk
     pub kind: String,        // kind of disk.( SSD for example )
+    
+    // following info will not be shown in ui
     pub last_written_bytes: f64, // in MB with 3 decimal places
     pub last_read_bytes: f64, // in MB with 3 decimal places
     pub is_updated: bool, // this was to keep tracked of exsiting disk data we collected was still connected to the system
@@ -196,8 +198,14 @@ impl DiskData {
             self.kind = kind;
             let actual_written_byte = written_bytes - self.last_written_bytes;
             let actual_read_byte = read_bytes - self.last_read_bytes;
-            self.written_bytes_vec.push(if actual_written_byte > 0.0 {actual_written_byte} else {0.0});
-            self.read_bytes_vec.push(if actual_read_byte > 0.0 {actual_read_byte} else {0.0});
+            self.written_bytes_vec.push(actual_written_byte.min(0.0));
+            self.read_bytes_vec.push(actual_read_byte.min(0.0));
+            if self.written_bytes_vec.len() > MAXIMUM_DATA_COLLECTION {
+                self.written_bytes_vec.remove(0);
+            }
+            if self.read_bytes_vec.len() > MAXIMUM_DATA_COLLECTION {
+                self.read_bytes_vec.remove(0);
+            }
             self.last_written_bytes = written_bytes;
             self.last_read_bytes = read_bytes;
             self.is_updated = true;

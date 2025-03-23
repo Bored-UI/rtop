@@ -8,7 +8,7 @@ use ratatui::{
     Frame,
 };
 
-use crate::{tui::AppColorInfo, types::CpuData};
+use crate::{tui::AppColorInfo, types::CpuData, utils::get_tick_line_ui};
 
 pub fn draw_cpu_info(
     tick: u64,
@@ -27,16 +27,7 @@ pub fn draw_cpu_info(
             .bold()
             .style(app_color_info.text_color),
     );
-    let refresh_tick = Line::from(vec![
-        Span::styled("| ", Style::default().fg(app_color_info.text_color)),
-        Span::styled("-", Style::default().fg(app_color_info.key_text_color)).bold(),
-        Span::styled(
-            format!(" {}ms ", tick),
-            Style::default().fg(app_color_info.text_color),
-        ),
-        Span::styled("+", Style::default().fg(app_color_info.key_text_color)).bold(),
-        Span::styled(" |", Style::default().fg(app_color_info.text_color)),
-    ]);
+    let refresh_tick = get_tick_line_ui(tick, app_color_info);
     let select_instruction = Line::from(vec![
         Span::styled(" ", Style::default().fg(app_color_info.text_color)),
         Span::styled("C", Style::default().fg(app_color_info.key_text_color))

@@ -11,6 +11,7 @@ use crate::{
     cpu::draw_cpu_info,
     get_sys_info::spawn_system_info_collector,
     memory::draw_memory_info,
+    disk::draw_disk_info,
     types::{CSysInfo, MemoryData, SysInfo}, utils::process_sys_info,
 };
 
@@ -43,7 +44,9 @@ struct App {
     state: AppState,
     cpu_graph_shown_range: usize,
     memory_graph_shown_range: usize,
+    disk_graph_shown_range: usize,
     cpu_selected_state: ListState,
+    disk_selected_entry: usize,
     is_renderable: bool,
     is_init: bool,
     container_full_screen: bool,
@@ -74,6 +77,11 @@ pub struct AppColorInfo {
     pub free_memory_graph_color: Color,
     pub cached_memory_graph_color: Color,
     pub swap_memory_graph_color: Color,
+    
+    // for disk
+    pub disk_container_selected_color: Color,
+    pub disk_main_block_color: Color,
+    pub disk_selected_color: Color,
 }
 
 const MIN_HEIGHT: u16 = 25;
@@ -100,7 +108,9 @@ pub fn tui() {
         state: AppState::View,
         cpu_graph_shown_range: 100,
         memory_graph_shown_range: 100,
+        disk_graph_shown_range: 100,
         cpu_selected_state: ListState::default(),
+        disk_selected_entry: 0,
         is_renderable: true,
         is_init: false,
         container_full_screen: false,
@@ -141,6 +151,13 @@ pub fn tui() {
         free_memory_graph_color: Color::Rgb(80, 180, 80), // Muted green
         cached_memory_graph_color: Color::Rgb(120, 100, 180), // Muted purple-blue
         swap_memory_graph_color: Color::Rgb(180, 140, 60), // Muted golden orange
+        
+        // Disk container selected color: A bright cyan for selected container
+        disk_container_selected_color: Color::Rgb(0, 255, 255), // Cyan
+        // Disk main block: A slightly lighter grayish-blue to contrast with the background
+        disk_main_block_color: Color::Rgb(40, 50, 60), // Darker grayish-blue
+        // Disk selected color: A bright teal for selected Memory items in the list
+        disk_selected_color: Color::Rgb(0, 200, 200), // Teal
     };
     app.run(&mut terminal, tick_rx, app_color_info);
     disable_raw_mode().unwrap();
@@ -233,6 +250,17 @@ impl App {
         }
 
         if self.is_renderable {
+            // we check the selcted disk entry to prevent selecting a disk that got removed 
+            // 
+            // default to the first disk first
+            let mut selected_disk = self.sys_info.disks.iter().nth(0).unwrap().1;
+            // if the selected disk is valid, override the selected default disk
+            if let Some((_, value)) = self.sys_info.disks.iter().nth(self.disk_selected_entry) {
+                selected_disk = value;
+            } else {
+                self.disk_selected_entry = 0;
+            }
+            
             // handling for full screen mode
             if self.container_full_screen{
                 if self.selected_container == SelectedContainer::Cpu {
@@ -265,6 +293,21 @@ impl App {
                         app_color_info,
                         true,
                     )
+                } else if self.selected_container == SelectedContainer::Disk {
+                    draw_disk_info(
+                        self.tick as u64,
+                        &selected_disk,
+                        full_frame_view_rect,
+                        frame,
+                        self.disk_graph_shown_range,
+                        if self.selected_container == SelectedContainer::Disk {
+                            true
+                        } else {
+                            false
+                        },
+                        app_color_info,
+                        true,
+                    )
                 }
             } else {
                 draw_cpu_info(
@@ -289,6 +332,21 @@ impl App {
                     frame,
                     self.memory_graph_shown_range,
                     if self.selected_container == SelectedContainer::Memory {
+                        true
+                    } else {
+                        false
+                    },
+                    app_color_info,
+                    false,
+                );
+                
+                draw_disk_info(
+                    self.tick as u64,
+                    &selected_disk,
+                    disk_area,
+                    frame,
+                    self.disk_graph_shown_range,
+                    if self.selected_container == SelectedContainer::Disk {
                         true
                     } else {
                         false
@@ -375,6 +433,10 @@ impl App {
                     if self.memory_graph_shown_range > 100 {
                         self.memory_graph_shown_range -= 10;
                     }
+                } else if self.selected_container == SelectedContainer::Disk {
+                    if self.disk_graph_shown_range > 100 {
+                        self.disk_graph_shown_range -= 10;
+                    }
                 }
             }
             KeyCode::Right => {
@@ -385,6 +447,10 @@ impl App {
                 } else if self.selected_container == SelectedContainer::Memory {
                     if self.memory_graph_shown_range < 10000 {
                         self.memory_graph_shown_range += 10;
+                    }
+                } else if self.selected_container == SelectedContainer::Disk {
+                    if self.disk_graph_shown_range < 10000 {
+                        self.disk_graph_shown_range += 10;
                     }
                 }
             }
@@ -440,6 +506,55 @@ impl App {
                     }
                 }
             }
+            
+            // d and D for selecting the Disk Block
+            KeyCode::Char('d') => {
+                if self.state == AppState::View {
+                    if self.selected_container == SelectedContainer::None
+                        || self.selected_container != SelectedContainer::Disk
+                    {
+                        self.selected_container = SelectedContainer::Disk;
+                    } else {
+                        self.container_full_screen = false;
+                        self.selected_container = SelectedContainer::None;
+                    }
+                }
+            }
+            KeyCode::Char('D') => {
+                if self.state == AppState::View {
+                    if self.selected_container == SelectedContainer::None
+                        || self.selected_container != SelectedContainer::Disk
+                    {
+                        self.selected_container = SelectedContainer::Disk;
+                    } else {
+                        self.container_full_screen = false;
+                        self.selected_container = SelectedContainer::None;
+                    }
+                }
+            }
+            KeyCode::Char('<') => {
+                if self.state == AppState::View {
+                    if self.selected_container == SelectedContainer::Disk{
+                       if self.disk_selected_entry == 0{
+                           self.disk_selected_entry = self.sys_info.disks.len() - 1;
+                       } else {
+                           self.disk_selected_entry -= 1;
+                       }
+                    }
+                }
+            }
+            KeyCode::Char('>') => {
+                if self.state == AppState::View {
+                    if self.selected_container == SelectedContainer::Disk{
+                        if self.disk_selected_entry == self.sys_info.disks.len() - 1{
+                            self.disk_selected_entry = 0
+                        } else {
+                            self.disk_selected_entry += 1;
+                        }
+                    }
+                }
+            }
+            
             KeyCode::Tab => {
                 // for a container to be full screen, it need to be selected first
                 if self.container_full_screen && self.selected_container!=SelectedContainer::None {

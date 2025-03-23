@@ -1,4 +1,6 @@
-use crate::types::{CSysInfo, CpuData, DiskData, MemoryData, SysInfo};
+use ratatui::{style::{Style, Stylize}, text::{Line, Span}};
+
+use crate::{tui::AppColorInfo, types::{CSysInfo, CpuData, DiskData, MemoryData, SysInfo}};
 
 pub fn process_sys_info(current_sys_info: &mut SysInfo, collected_sys_info: CSysInfo) {
     // process for each cpu
@@ -114,4 +116,19 @@ pub fn process_sys_info(current_sys_info: &mut SysInfo, collected_sys_info: CSys
     }
 
     drop(collected_sys_info);
+}
+
+pub fn get_tick_line_ui(tick:u64, app_color_info: &AppColorInfo) -> Line {
+    let refresh_tick = Line::from(vec![
+        Span::styled("| ", Style::default().fg(app_color_info.text_color)),
+        Span::styled("-", Style::default().fg(app_color_info.key_text_color)).bold(),
+        Span::styled(
+            format!(" {}ms ", tick),
+            Style::default().fg(app_color_info.text_color),
+        ),
+        Span::styled("+", Style::default().fg(app_color_info.key_text_color)).bold(),
+        Span::styled(" |", Style::default().fg(app_color_info.text_color)),
+    ]);
+    
+    return refresh_tick;
 }

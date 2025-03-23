@@ -7,7 +7,7 @@ use ratatui::{
     Frame,
 };
 
-use crate::{tui::AppColorInfo, types::MemoryData};
+use crate::{tui::AppColorInfo, types::MemoryData, utils::get_tick_line_ui};
 
 // width smaller than this will be consider small width for the memory container
 const SMALL_WIDTH: u16 = 20;
@@ -54,16 +54,7 @@ pub fn draw_memory_info(
     }
     
     if is_full_screen {
-        let refresh_tick = Line::from(vec![
-            Span::styled("| ", Style::default().fg(app_color_info.text_color)),
-            Span::styled("-", Style::default().fg(app_color_info.key_text_color)).bold(),
-            Span::styled(
-                format!(" {}ms ", tick),
-                Style::default().fg(app_color_info.text_color),
-            ),
-            Span::styled("+", Style::default().fg(app_color_info.key_text_color)).bold(),
-            Span::styled(" |", Style::default().fg(app_color_info.text_color)),
-        ]);
+        let refresh_tick = get_tick_line_ui(tick, app_color_info);
         
         main_block = main_block.title(refresh_tick.right_aligned());
     }
@@ -152,21 +143,21 @@ pub fn draw_memory_info(
         Constraint::Percentage(MEMORY_GRAPH_HEIGHT_PRCENTAGE),
     ])
     .areas(used_memory_layout);
-    let label = if used_memory_layout.width < SMALL_WIDTH {
+    let used_memory_label = if used_memory_layout.width < SMALL_WIDTH {
         Line::from("U").style(app_color_info.text_color)
     } else {
         Line::from("Used:").style(app_color_info.text_color)
     };
 
-    let usage = Line::from(format!(
+    let used_memory_usage = Line::from(format!(
         "{} GiB",
         memory.used_memory_vec[memory.used_memory_vec.len() - 1]
     ))
     .style(app_color_info.text_color);
 
     let mut used_memory_block = Block::new()
-        .title(label.left_aligned())
-        .title(usage.right_aligned())
+        .title(used_memory_label.left_aligned())
+        .title(used_memory_usage.right_aligned())
         .style(app_color_info.memory_main_block_color)
         .borders(Borders::NONE);
 
@@ -220,21 +211,21 @@ pub fn draw_memory_info(
         Constraint::Percentage(MEMORY_GRAPH_HEIGHT_PRCENTAGE),
     ])
     .areas(available_memory_layout);
-    let label = if available_memory_layout.width < SMALL_WIDTH {
+    let available_memory_label = if available_memory_layout.width < SMALL_WIDTH {
         Line::from("A").style(app_color_info.text_color)
     } else {
         Line::from("Available:").style(app_color_info.text_color)
     };
 
-    let usage = Line::from(format!(
+    let available_memory_usage = Line::from(format!(
         "{} GiB",
         memory.available_memory_vec[memory.available_memory_vec.len() - 1]
     ))
     .style(app_color_info.text_color);
 
     let mut available_memory_block = Block::new()
-        .title(label.left_aligned())
-        .title(usage.right_aligned())
+        .title(available_memory_label.left_aligned())
+        .title(available_memory_usage.right_aligned())
         .style(app_color_info.memory_main_block_color)
         .borders(Borders::NONE);
 
@@ -288,21 +279,21 @@ pub fn draw_memory_info(
         Constraint::Percentage(MEMORY_GRAPH_HEIGHT_PRCENTAGE),
     ])
     .areas(free_memory_layout);
-    let label = if free_memory_layout.width < SMALL_WIDTH {
+    let free_memory_label = if free_memory_layout.width < SMALL_WIDTH {
         Line::from("F").style(app_color_info.text_color)
     } else {
         Line::from("Free:").style(app_color_info.text_color)
     };
 
-    let usage = Line::from(format!(
+    let free_memory_usage = Line::from(format!(
         "{} GiB",
         memory.free_memory_vec[memory.free_memory_vec.len() - 1]
     ))
     .style(app_color_info.text_color);
 
     let mut free_memory_block = Block::new()
-        .title(label.left_aligned())
-        .title(usage.right_aligned())
+        .title(free_memory_label.left_aligned())
+        .title(free_memory_usage.right_aligned())
         .style(app_color_info.memory_main_block_color)
         .borders(Borders::NONE);
 
@@ -357,21 +348,21 @@ pub fn draw_memory_info(
             Constraint::Percentage(MEMORY_GRAPH_HEIGHT_PRCENTAGE),
         ])
         .areas(swap_memory_layout);
-        let label = if swap_memory_layout.width < SMALL_WIDTH {
+        let swap_memory_label = if swap_memory_layout.width < SMALL_WIDTH {
             Line::from("S").style(app_color_info.text_color)
         } else {
             Line::from("Swap:").style(app_color_info.text_color)
         };
 
-        let usage = Line::from(format!(
+        let swap_memory_usage = Line::from(format!(
             "{} GiB",
             memory.used_swap_vec[memory.used_swap_vec.len() - 1]
         ))
         .style(app_color_info.text_color);
 
         let mut swap_memory_block = Block::new()
-            .title(label.left_aligned())
-            .title(usage.right_aligned())
+            .title(swap_memory_label.left_aligned())
+            .title(swap_memory_usage.right_aligned())
             .style(app_color_info.memory_main_block_color)
             .borders(Borders::NONE);
 
@@ -428,21 +419,21 @@ pub fn draw_memory_info(
             Constraint::Percentage(MEMORY_GRAPH_HEIGHT_PRCENTAGE),
         ])
         .areas(cached_memory_layout);
-        let label = if cached_memory_layout.width < SMALL_WIDTH {
+        let cached_memory_label = if cached_memory_layout.width < SMALL_WIDTH {
             Line::from("C").style(app_color_info.text_color)
         } else {
             Line::from("Cached:").style(app_color_info.text_color)
         };
 
-        let usage = Line::from(format!(
+        let cached_memory_usage = Line::from(format!(
             "{} GiB",
             memory.cached_memory_vec[memory.cached_memory_vec.len() - 1]
         ))
         .style(app_color_info.text_color);
 
         let mut cached_memory_block = Block::new()
-            .title(label.left_aligned())
-            .title(usage.right_aligned())
+            .title(cached_memory_label.left_aligned())
+            .title(cached_memory_usage.right_aligned())
             .style(app_color_info.memory_main_block_color)
             .borders(Borders::NONE);
 
