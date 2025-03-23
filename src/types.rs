@@ -31,17 +31,11 @@ pub struct DiskData {
     pub total_space: f64,
     pub available_space: f64,
     pub used_space: f64,
-    pub total_written_bytes: f64,    // Total number of written bytes.
-    pub written_bytes_vec: Vec<f64>, // Number of written bytes since the last refresh. in MB with 3 decimal places
-    pub total_read_bytes: f64,       // Total number of read bytes.
-    pub read_bytes_vec: Vec<f64>, // Number of read bytes since the last refresh. in MB with 3 decimal places
+    pub bytes_written_vec: Vec<f64>, // Number of written bytes since the last refresh. in KiB
+    pub bytes_read_vec: Vec<f64>,    // Number of read bytes since the last refresh. in KiB
     pub file_system: String, // file system used on this disk (so for example: EXT4, NTFS, etc…).
     pub mount_point: String, // mount point of the disk (/ for example). And mount point will also served as the unique identifier for the disk
-    pub kind: String,        // kind of disk.( SSD for example )
-
-    // following info will not be shown in ui
-    pub last_written_bytes: f64, // in MB with 3 decimal places
-    pub last_read_bytes: f64,    // in MB with 3 decimal places
+    pub disk_kind: String,   // kind of disk.( SSD for example )
     pub is_updated: bool, // this was to keep tracked of exsiting disk data we collected was still connected to the system
 }
 
@@ -147,10 +141,8 @@ impl DiskData {
         total_space: f64,
         available_space: f64,
         used_space: f64,
-        total_written_bytes: f64,
-        written_bytes: f64,
-        total_read_bytes: f64,
-        read_bytes: f64,
+        bytes_written: f64,
+        bytes_read: f64,
         file_system: String,
         mount_point: String,
         kind: String,
@@ -160,15 +152,11 @@ impl DiskData {
             total_space,
             available_space,
             used_space,
-            total_written_bytes,
-            written_bytes_vec: vec![],
-            total_read_bytes,
-            read_bytes_vec: vec![],
+            bytes_written_vec: vec![bytes_written],
+            bytes_read_vec: vec![bytes_read],
             file_system,
             mount_point,
-            kind,
-            last_written_bytes: written_bytes,
-            last_read_bytes: read_bytes,
+            disk_kind: kind,
             is_updated: true,
         }
     }
@@ -179,10 +167,8 @@ impl DiskData {
         total_space: f64,
         available_space: f64,
         used_space: f64,
-        total_written_bytes: f64,
-        written_bytes: f64,
-        total_read_bytes: f64,
-        read_bytes: f64,
+        bytes_written: f64,
+        bytes_read: f64,
         file_system: String,
         mount_point: String,
         kind: String,
@@ -192,22 +178,16 @@ impl DiskData {
             self.total_space = total_space;
             self.available_space = available_space;
             self.used_space = used_space;
-            self.total_written_bytes = total_written_bytes;
-            self.total_read_bytes = total_read_bytes;
             self.file_system = file_system;
-            self.kind = kind;
-            let actual_written_byte = written_bytes - self.last_written_bytes;
-            let actual_read_byte = read_bytes - self.last_read_bytes;
-            self.written_bytes_vec.push(actual_written_byte.min(0.0));
-            self.read_bytes_vec.push(actual_read_byte.min(0.0));
-            if self.written_bytes_vec.len() > MAXIMUM_DATA_COLLECTION {
-                self.written_bytes_vec.remove(0);
+            self.disk_kind = kind;
+            self.bytes_written_vec.push(bytes_written);
+            self.bytes_read_vec.push(bytes_read);
+            if self.bytes_written_vec.len() > MAXIMUM_DATA_COLLECTION {
+                self.bytes_written_vec.remove(0);
             }
-            if self.read_bytes_vec.len() > MAXIMUM_DATA_COLLECTION {
-                self.read_bytes_vec.remove(0);
+            if self.bytes_read_vec.len() > MAXIMUM_DATA_COLLECTION {
+                self.bytes_read_vec.remove(0);
             }
-            self.last_written_bytes = written_bytes;
-            self.last_read_bytes = read_bytes;
             self.is_updated = true;
         }
     }
@@ -241,11 +221,9 @@ pub struct CDiskData {
     pub total_space: f64,
     pub available_space: f64,
     pub used_space: f64,
-    pub total_written_bytes: f64, // Total number of written bytes.
-    pub written_bytes: f64, // Number of written bytes since the last refresh. Will be return in MB with 3 decimal places
-    pub total_read_bytes: f64, // Total number of read bytes.
-    pub read_bytes: f64, // Number of read bytes since the last refresh. Will be return in MB with 3 decimal places
+    pub bytes_written: f64, // Number of written bytes since the last refresh. Will be return in KiB
+    pub bytes_read: f64,    // Number of read bytes since the last refresh. Will be return in KiB
     pub file_system: String, // file system used on this disk (so for example: EXT4, NTFS, etc…).
     pub mount_point: String, // mount point of the disk (/ for example).
-    pub kind: String,    // kind of disk.( SSD for example )
+    pub kind: String,       // kind of disk.( SSD for example )
 }

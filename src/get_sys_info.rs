@@ -9,7 +9,7 @@ use crate::types::{CCpuData, CDiskData, CMemoryData, CSysInfo};
 use sysinfo::{Disks, System};
 
 const TO_GB: f64 = 1_073_741_824.0;
-const TO_MB: f64 = 1_048_576.0;
+const TO_KB: f64 = 1024.0;
 
 pub fn spawn_system_info_collector(
     tick_receiver: Receiver<u32>,
@@ -101,18 +101,11 @@ pub fn spawn_system_info_collector(
                         name: disk.name().to_string_lossy().to_string(),
                         total_space,
                         available_space,
-                        used_space: total_space - available_space,
-                        total_written_bytes: ((disk.usage().total_written_bytes as f64 / TO_GB)
-                            * 100.0)
-                            .round()
-                            / 100.0,
-                        written_bytes: ((disk.usage().written_bytes as f64 / TO_MB) * 1000.0)
+                        used_space: ((total_space - available_space) * 100.0).round() / 100.0,
+                        bytes_written: ((disk.usage().written_bytes as f64 / TO_KB) * 1000.0)
                             .round()
                             / 1000.0,
-                        total_read_bytes: ((disk.usage().total_read_bytes as f64 / TO_GB) * 100.0)
-                            .round()
-                            / 100.0,
-                        read_bytes: ((disk.usage().read_bytes as f64 / TO_MB) * 1000.0).round()
+                        bytes_read: ((disk.usage().read_bytes as f64 / TO_KB) * 1000.0).round()
                             / 1000.0,
                         file_system: disk.file_system().to_string_lossy().to_string(),
                         mount_point: disk.mount_point().to_string_lossy().to_string(),

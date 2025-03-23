@@ -133,6 +133,12 @@ pub fn draw_memory_info(
         swap_memory_layout = new_swap_memory_layout;
     }
 
+    let border_type = if bottom_graphs.width < SMALL_WIDTH {
+        Borders::NONE
+    } else {
+        Borders::TOP
+    };
+
     // ----------------------------------------
     //
     //          FOR USED MEMORY LAYOUT
@@ -155,15 +161,11 @@ pub fn draw_memory_info(
     ))
     .style(app_color_info.text_color);
 
-    let mut used_memory_block = Block::new()
+    let used_memory_block = Block::new()
         .title(used_memory_label.left_aligned())
         .title(used_memory_usage.right_aligned())
         .style(app_color_info.memory_main_block_color)
-        .borders(Borders::NONE);
-
-    if used_memory_layout.width > SMALL_WIDTH {
-        used_memory_block = used_memory_block.borders(Borders::TOP);
-    }
+        .borders(border_type);
 
     let used_memory_history = memory.used_memory_vec.clone();
     let num_points_to_display = graph_show_range.min(used_memory_history.len());
@@ -223,15 +225,11 @@ pub fn draw_memory_info(
     ))
     .style(app_color_info.text_color);
 
-    let mut available_memory_block = Block::new()
+    let available_memory_block = Block::new()
         .title(available_memory_label.left_aligned())
         .title(available_memory_usage.right_aligned())
         .style(app_color_info.memory_main_block_color)
-        .borders(Borders::NONE);
-
-    if available_memory_layout.width > SMALL_WIDTH {
-        available_memory_block = available_memory_block.borders(Borders::TOP);
-    }
+        .borders(border_type);
 
     let available_memory_history = memory.available_memory_vec.clone();
     let num_points_to_display = graph_show_range.min(available_memory_history.len());
@@ -291,15 +289,11 @@ pub fn draw_memory_info(
     ))
     .style(app_color_info.text_color);
 
-    let mut free_memory_block = Block::new()
+    let free_memory_block = Block::new()
         .title(free_memory_label.left_aligned())
         .title(free_memory_usage.right_aligned())
         .style(app_color_info.memory_main_block_color)
-        .borders(Borders::NONE);
-
-    if free_memory_layout.width > SMALL_WIDTH {
-        free_memory_block = free_memory_block.borders(Borders::TOP);
-    }
+        .borders(border_type);
 
     let free_memory_history = memory.free_memory_vec.clone();
     let num_points_to_display = graph_show_range.min(free_memory_history.len());
@@ -360,15 +354,11 @@ pub fn draw_memory_info(
         ))
         .style(app_color_info.text_color);
 
-        let mut swap_memory_block = Block::new()
+        let swap_memory_block = Block::new()
             .title(swap_memory_label.left_aligned())
             .title(swap_memory_usage.right_aligned())
             .style(app_color_info.memory_main_block_color)
-            .borders(Borders::NONE);
-
-        if swap_memory_layout.width > SMALL_WIDTH {
-            swap_memory_block = swap_memory_block.borders(Borders::TOP);
-        }
+            .borders(border_type);
 
         let swap_memory_history = memory.used_swap_vec.clone();
         let num_points_to_display = graph_show_range.min(swap_memory_history.len());
@@ -431,15 +421,11 @@ pub fn draw_memory_info(
         ))
         .style(app_color_info.text_color);
 
-        let mut cached_memory_block = Block::new()
+        let cached_memory_block = Block::new()
             .title(cached_memory_label.left_aligned())
             .title(cached_memory_usage.right_aligned())
             .style(app_color_info.memory_main_block_color)
-            .borders(Borders::NONE);
-
-        if cached_memory_layout.width > SMALL_WIDTH {
-            cached_memory_block = cached_memory_block.borders(Borders::TOP);
-        }
+            .borders(border_type);
 
         let cached_memory_history = memory.cached_memory_vec.clone();
         let num_points_to_display = graph_show_range.min(cached_memory_history.len());

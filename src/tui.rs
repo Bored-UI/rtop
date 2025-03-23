@@ -94,6 +94,8 @@ pub struct AppColorInfo {
     pub disk_container_selected_color: Color,
     pub disk_main_block_color: Color,
     pub disk_selected_color: Color,
+    pub disk_bytes_written_graph_color: Color,
+    pub disk_bytes_read_graph_color: Color,
 }
 
 const MIN_HEIGHT: u16 = 25;
@@ -170,6 +172,8 @@ pub fn tui() {
         disk_main_block_color: Color::Rgb(40, 50, 60), // Darker grayish-blue
         // Disk selected color: A bright teal for selected Memory items in the list
         disk_selected_color: Color::Rgb(0, 200, 200), // Teal
+        disk_bytes_written_graph_color: Color::Rgb(180, 80, 80), // Muted reddish coral
+        disk_bytes_read_graph_color: Color::Rgb(80, 160, 160), // Muted teal
     };
     app.run(&mut terminal, tick_rx, app_color_info);
     disable_raw_mode().unwrap();
