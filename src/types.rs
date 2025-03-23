@@ -4,7 +4,7 @@ use std::collections::HashMap;
 pub struct SysInfo {
     pub cpus: Vec<CpuData>,
     pub memory: MemoryData,
-    pub disks: HashMap<String, DiskData>
+    pub disks: HashMap<String, DiskData>,
 }
 
 const MAXIMUM_DATA_COLLECTION: usize = 10000;
@@ -34,14 +34,14 @@ pub struct DiskData {
     pub total_written_bytes: f64,    // Total number of written bytes.
     pub written_bytes_vec: Vec<f64>, // Number of written bytes since the last refresh. in MB with 3 decimal places
     pub total_read_bytes: f64,       // Total number of read bytes.
-    pub read_bytes_vec: Vec<f64>,    // Number of read bytes since the last refresh. in MB with 3 decimal places
+    pub read_bytes_vec: Vec<f64>, // Number of read bytes since the last refresh. in MB with 3 decimal places
     pub file_system: String, // file system used on this disk (so for example: EXT4, NTFS, etc…).
     pub mount_point: String, // mount point of the disk (/ for example). And mount point will also served as the unique identifier for the disk
     pub kind: String,        // kind of disk.( SSD for example )
-    
+
     // following info will not be shown in ui
     pub last_written_bytes: f64, // in MB with 3 decimal places
-    pub last_read_bytes: f64, // in MB with 3 decimal places
+    pub last_read_bytes: f64,    // in MB with 3 decimal places
     pub is_updated: bool, // this was to keep tracked of exsiting disk data we collected was still connected to the system
 }
 
@@ -169,7 +169,7 @@ impl DiskData {
             kind,
             last_written_bytes: written_bytes,
             last_read_bytes: read_bytes,
-            is_updated: true
+            is_updated: true,
         }
     }
 
@@ -242,10 +242,10 @@ pub struct CDiskData {
     pub available_space: f64,
     pub used_space: f64,
     pub total_written_bytes: f64, // Total number of written bytes.
-    pub written_bytes: f64,   // Number of written bytes since the last refresh. Will be return in MB with 3 decimal places
-    pub total_read_bytes: f64,    // Total number of read bytes.
-    pub read_bytes: f64,          // Number of read bytes since the last refresh. Will be return in MB with 3 decimal places
+    pub written_bytes: f64, // Number of written bytes since the last refresh. Will be return in MB with 3 decimal places
+    pub total_read_bytes: f64, // Total number of read bytes.
+    pub read_bytes: f64, // Number of read bytes since the last refresh. Will be return in MB with 3 decimal places
     pub file_system: String, // file system used on this disk (so for example: EXT4, NTFS, etc…).
     pub mount_point: String, // mount point of the disk (/ for example).
-    pub kind: String,        // kind of disk.( SSD for example )
+    pub kind: String,    // kind of disk.( SSD for example )
 }

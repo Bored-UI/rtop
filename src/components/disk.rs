@@ -1,4 +1,11 @@
-use ratatui::{layout::{Constraint, Layout, Rect}, style::{Style, Stylize}, symbols::border, text::{Line, Span}, widgets::{Block, Borders}, Frame};
+use ratatui::{
+    layout::{Constraint, Layout, Rect},
+    style::{Style, Stylize},
+    symbols::border,
+    text::{Line, Span},
+    widgets::{Block, Borders},
+    Frame,
+};
 
 use crate::{tui::AppColorInfo, types::DiskData, utils::get_tick_line_ui};
 
@@ -20,30 +27,22 @@ pub fn draw_disk_info(
     graph_show_range: usize,
     is_selected: bool,
     app_color_info: &AppColorInfo,
-    is_full_screen: bool
+    is_full_screen: bool,
 ) {
     let current_graph_percentage = if is_full_screen {
         BIG_WIDGET_PERCENTAGE
     } else {
         SMALL_WIDGET_PERCENTAGE
     };
-    
+
     let mut disk_name = disk_data.name.clone();
     if area.width <= SMALL_WIDTH + 5 {
-        let extension = if disk_name.len() > 8 {
-            ".."
-        } else {
-            ""
-        };
+        let extension = if disk_name.len() > 8 { ".." } else { "" };
         let new_disk_name = disk_name.get(..8).unwrap_or(disk_name.as_str());
         let new_disk_name_with_ext = new_disk_name.to_string() + extension;
         disk_name = new_disk_name_with_ext;
     } else if area.width <= SMALL_WIDTH + 20 {
-        let extension = if disk_name.len() > 25 {
-            ".."
-        } else {
-            ""
-        };
+        let extension = if disk_name.len() > 25 { ".." } else { "" };
         let new_disk_name = disk_name.get(..25).unwrap_or(disk_name.as_str());
         let new_disk_name_with_ext = new_disk_name.to_string() + extension;
         disk_name = new_disk_name_with_ext;
@@ -56,14 +55,15 @@ pub fn draw_disk_info(
             .underlined(),
         Span::styled("isk ", Style::default().fg(app_color_info.text_color)),
     ]);
-    
+
     let disk_switch_instruction = Line::from(vec![
         Span::styled("| ", Style::default().fg(app_color_info.text_color)),
-        Span::styled("<", Style::default().fg(app_color_info.key_text_color))
-            .bold(),
-        Span::styled(format!(" {} ", disk_name), Style::default().fg(app_color_info.text_color)),
-        Span::styled(">", Style::default().fg(app_color_info.key_text_color))
-            .bold(),
+        Span::styled("<", Style::default().fg(app_color_info.key_text_color)).bold(),
+        Span::styled(
+            format!(" {} ", disk_name),
+            Style::default().fg(app_color_info.text_color),
+        ),
+        Span::styled(">", Style::default().fg(app_color_info.key_text_color)).bold(),
         Span::styled(" |", Style::default().fg(app_color_info.text_color)),
     ]);
 
@@ -79,12 +79,10 @@ pub fn draw_disk_info(
     }
     if is_full_screen {
         let refresh_tick = get_tick_line_ui(tick, app_color_info);
-        
-        main_block = main_block.title(
-            refresh_tick.right_aligned()
-        )
+
+        main_block = main_block.title(refresh_tick.right_aligned())
     }
-    
+
     let [_, bottom_border, _] = Layout::vertical([
         Constraint::Percentage(5),
         Constraint::Percentage(90),
@@ -115,7 +113,7 @@ pub fn draw_disk_info(
 
     frame.render_widget(main_block, area);
     frame.render_widget(top_inner_block, top_label);
-    
+
     // bottom block will be in the follwing order:
     // used space
     // available space
@@ -125,40 +123,33 @@ pub fn draw_disk_info(
     // mount point
     // current written bytes [graph]
     // current read bytes [graph]
-    
-    let [
-        used_space_layout,
-        available_space_layout,
-        total_bytes_written_layout,
-        total_bytes_read_layout,
-        file_system_layout,
-        mount_point_layout,
-        current_written_bytes_layout,
-        current_read_bytes_layout,
-    ] = Layout::vertical([
-        Constraint::Percentage(5),
-        Constraint::Percentage(5),
-        Constraint::Percentage(5),
-        Constraint::Percentage(5),
-        Constraint::Percentage(5),
-        Constraint::Percentage(5),
-        Constraint::Percentage(35),
-        Constraint::Percentage(35),
-    ]).areas(bottom_blocks);
-    
+
+    let [used_space_layout, available_space_layout, total_bytes_written_layout, total_bytes_read_layout, file_system_layout, mount_point_layout, current_written_bytes_layout, current_read_bytes_layout] =
+        Layout::vertical([
+            Constraint::Percentage(5),
+            Constraint::Percentage(5),
+            Constraint::Percentage(5),
+            Constraint::Percentage(5),
+            Constraint::Percentage(5),
+            Constraint::Percentage(5),
+            Constraint::Percentage(35),
+            Constraint::Percentage(35),
+        ])
+        .areas(bottom_blocks);
+
     let used_space_label = if used_space_layout.width < SMALL_WIDTH {
         Line::from("U").style(app_color_info.text_color)
     } else {
         Line::from("Used:").style(app_color_info.text_color)
     };
-    
-    let used_space_usage = Line::from(format!("{} GiB", disk_data.used_space)).style(app_color_info.text_color);
+
+    let used_space_usage =
+        Line::from(format!("{} GiB", disk_data.used_space)).style(app_color_info.text_color);
     let used_space_block = Block::bordered()
         .title(used_space_label.left_aligned())
         .title(used_space_usage.right_aligned())
         .style(app_color_info.disk_main_block_color)
         .borders(Borders::NONE);
-    
+
     frame.render_widget(used_space_block, used_space_layout);
-    
 }

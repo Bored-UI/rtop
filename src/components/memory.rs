@@ -52,10 +52,10 @@ pub fn draw_memory_info(
             .style(app_color_info.memory_container_selected_color)
             .border_set(border::DOUBLE);
     }
-    
+
     if is_full_screen {
         let refresh_tick = get_tick_line_ui(tick, app_color_info);
-        
+
         main_block = main_block.title(refresh_tick.right_aligned());
     }
 

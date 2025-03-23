@@ -85,7 +85,7 @@ pub fn spawn_system_info_collector(
                     free_memory,
                     cached_memory,
                 };
-                
+
                 // -------------------------------------------
                 //
                 //            DISK DATA COLLECTION
@@ -95,21 +95,30 @@ pub fn spawn_system_info_collector(
                 let mut disk_data = Vec::new();
                 for disk in &disks {
                     let total_space = ((disk.total_space() as f64 / TO_GB) * 100.0).round() / 100.0;
-                    let available_space = ((disk.available_space() as f64 / TO_GB) * 100.0).round() / 100.0;
+                    let available_space =
+                        ((disk.available_space() as f64 / TO_GB) * 100.0).round() / 100.0;
                     let data = CDiskData {
                         name: disk.name().to_string_lossy().to_string(),
                         total_space,
                         available_space,
                         used_space: total_space - available_space,
-                        total_written_bytes: ((disk.usage().total_written_bytes as f64 / TO_GB) * 100.0).round() / 100.0,
-                        written_bytes: ((disk.usage().written_bytes as f64 / TO_MB) * 1000.0).round() / 1000.0,
-                        total_read_bytes: ((disk.usage().total_read_bytes as f64 / TO_GB) * 100.0).round() / 100.0,
-                        read_bytes: ((disk.usage().read_bytes as f64 / TO_MB) * 1000.0).round() / 1000.0,
+                        total_written_bytes: ((disk.usage().total_written_bytes as f64 / TO_GB)
+                            * 100.0)
+                            .round()
+                            / 100.0,
+                        written_bytes: ((disk.usage().written_bytes as f64 / TO_MB) * 1000.0)
+                            .round()
+                            / 1000.0,
+                        total_read_bytes: ((disk.usage().total_read_bytes as f64 / TO_GB) * 100.0)
+                            .round()
+                            / 100.0,
+                        read_bytes: ((disk.usage().read_bytes as f64 / TO_MB) * 1000.0).round()
+                            / 1000.0,
                         file_system: disk.file_system().to_string_lossy().to_string(),
                         mount_point: disk.mount_point().to_string_lossy().to_string(),
                         kind: disk.kind().to_string(),
                     };
-                    
+
                     disk_data.push(data);
                 }
 

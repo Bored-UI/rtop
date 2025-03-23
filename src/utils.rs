@@ -1,6 +1,12 @@
-use ratatui::{style::{Style, Stylize}, text::{Line, Span}};
+use ratatui::{
+    style::{Style, Stylize},
+    text::{Line, Span},
+};
 
-use crate::{tui::AppColorInfo, types::{CSysInfo, CpuData, DiskData, MemoryData, SysInfo}};
+use crate::{
+    tui::AppColorInfo,
+    types::{CSysInfo, CpuData, DiskData, MemoryData, SysInfo},
+};
 
 pub fn process_sys_info(current_sys_info: &mut SysInfo, collected_sys_info: CSysInfo) {
     // process for each cpu
@@ -37,12 +43,12 @@ pub fn process_sys_info(current_sys_info: &mut SysInfo, collected_sys_info: CSys
     }
 
     // process for disks
-    if current_sys_info.disks.len() == 0{
+    if current_sys_info.disks.len() == 0 {
         for disk in collected_sys_info.disks.iter() {
             let disk = DiskData::new(
                 disk.name.clone(),
                 disk.total_space,
-                disk.available_space, 
+                disk.available_space,
                 disk.used_space,
                 disk.total_written_bytes,
                 disk.written_bytes,
@@ -52,7 +58,9 @@ pub fn process_sys_info(current_sys_info: &mut SysInfo, collected_sys_info: CSys
                 disk.mount_point.clone(),
                 disk.kind.clone(),
             );
-            current_sys_info.disks.insert(disk.mount_point.clone(), disk);
+            current_sys_info
+                .disks
+                .insert(disk.mount_point.clone(), disk);
         }
     } else {
         // need slightly more processing to address the following
@@ -64,7 +72,7 @@ pub fn process_sys_info(current_sys_info: &mut SysInfo, collected_sys_info: CSys
             disk.is_updated = false;
         }
 
-        // loop through all collected disk data and update existing disk data or create new one 
+        // loop through all collected disk data and update existing disk data or create new one
         for disk in collected_sys_info.disks.iter() {
             let existing_disk = current_sys_info.disks.get_mut(&disk.mount_point);
             match existing_disk {
@@ -72,7 +80,7 @@ pub fn process_sys_info(current_sys_info: &mut SysInfo, collected_sys_info: CSys
                     e_d.update(
                         disk.name.clone(),
                         disk.total_space,
-                        disk.available_space, 
+                        disk.available_space,
                         disk.used_space,
                         disk.total_written_bytes,
                         disk.written_bytes,
@@ -87,7 +95,7 @@ pub fn process_sys_info(current_sys_info: &mut SysInfo, collected_sys_info: CSys
                     let disk = DiskData::new(
                         disk.name.clone(),
                         disk.total_space,
-                        disk.available_space, 
+                        disk.available_space,
                         disk.used_space,
                         disk.total_written_bytes,
                         disk.written_bytes,
@@ -97,14 +105,16 @@ pub fn process_sys_info(current_sys_info: &mut SysInfo, collected_sys_info: CSys
                         disk.mount_point.clone(),
                         disk.kind.clone(),
                     );
-                    current_sys_info.disks.insert(disk.mount_point.clone(), disk);
+                    current_sys_info
+                        .disks
+                        .insert(disk.mount_point.clone(), disk);
                 }
             }
-
         }
 
         // now remove those that is_updated field is false as it was indicated they were no longer connected
-        let keys_to_remove: Vec<String> = current_sys_info.disks
+        let keys_to_remove: Vec<String> = current_sys_info
+            .disks
             .iter()
             .filter(|(_, disk)| !disk.is_updated)
             .map(|(key, _)| key.clone())
@@ -118,7 +128,7 @@ pub fn process_sys_info(current_sys_info: &mut SysInfo, collected_sys_info: CSys
     drop(collected_sys_info);
 }
 
-pub fn get_tick_line_ui(tick:u64, app_color_info: &AppColorInfo) -> Line {
+pub fn get_tick_line_ui(tick: u64, app_color_info: &AppColorInfo) -> Line {
     let refresh_tick = Line::from(vec![
         Span::styled("| ", Style::default().fg(app_color_info.text_color)),
         Span::styled("-", Style::default().fg(app_color_info.key_text_color)).bold(),
@@ -129,6 +139,6 @@ pub fn get_tick_line_ui(tick:u64, app_color_info: &AppColorInfo) -> Line {
         Span::styled("+", Style::default().fg(app_color_info.key_text_color)).bold(),
         Span::styled(" |", Style::default().fg(app_color_info.text_color)),
     ]);
-    
+
     return refresh_tick;
 }

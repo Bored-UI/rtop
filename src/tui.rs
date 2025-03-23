@@ -1,18 +1,30 @@
-use std::{collections::HashMap, sync::mpsc::{self, Receiver, Sender}};
+use std::{
+    collections::HashMap,
+    sync::mpsc::{self, Receiver, Sender},
+};
 
 use ratatui::{
     crossterm::{
         event::{self, Event, KeyCode, KeyEvent, KeyEventKind},
         terminal::{disable_raw_mode, enable_raw_mode},
-    }, init, layout::{Alignment, Constraint, Layout}, restore, style::{Color, Style}, symbols::border, text::{Line, Span}, widgets::{Block, ListState, Paragraph}, DefaultTerminal, Frame
+    },
+    init,
+    layout::{Alignment, Constraint, Layout},
+    restore,
+    style::{Color, Style},
+    symbols::border,
+    text::{Line, Span},
+    widgets::{Block, ListState, Paragraph},
+    DefaultTerminal, Frame,
 };
 
 use crate::{
     cpu::draw_cpu_info,
+    disk::draw_disk_info,
     get_sys_info::spawn_system_info_collector,
     memory::draw_memory_info,
-    disk::draw_disk_info,
-    types::{CSysInfo, MemoryData, SysInfo}, utils::process_sys_info,
+    types::{CSysInfo, MemoryData, SysInfo},
+    utils::process_sys_info,
 };
 
 #[derive(PartialEq)]
@@ -77,7 +89,7 @@ pub struct AppColorInfo {
     pub free_memory_graph_color: Color,
     pub cached_memory_graph_color: Color,
     pub swap_memory_graph_color: Color,
-    
+
     // for disk
     pub disk_container_selected_color: Color,
     pub disk_main_block_color: Color,
@@ -151,7 +163,7 @@ pub fn tui() {
         free_memory_graph_color: Color::Rgb(80, 180, 80), // Muted green
         cached_memory_graph_color: Color::Rgb(120, 100, 180), // Muted purple-blue
         swap_memory_graph_color: Color::Rgb(180, 140, 60), // Muted golden orange
-        
+
         // Disk container selected color: A bright cyan for selected container
         disk_container_selected_color: Color::Rgb(0, 255, 255), // Cyan
         // Disk main block: A slightly lighter grayish-blue to contrast with the background
@@ -250,8 +262,8 @@ impl App {
         }
 
         if self.is_renderable {
-            // we check the selcted disk entry to prevent selecting a disk that got removed 
-            // 
+            // we check the selcted disk entry to prevent selecting a disk that got removed
+            //
             // default to the first disk first
             let mut selected_disk = self.sys_info.disks.iter().nth(0).unwrap().1;
             // if the selected disk is valid, override the selected default disk
@@ -260,9 +272,9 @@ impl App {
             } else {
                 self.disk_selected_entry = 0;
             }
-            
+
             // handling for full screen mode
-            if self.container_full_screen{
+            if self.container_full_screen {
                 if self.selected_container == SelectedContainer::Cpu {
                     draw_cpu_info(
                         self.tick as u64,
@@ -324,7 +336,7 @@ impl App {
                     },
                     app_color_info,
                 );
-    
+
                 draw_memory_info(
                     self.tick as u64,
                     &self.sys_info.memory,
@@ -339,7 +351,7 @@ impl App {
                     app_color_info,
                     false,
                 );
-                
+
                 draw_disk_info(
                     self.tick as u64,
                     &selected_disk,
@@ -506,7 +518,7 @@ impl App {
                     }
                 }
             }
-            
+
             // d and D for selecting the Disk Block
             KeyCode::Char('d') => {
                 if self.state == AppState::View {
@@ -534,19 +546,19 @@ impl App {
             }
             KeyCode::Char('<') => {
                 if self.state == AppState::View {
-                    if self.selected_container == SelectedContainer::Disk{
-                       if self.disk_selected_entry == 0{
-                           self.disk_selected_entry = self.sys_info.disks.len() - 1;
-                       } else {
-                           self.disk_selected_entry -= 1;
-                       }
+                    if self.selected_container == SelectedContainer::Disk {
+                        if self.disk_selected_entry == 0 {
+                            self.disk_selected_entry = self.sys_info.disks.len() - 1;
+                        } else {
+                            self.disk_selected_entry -= 1;
+                        }
                     }
                 }
             }
             KeyCode::Char('>') => {
                 if self.state == AppState::View {
-                    if self.selected_container == SelectedContainer::Disk{
-                        if self.disk_selected_entry == self.sys_info.disks.len() - 1{
+                    if self.selected_container == SelectedContainer::Disk {
+                        if self.disk_selected_entry == self.sys_info.disks.len() - 1 {
                             self.disk_selected_entry = 0
                         } else {
                             self.disk_selected_entry += 1;
@@ -554,12 +566,15 @@ impl App {
                     }
                 }
             }
-            
+
             KeyCode::Tab => {
                 // for a container to be full screen, it need to be selected first
-                if self.container_full_screen && self.selected_container!=SelectedContainer::None {
+                if self.container_full_screen && self.selected_container != SelectedContainer::None
+                {
                     self.container_full_screen = false;
-                } else if !self.container_full_screen && self.selected_container!=SelectedContainer::None {
+                } else if !self.container_full_screen
+                    && self.selected_container != SelectedContainer::None
+                {
                     self.container_full_screen = true;
                 }
             }
