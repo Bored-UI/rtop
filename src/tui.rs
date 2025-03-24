@@ -66,36 +66,35 @@ struct App {
 
 pub struct AppColorInfo {
     pub background_color: Color,
-    pub text_color: Color,
-    // key text was the key that triggers certain functionality
+    pub base_app_text_color: Color,
+    // key text was the key that triggers certain functionality, like c for selecting cpu container -/+ to chnage the refresh tick
     pub key_text_color: Color,
+    pub app_title_color: Color, // this will be used for those text in the title of each main block
 
     // for cpu
     pub cpu_container_selected_color: Color,
     pub cpu_main_block_color: Color,
     pub cpu_selected_color: Color,
-    pub cpu_low_usage_color: Color,
-    pub cpu_medium_usage_color: Color,
-    pub cpu_high_usage_color: Color,
     pub cpu_base_graph_color: Color,
     pub cpu_info_border_color: Color,
+    pub cpu_text_color: Color,
 
     // for memory
     pub memory_container_selected_color: Color,
     pub memory_main_block_color: Color,
-    pub memory_selected_color: Color,
     pub used_memory_base_graph_color: Color,
     pub available_memory_base_graph_color: Color,
     pub free_memory_base_graph_color: Color,
     pub cached_memory_base_graph_color: Color,
     pub swap_memory_base_graph_color: Color,
+    pub memory_text_color: Color,
 
     // for disk
     pub disk_container_selected_color: Color,
     pub disk_main_block_color: Color,
-    pub disk_selected_color: Color,
     pub disk_bytes_written_base_graph_color: Color,
     pub disk_bytes_read_base_graph_color: Color,
+    pub disk_text_color: Color,
 }
 
 const MIN_HEIGHT: u16 = 25;
@@ -132,48 +131,45 @@ pub fn tui() {
 
     let app_color_info = AppColorInfo {
         // Background color: A dark grayish-blue for the entire terminal
-        background_color: Color::Rgb(20, 30, 40), // Dark grayish-blue
+        background_color: Color::Rgb(46, 52, 64), // Polar Knight
         // Text color: A soft white for general text readability
-        text_color: Color::Rgb(220, 220, 220), // Soft white
+        base_app_text_color: Color::Rgb(216, 222, 233), // Snow Storm
         // Key text color: A bright magenta for key text (e.g., "C" in "Cpu")
-        key_text_color: Color::Rgb(200, 50, 200), // Bright magenta
+        key_text_color: Color::Rgb(94, 129, 172), // Bright magenta
+        app_title_color: Color::Rgb(143, 188, 187), // Frost
 
         // CPU container selected color: A bright cyan for selected container
-        cpu_container_selected_color: Color::Rgb(0, 255, 255), // Cyan
+        cpu_container_selected_color: Color::Rgb(94, 129, 172),
         // CPU main block: A slightly lighter grayish-blue to contrast with the background
-        cpu_main_block_color: Color::Rgb(40, 50, 60), // Darker grayish-blue
+        cpu_main_block_color: Color::Rgb(76, 86, 106),
         // CPU selected color: A bright teal for selected CPU items in the list
-        cpu_selected_color: Color::Rgb(0, 200, 200), // Teal
-        // CPU usage colors: Gradient from green to red
-        cpu_low_usage_color: Color::Rgb(50, 200, 50), // Green for low usage (< 30%)
-        cpu_medium_usage_color: Color::Rgb(200, 200, 50), // Yellow for medium usage (30-70%)
-        cpu_high_usage_color: Color::Rgb(200, 50, 50), // Red for high usage (> 70%)
+        cpu_selected_color: Color::Rgb(94, 129, 172),
         // CPU graph color: A muted blue to represent graph lines
         cpu_base_graph_color: Color::Rgb(70, 130, 180), // Steel blue
         // CPU info border color: A subtle silver for borders
         cpu_info_border_color: Color::Rgb(150, 150, 150), // Silver
+        cpu_text_color: Color::Rgb(94, 129, 172),         // color for cpu related text
 
         // Memory container selected color: A bright cyan for selected container
-        memory_container_selected_color: Color::Rgb(0, 255, 255), // Cyan
+        memory_container_selected_color: Color::Rgb(94, 129, 172),
         // Memory main block: A slightly lighter grayish-blue to contrast with the background
-        memory_main_block_color: Color::Rgb(40, 50, 60), // Darker grayish-blue
-        // Memory selected color: A bright teal for selected Memory items in the list
-        memory_selected_color: Color::Rgb(0, 200, 200), // Teal
+        memory_main_block_color: Color::Rgb(76, 86, 106),
         // Memory related graph color
         used_memory_base_graph_color: Color::Rgb(180, 80, 80), // Muted reddish coral
         available_memory_base_graph_color: Color::Rgb(80, 160, 160), // Muted teal
         free_memory_base_graph_color: Color::Rgb(80, 180, 80), // Muted green
         cached_memory_base_graph_color: Color::Rgb(120, 100, 180), // Muted purple-blue
         swap_memory_base_graph_color: Color::Rgb(180, 140, 60), // Muted golden orange
+        memory_text_color: Color::Rgb(143, 188, 187),          // color for memory related text
 
         // Disk container selected color: A bright cyan for selected container
         disk_container_selected_color: Color::Rgb(0, 255, 255), // Cyan
         // Disk main block: A slightly lighter grayish-blue to contrast with the background
-        disk_main_block_color: Color::Rgb(40, 50, 60), // Darker grayish-blue
+        disk_main_block_color: Color::Rgb(76, 86, 106),
         // Disk selected color: A bright teal for selected Memory items in the list
-        disk_selected_color: Color::Rgb(0, 200, 200), // Teal
         disk_bytes_written_base_graph_color: Color::Rgb(180, 80, 80), // Muted reddish coral
-        disk_bytes_read_base_graph_color: Color::Rgb(80, 160, 160), // Muted teal
+        disk_bytes_read_base_graph_color: Color::Rgb(80, 160, 160),   // Muted teal
+        disk_text_color: Color::Rgb(143, 188, 187), //  color for disk related text
     };
     app.run(&mut terminal, tick_rx, app_color_info);
     disable_raw_mode().unwrap();
@@ -599,9 +595,12 @@ fn draw_not_renderable_message(frame: &mut Frame, app_color_info: &AppColorInfo)
     // Define multiple paragraphs
     let text_lines = vec![
         Line::from("UI can't be rendered, terminal size too small")
-            .style(app_color_info.text_color),
+            .style(app_color_info.base_app_text_color),
         Line::from(vec![
-            Span::styled("Width =", Style::default().fg(app_color_info.text_color)),
+            Span::styled(
+                "Width =",
+                Style::default().fg(app_color_info.base_app_text_color),
+            ),
             Span::styled(
                 format!(" {} ", width),
                 Style::default().fg(if width >= MIN_WIDTH {
@@ -610,7 +609,10 @@ fn draw_not_renderable_message(frame: &mut Frame, app_color_info: &AppColorInfo)
                     Color::Red
                 }),
             ),
-            Span::styled("Height =", Style::default().fg(app_color_info.text_color)),
+            Span::styled(
+                "Height =",
+                Style::default().fg(app_color_info.base_app_text_color),
+            ),
             Span::styled(
                 format!(" {} ", height),
                 Style::default().fg(if height >= MIN_HEIGHT {
@@ -621,9 +623,9 @@ fn draw_not_renderable_message(frame: &mut Frame, app_color_info: &AppColorInfo)
             ),
         ]),
         Line::from(""),
-        Line::from("Need Size for current config.").style(app_color_info.text_color),
+        Line::from("Need Size for current config.").style(app_color_info.base_app_text_color),
         Line::from(format!("Width = {} Height = {}  ", MIN_WIDTH, MIN_HEIGHT))
-            .style(app_color_info.text_color),
+            .style(app_color_info.base_app_text_color),
     ];
 
     let warning_paragraph = Paragraph::new(text_lines)

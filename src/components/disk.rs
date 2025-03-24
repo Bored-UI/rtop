@@ -47,22 +47,22 @@ pub fn draw_disk_info(
     }
 
     let select_instruction = Line::from(vec![
-        Span::styled(" ", Style::default().fg(app_color_info.text_color)),
+        Span::styled(" ", Style::default().fg(app_color_info.app_title_color)),
         Span::styled("D", Style::default().fg(app_color_info.key_text_color))
             .bold()
             .underlined(),
-        Span::styled("isk ", Style::default().fg(app_color_info.text_color)),
+        Span::styled("isk ", Style::default().fg(app_color_info.app_title_color)),
     ]);
 
     let disk_switch_instruction = Line::from(vec![
-        Span::styled("| ", Style::default().fg(app_color_info.text_color)),
+        Span::styled("  ", Style::default().fg(app_color_info.app_title_color)),
         Span::styled("<", Style::default().fg(app_color_info.key_text_color)).bold(),
         Span::styled(
             format!(" {} ", disk_name),
-            Style::default().fg(app_color_info.text_color),
+            Style::default().fg(app_color_info.app_title_color),
         ),
         Span::styled(">", Style::default().fg(app_color_info.key_text_color)).bold(),
-        Span::styled(" |", Style::default().fg(app_color_info.text_color)),
+        Span::styled("  ", Style::default().fg(app_color_info.app_title_color)),
     ]);
 
     let mut main_block = Block::bordered()
@@ -100,9 +100,9 @@ pub fn draw_disk_info(
         Layout::vertical([Constraint::Percentage(10), Constraint::Percentage(90)])
             .areas(padded_bottom);
 
-    let total_disk_space_label = Line::from("Total:").style(app_color_info.text_color);
+    let total_disk_space_label = Line::from("Total:").style(app_color_info.app_title_color);
     let total_disk_space =
-        Line::from(format!("{} GiB", disk_data.total_space)).style(app_color_info.text_color);
+        Line::from(format!("{} GiB", disk_data.total_space)).style(app_color_info.app_title_color);
     let top_inner_block = Block::new()
         .title(total_disk_space_label.left_aligned())
         .title(total_disk_space.right_aligned())
@@ -145,13 +145,13 @@ pub fn draw_disk_info(
     //
     // ----------------------------------------
     let used_space_label = if used_space_layout.width < SMALL_WIDTH {
-        Line::from("U").style(app_color_info.text_color)
+        Line::from("U").style(app_color_info.base_app_text_color)
     } else {
-        Line::from("Used:").style(app_color_info.text_color)
+        Line::from("Used:").style(app_color_info.base_app_text_color)
     };
 
     let used_space_usage =
-        Line::from(format!("{} GiB", disk_data.used_space)).style(app_color_info.text_color);
+        Line::from(format!("{} GiB", disk_data.used_space)).style(app_color_info.disk_text_color);
     let used_space_block = Block::bordered()
         .title(used_space_label.left_aligned())
         .title(used_space_usage.right_aligned())
@@ -166,13 +166,13 @@ pub fn draw_disk_info(
     //
     // ----------------------------------------
     let available_space_label = if available_space_layout.width < SMALL_WIDTH + 10 {
-        Line::from("A").style(app_color_info.text_color)
+        Line::from("A").style(app_color_info.base_app_text_color)
     } else {
-        Line::from("Available:").style(app_color_info.text_color)
+        Line::from("Available:").style(app_color_info.base_app_text_color)
     };
 
-    let available_space_usage =
-        Line::from(format!("{} GiB", disk_data.available_space)).style(app_color_info.text_color);
+    let available_space_usage = Line::from(format!("{} GiB", disk_data.available_space))
+        .style(app_color_info.disk_text_color);
     let available_space_block = Block::bordered()
         .title(available_space_label.left_aligned())
         .title(available_space_usage.right_aligned())
@@ -187,9 +187,9 @@ pub fn draw_disk_info(
     //
     // ----------------------------------------
     let file_system_label = if file_system_layout.width < SMALL_WIDTH + 10 {
-        Line::from("F/S").style(app_color_info.text_color)
+        Line::from("F/S").style(app_color_info.base_app_text_color)
     } else {
-        Line::from("File System:").style(app_color_info.text_color)
+        Line::from("File System:").style(app_color_info.base_app_text_color)
     };
 
     let mut file_system = disk_data.file_system.clone();
@@ -205,7 +205,8 @@ pub fn draw_disk_info(
         file_system = new_file_system_with_ext;
     }
 
-    let file_system_usage = Line::from(format!("{}", file_system)).style(app_color_info.text_color);
+    let file_system_usage =
+        Line::from(format!("{}", file_system)).style(app_color_info.disk_text_color);
     let file_system_block = Block::bordered()
         .title(file_system_label.left_aligned())
         .title(file_system_usage.right_aligned())
@@ -220,9 +221,9 @@ pub fn draw_disk_info(
     //
     // ----------------------------------------
     let mount_point_label = if mount_point_layout.width < SMALL_WIDTH + 10 {
-        Line::from("M/P").style(app_color_info.text_color)
+        Line::from("M/P").style(app_color_info.base_app_text_color)
     } else {
-        Line::from("Mount Point:").style(app_color_info.text_color)
+        Line::from("Mount Point:").style(app_color_info.base_app_text_color)
     };
 
     let mut mount_point = disk_data.mount_point.clone();
@@ -238,7 +239,8 @@ pub fn draw_disk_info(
         mount_point = new_mount_point_with_ext;
     }
 
-    let mount_point_usage = Line::from(format!("{}", mount_point)).style(app_color_info.text_color);
+    let mount_point_usage =
+        Line::from(format!("{}", mount_point)).style(app_color_info.memory_text_color);
     let mount_point_block = Block::bordered()
         .title(mount_point_label.left_aligned())
         .title(mount_point_usage.right_aligned())
@@ -253,13 +255,13 @@ pub fn draw_disk_info(
     //
     // ----------------------------------------
     let disk_kind_label = if disk_kind_layout.width < SMALL_WIDTH {
-        Line::from("K").style(app_color_info.text_color)
+        Line::from("K").style(app_color_info.base_app_text_color)
     } else {
-        Line::from("Disk Kind:").style(app_color_info.text_color)
+        Line::from("Disk Kind:").style(app_color_info.base_app_text_color)
     };
 
     let disk_kind_usage =
-        Line::from(format!("{}", disk_data.disk_kind)).style(app_color_info.text_color);
+        Line::from(format!("{}", disk_data.disk_kind)).style(app_color_info.disk_text_color);
     let disk_kind_block = Block::bordered()
         .title(disk_kind_label.left_aligned())
         .title(disk_kind_usage.right_aligned())
@@ -279,9 +281,9 @@ pub fn draw_disk_info(
     ])
     .areas(current_bytes_written_layout);
     let bytes_written_label = if current_bytes_written_layout.width < SMALL_WIDTH {
-        Line::from("W").style(app_color_info.text_color)
+        Line::from("W").style(app_color_info.base_app_text_color)
     } else {
-        Line::from("WRITE:").style(app_color_info.text_color)
+        Line::from("WRITE:").style(app_color_info.base_app_text_color)
     };
 
     let mut actual_bytes = disk_data.bytes_written_vec[disk_data.bytes_written_vec.len() - 1];
@@ -305,7 +307,7 @@ pub fn draw_disk_info(
         actual_bytes,
         bytes_format
     ))
-    .style(app_color_info.text_color);
+    .style(app_color_info.memory_text_color);
 
     let bytes_written_block = Block::new()
         .title(bytes_written_label.left_aligned())
@@ -366,9 +368,9 @@ pub fn draw_disk_info(
     ])
     .areas(current_bytes_read_layout);
     let bytes_read_label = if current_bytes_read_layout.width < SMALL_WIDTH {
-        Line::from("R").style(app_color_info.text_color)
+        Line::from("R").style(app_color_info.base_app_text_color)
     } else {
-        Line::from("READ:").style(app_color_info.text_color)
+        Line::from("READ:").style(app_color_info.base_app_text_color)
     };
 
     let mut actual_bytes = disk_data.bytes_read_vec[disk_data.bytes_read_vec.len() - 1];
@@ -392,7 +394,7 @@ pub fn draw_disk_info(
         actual_bytes,
         bytes_format
     ))
-    .style(app_color_info.text_color);
+    .style(app_color_info.memory_text_color);
 
     let bytes_read_block = Block::new()
         .title(bytes_read_label.left_aligned())

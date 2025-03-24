@@ -36,11 +36,14 @@ pub fn draw_memory_info(
     };
 
     let select_instruction = Line::from(vec![
-        Span::styled(" ", Style::default().fg(app_color_info.text_color)),
+        Span::styled(" ", Style::default().fg(app_color_info.app_title_color)),
         Span::styled("M", Style::default().fg(app_color_info.key_text_color))
             .bold()
             .underlined(),
-        Span::styled("emory ", Style::default().fg(app_color_info.text_color)),
+        Span::styled(
+            "emory ",
+            Style::default().fg(app_color_info.app_title_color),
+        ),
     ]);
 
     let mut main_block = Block::bordered()
@@ -78,9 +81,9 @@ pub fn draw_memory_info(
         Layout::vertical([Constraint::Percentage(10), Constraint::Percentage(90)])
             .areas(padded_bottom);
 
-    let total_memory_label = Line::from("Total:").style(app_color_info.text_color);
+    let total_memory_label = Line::from("Total:").style(app_color_info.app_title_color);
     let total_memory =
-        Line::from(format!("{} GiB", memory.total_memory)).style(app_color_info.text_color);
+        Line::from(format!("{} GiB", memory.total_memory)).style(app_color_info.app_title_color);
     let top_inner_block = Block::new()
         .title(total_memory_label.left_aligned())
         .title(total_memory.right_aligned())
@@ -150,16 +153,16 @@ pub fn draw_memory_info(
     ])
     .areas(used_memory_layout);
     let used_memory_label = if used_memory_layout.width < SMALL_WIDTH {
-        Line::from("U").style(app_color_info.text_color)
+        Line::from("U").style(app_color_info.base_app_text_color)
     } else {
-        Line::from("Used:").style(app_color_info.text_color)
+        Line::from("Used:").style(app_color_info.base_app_text_color)
     };
 
     let used_memory_usage = Line::from(format!(
         "{} GiB",
         memory.used_memory_vec[memory.used_memory_vec.len() - 1]
     ))
-    .style(app_color_info.text_color);
+    .style(app_color_info.memory_text_color);
 
     let used_memory_block = Block::new()
         .title(used_memory_label.left_aligned())
@@ -214,16 +217,16 @@ pub fn draw_memory_info(
     ])
     .areas(available_memory_layout);
     let available_memory_label = if available_memory_layout.width < SMALL_WIDTH {
-        Line::from("A").style(app_color_info.text_color)
+        Line::from("A").style(app_color_info.base_app_text_color)
     } else {
-        Line::from("Available:").style(app_color_info.text_color)
+        Line::from("Available:").style(app_color_info.base_app_text_color)
     };
 
     let available_memory_usage = Line::from(format!(
         "{} GiB",
         memory.available_memory_vec[memory.available_memory_vec.len() - 1]
     ))
-    .style(app_color_info.text_color);
+    .style(app_color_info.memory_text_color);
 
     let available_memory_block = Block::new()
         .title(available_memory_label.left_aligned())
@@ -278,16 +281,16 @@ pub fn draw_memory_info(
     ])
     .areas(free_memory_layout);
     let free_memory_label = if free_memory_layout.width < SMALL_WIDTH {
-        Line::from("F").style(app_color_info.text_color)
+        Line::from("F").style(app_color_info.base_app_text_color)
     } else {
-        Line::from("Free:").style(app_color_info.text_color)
+        Line::from("Free:").style(app_color_info.base_app_text_color)
     };
 
     let free_memory_usage = Line::from(format!(
         "{} GiB",
         memory.free_memory_vec[memory.free_memory_vec.len() - 1]
     ))
-    .style(app_color_info.text_color);
+    .style(app_color_info.memory_text_color);
 
     let free_memory_block = Block::new()
         .title(free_memory_label.left_aligned())
@@ -343,16 +346,16 @@ pub fn draw_memory_info(
         ])
         .areas(swap_memory_layout);
         let swap_memory_label = if swap_memory_layout.width < SMALL_WIDTH {
-            Line::from("S").style(app_color_info.text_color)
+            Line::from("S").style(app_color_info.base_app_text_color)
         } else {
-            Line::from("Swap:").style(app_color_info.text_color)
+            Line::from("Swap:").style(app_color_info.base_app_text_color)
         };
 
         let swap_memory_usage = Line::from(format!(
             "{} GiB",
             memory.used_swap_vec[memory.used_swap_vec.len() - 1]
         ))
-        .style(app_color_info.text_color);
+        .style(app_color_info.memory_text_color);
 
         let swap_memory_block = Block::new()
             .title(swap_memory_label.left_aligned())
@@ -410,16 +413,16 @@ pub fn draw_memory_info(
         ])
         .areas(cached_memory_layout);
         let cached_memory_label = if cached_memory_layout.width < SMALL_WIDTH {
-            Line::from("C").style(app_color_info.text_color)
+            Line::from("C").style(app_color_info.base_app_text_color)
         } else {
-            Line::from("Cached:").style(app_color_info.text_color)
+            Line::from("Cached:").style(app_color_info.base_app_text_color)
         };
 
         let cached_memory_usage = Line::from(format!(
             "{} GiB",
             memory.cached_memory_vec[memory.cached_memory_vec.len() - 1]
         ))
-        .style(app_color_info.text_color);
+        .style(app_color_info.memory_text_color);
 
         let cached_memory_block = Block::new()
             .title(cached_memory_label.left_aligned())

@@ -25,15 +25,15 @@ pub fn draw_cpu_info(
     let title = Line::from(
         format!(" {} ", local_time.format("%H:%M:%S"))
             .bold()
-            .style(app_color_info.text_color),
+            .style(app_color_info.app_title_color),
     );
     let refresh_tick = get_tick_line_ui(tick, app_color_info);
     let select_instruction = Line::from(vec![
-        Span::styled(" ", Style::default().fg(app_color_info.text_color)),
+        Span::styled(" ", Style::default().fg(app_color_info.app_title_color)),
         Span::styled("C", Style::default().fg(app_color_info.key_text_color))
             .bold()
             .underlined(),
-        Span::styled("pu ", Style::default().fg(app_color_info.text_color)),
+        Span::styled("pu ", Style::default().fg(app_color_info.app_title_color)),
     ]);
 
     // The main block for CPU info
@@ -114,28 +114,13 @@ pub fn draw_cpu_info(
         .style(Style::default().fg(app_color_info.cpu_base_graph_color));
 
     let x_axis = Axis::default()
-        .style(Style::default().fg(app_color_info.text_color))
+        .style(Style::default().fg(app_color_info.base_app_text_color))
         .bounds([0.0, num_points_to_display as f64]);
 
     // Define the x-axis (CPU Usage) and y-axis (Time)
     let y_axis = Axis::default()
-        .title(Line::from("Usage (%)").style(app_color_info.text_color))
-        .style(Style::default().fg(app_color_info.text_color))
-        .bounds([0.0, 100.0])
-        .labels(vec![
-            Line::from(vec![Span::styled(
-                "0",
-                Style::default().fg(app_color_info.text_color),
-            )]),
-            Line::from(vec![Span::styled(
-                "50",
-                Style::default().fg(app_color_info.text_color),
-            )]),
-            Line::from(vec![Span::styled(
-                "100",
-                Style::default().fg(app_color_info.text_color),
-            )]),
-        ]);
+        .style(Style::default().fg(app_color_info.base_app_text_color))
+        .bounds([0.0, 100.0]);
 
     // Create the chart widget
     let chart = Chart::new(vec![dataset])
@@ -148,7 +133,8 @@ pub fn draw_cpu_info(
     // --------------------------------------------------
 
     // Create the inner_right block [for cpu info]
-    let cpu_brand = Line::from(format!(" {} ", cpus[0].brand)).style(app_color_info.text_color);
+    let cpu_brand =
+        Line::from(format!(" {} ", cpus[0].brand)).style(app_color_info.app_title_color);
     let inner_right_block = Block::bordered()
         .title(cpu_brand.left_aligned())
         .style(app_color_info.cpu_info_border_color)
@@ -170,7 +156,6 @@ pub fn draw_cpu_info(
     let cpu_info_items: Vec<ListItem> = cpus
         .iter()
         .map(|cpu| {
-            let mut color = app_color_info.cpu_low_usage_color;
             let name = format!("{}", cpu.id);
             let usage = format!("{:.2}%", cpu.usage);
 
@@ -188,15 +173,15 @@ pub fn draw_cpu_info(
                 usage.chars().take(usage_width).collect::<String>()
             };
 
-            if cpu.usage > 30.0 && cpu.usage < 70.0 {
-                color = app_color_info.cpu_medium_usage_color;
-            } else if cpu.usage >= 70.0 {
-                color = app_color_info.cpu_high_usage_color;
-            }
-
             ListItem::new(Line::from(vec![
-                Span::styled(padded_name, Style::default().fg(color)),
-                Span::styled(padded_usage, Style::default().fg(color)),
+                Span::styled(
+                    padded_name,
+                    Style::default().fg(app_color_info.base_app_text_color),
+                ),
+                Span::styled(
+                    padded_usage,
+                    Style::default().fg(app_color_info.cpu_text_color),
+                ),
             ]))
         })
         .collect();
