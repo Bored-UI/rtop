@@ -82,7 +82,7 @@ pub fn draw_disk_info(
     }
 
     // bottom border will be the space where the statistics for used, available space, total bytes written and read etc... will be displayed
-    let [_, bottom_border, _] = Layout::vertical([
+    let [_, disk_block, _] = Layout::vertical([
         Constraint::Percentage(5),
         Constraint::Percentage(90),
         Constraint::Percentage(5),
@@ -90,18 +90,18 @@ pub fn draw_disk_info(
     .areas(area);
 
     // padded the bottom border for some space on the left and right
-    let [_, padded_bottom, _] = Layout::horizontal([
+    let [_, padded_disk_block, _] = Layout::horizontal([
         Constraint::Percentage(3),
         Constraint::Percentage(94),
         Constraint::Percentage(3),
     ])
-    .areas(bottom_border);
+    .areas(disk_block);
 
     // top label will be the label for total disk space
-    // bottom blocks will be the statistics for used, available space, total bytes written and read etc...
-    let [top_label, bottom_blocks] =
+    // bottom disk info blocks will be the statistics for used, available space, total bytes written and read etc...
+    let [top_label, bottom_disk_info_blocks] =
         Layout::vertical([Constraint::Percentage(10), Constraint::Percentage(90)])
-            .areas(padded_bottom);
+            .areas(padded_disk_block);
 
     let total_disk_space_label = Line::from("Total:").style(app_color_info.app_title_color);
     let total_disk_space =
@@ -134,9 +134,9 @@ pub fn draw_disk_info(
             Constraint::Percentage(35),
             Constraint::Percentage(35),
         ])
-        .areas(bottom_blocks);
+        .areas(bottom_disk_info_blocks);
 
-    let border_type = if bottom_blocks.width < SMALL_WIDTH {
+    let border_type = if bottom_disk_info_blocks.width < SMALL_WIDTH {
         Borders::NONE
     } else {
         Borders::TOP

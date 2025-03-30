@@ -68,7 +68,7 @@ pub fn draw_memory_info(
     }
 
     // this will be the layout for the memory usage graph
-    let [_, bottom_border, _] = Layout::vertical([
+    let [_, memory_block, _] = Layout::vertical([
         Constraint::Percentage(5),
         Constraint::Percentage(90),
         Constraint::Percentage(5),
@@ -76,18 +76,18 @@ pub fn draw_memory_info(
     .areas(area);
 
     // padded the layout for the memory usage graph to have some space on the left and right
-    let [_, padded_bottom, _] = Layout::horizontal([
+    let [_, padded_memory_block, _] = Layout::horizontal([
         Constraint::Percentage(3),
         Constraint::Percentage(94),
         Constraint::Percentage(3),
     ])
-    .areas(bottom_border);
+    .areas(memory_block);
 
     // top label will be the label for total memory
     // bottom graph will be the statistics for memory usage like used, free, available memory, etc
     let [top_label, bottom_graphs] =
         Layout::vertical([Constraint::Percentage(10), Constraint::Percentage(90)])
-            .areas(padded_bottom);
+            .areas(padded_memory_block);
 
     let total_memory_label = Line::from("Total:").style(app_color_info.app_title_color);
     let total_memory =

@@ -50,33 +50,33 @@ pub fn draw_cpu_info(
     }
 
     // Constrain the block to have space at the right and left
-    let [_, constraint_block, _] = Layout::horizontal([
+    let [_, cpu_block, _] = Layout::horizontal([
         Constraint::Percentage(1),
         Constraint::Percentage(98),
         Constraint::Percentage(1),
     ])
     .areas(size);
 
-    // Split into left (cpu graph) and right (cpu name and usage info)
-    let [left, right] =
+    // Split into cpu_graph_layout and cpu_info_layout (cpu name and usage info)
+    let [cpu_graph_layout, cpu_info_layout] =
         Layout::horizontal([Constraint::Percentage(70), Constraint::Percentage(30)])
-            .areas(constraint_block);
+            .areas(cpu_block);
 
     // Constrain the block to have space at the top and bottom for cpu graph
-    let [_, constraint_inner_left, _] = Layout::vertical([
+    let [_, constraint_inner_cpu_graph_layout, _] = Layout::vertical([
         Constraint::Percentage(10),
         Constraint::Percentage(80),
         Constraint::Percentage(10),
     ])
-    .areas(left);
+    .areas(cpu_graph_layout);
 
     // Constrain the block to have space at the top and bottom for cpu name and usage info
-    let [_, constraint_inner_right, _] = Layout::vertical([
+    let [_, constraint_inner_cpu_info_layout, _] = Layout::vertical([
         Constraint::Percentage(10),
         Constraint::Percentage(80),
         Constraint::Percentage(10),
     ])
-    .areas(right);
+    .areas(cpu_info_layout);
 
     // --------------------------------------------------
     // Rendering for CPU usage history graph on the left
@@ -146,7 +146,7 @@ pub fn draw_cpu_info(
         Constraint::Percentage(90),
         Constraint::Percentage(5),
     ])
-    .areas(constraint_inner_right);
+    .areas(constraint_inner_cpu_info_layout);
 
     // Approximate 48% of the container width for each section (name and usage)
     let name_width = cpu_info_inner_container.width as usize / 2;
@@ -196,7 +196,7 @@ pub fn draw_cpu_info(
     // Render the main cpu block container
     frame.render_widget(main_block, size);
     // Render the chart in the left area
-    frame.render_widget(chart, constraint_inner_left);
+    frame.render_widget(chart, constraint_inner_cpu_graph_layout);
     // Render the combined list with state
     frame.render_stateful_widget(cpu_info_list, cpu_info_inner_container, cpu_selected_state);
 

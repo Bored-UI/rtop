@@ -19,6 +19,7 @@ use ratatui::{
 };
 
 use crate::{
+    components::network::draw_network_info,
     cpu::draw_cpu_info,
     disk::draw_disk_info,
     get_sys_info::spawn_system_info_collector,
@@ -57,8 +58,10 @@ struct App {
     cpu_graph_shown_range: usize,
     memory_graph_shown_range: usize,
     disk_graph_shown_range: usize,
+    network_graph_shown_range: usize,
     cpu_selected_state: ListState,
     disk_selected_entry: usize,
+    network_selected_entry: usize,
     is_renderable: bool,
     is_init: bool,
     container_full_screen: bool,
@@ -95,6 +98,13 @@ pub struct AppColorInfo {
     pub disk_bytes_written_base_graph_color: Color,
     pub disk_bytes_read_base_graph_color: Color,
     pub disk_text_color: Color,
+
+    // for network
+    pub network_container_selected_color: Color,
+    pub network_main_block_color: Color,
+    pub network_received_base_graph_color: Color,
+    pub network_transmitted_base_graph_color: Color,
+    pub network_text_color: Color,
 }
 
 const MIN_HEIGHT: u16 = 25;
@@ -123,8 +133,10 @@ pub fn tui() {
         cpu_graph_shown_range: 100,
         memory_graph_shown_range: 100,
         disk_graph_shown_range: 100,
+        network_graph_shown_range: 100,
         cpu_selected_state: ListState::default(),
         disk_selected_entry: 0,
+        network_selected_entry: 0,
         is_renderable: true,
         is_init: false,
         container_full_screen: false,
@@ -139,7 +151,6 @@ pub fn tui() {
         key_text_color: Color::Rgb(94, 129, 172), // Bright magenta
         app_title_color: Color::Rgb(143, 188, 187), // Frost
 
-        // CPU container selected color: A bright cyan for selected container
         cpu_container_selected_color: Color::Rgb(94, 129, 172),
         // CPU main block: A slightly lighter grayish-blue to contrast with the background
         cpu_main_block_color: Color::Rgb(76, 86, 106),
@@ -151,7 +162,6 @@ pub fn tui() {
         cpu_info_border_color: Color::Rgb(150, 150, 150), // Silver
         cpu_text_color: Color::Rgb(94, 129, 172),         // color for cpu related text
 
-        // Memory container selected color: A bright cyan for selected container
         memory_container_selected_color: Color::Rgb(94, 129, 172),
         // Memory main block: A slightly lighter grayish-blue to contrast with the background
         memory_main_block_color: Color::Rgb(76, 86, 106),
@@ -163,14 +173,21 @@ pub fn tui() {
         swap_memory_base_graph_color: Color::Rgb(180, 140, 60), // Muted golden orange
         memory_text_color: Color::Rgb(143, 188, 187),          // color for memory related text
 
-        // Disk container selected color: A bright cyan for selected container
-        disk_container_selected_color: Color::Rgb(0, 255, 255), // Cyan
+        disk_container_selected_color: Color::Rgb(94, 129, 172),
         // Disk main block: A slightly lighter grayish-blue to contrast with the background
         disk_main_block_color: Color::Rgb(76, 86, 106),
         // Disk selected color: A bright teal for selected Memory items in the list
         disk_bytes_written_base_graph_color: Color::Rgb(180, 80, 80), // Muted reddish coral
         disk_bytes_read_base_graph_color: Color::Rgb(80, 160, 160),   // Muted teal
         disk_text_color: Color::Rgb(143, 188, 187), //  color for disk related text
+
+        network_container_selected_color: Color::Rgb(94, 129, 172),
+        // Network main block: A slightly lighter grayish-blue to contrast with the background
+        network_main_block_color: Color::Rgb(76, 86, 106),
+        // Network selected color: A bright teal for selected Memory items in the list
+        network_received_base_graph_color: Color::Rgb(180, 80, 80), // Muted reddish coral
+        network_transmitted_base_graph_color: Color::Rgb(80, 160, 160), // Muted teal
+        network_text_color: Color::Rgb(143, 188, 187), //  color for network related text
     };
     app.run(&mut terminal, tick_rx, app_color_info);
     disable_raw_mode().unwrap();
@@ -265,13 +282,27 @@ impl App {
         if self.is_renderable {
             // we check the selcted disk entry to prevent selecting a disk that got removed
             //
-            // default to the first disk first
+            // default to the first disk entry
             let mut selected_disk = self.sys_info.disks.iter().nth(0).unwrap().1;
             // if the selected disk is valid, override the selected default disk
             if let Some((_, value)) = self.sys_info.disks.iter().nth(self.disk_selected_entry) {
                 selected_disk = value;
             } else {
                 self.disk_selected_entry = 0;
+            }
+
+            // default to the first network entry
+            let mut selected_network = self.sys_info.networks.iter().nth(0).unwrap().1;
+            // if the selected network is valid, override the selected default network
+            if let Some((_, value)) = self
+                .sys_info
+                .networks
+                .iter()
+                .nth(self.network_selected_entry)
+            {
+                selected_network = value;
+            } else {
+                self.network_selected_entry = 0;
             }
 
             // handling for full screen mode
@@ -314,6 +345,21 @@ impl App {
                         frame,
                         self.disk_graph_shown_range,
                         if self.selected_container == SelectedContainer::Disk {
+                            true
+                        } else {
+                            false
+                        },
+                        app_color_info,
+                        true,
+                    )
+                } else if self.selected_container == SelectedContainer::Network {
+                    draw_network_info(
+                        self.tick as u64,
+                        &selected_network,
+                        full_frame_view_rect,
+                        frame,
+                        self.network_graph_shown_range,
+                        if self.selected_container == SelectedContainer::Network {
                             true
                         } else {
                             false
@@ -366,7 +412,22 @@ impl App {
                     },
                     app_color_info,
                     false,
-                )
+                );
+
+                draw_network_info(
+                    self.tick as u64,
+                    &selected_network,
+                    network_area,
+                    frame,
+                    self.network_graph_shown_range,
+                    if self.selected_container == SelectedContainer::Network {
+                        true
+                    } else {
+                        false
+                    },
+                    app_color_info,
+                    false,
+                );
             }
         }
     }
@@ -545,6 +606,33 @@ impl App {
                     }
                 }
             }
+
+            // n and N for selecting the Disk Block
+            KeyCode::Char('n') => {
+                if self.state == AppState::View {
+                    if self.selected_container == SelectedContainer::None
+                        || self.selected_container != SelectedContainer::Network
+                    {
+                        self.selected_container = SelectedContainer::Network;
+                    } else {
+                        self.container_full_screen = false;
+                        self.selected_container = SelectedContainer::None;
+                    }
+                }
+            }
+            KeyCode::Char('N') => {
+                if self.state == AppState::View {
+                    if self.selected_container == SelectedContainer::None
+                        || self.selected_container != SelectedContainer::Network
+                    {
+                        self.selected_container = SelectedContainer::Network;
+                    } else {
+                        self.container_full_screen = false;
+                        self.selected_container = SelectedContainer::None;
+                    }
+                }
+            }
+
             KeyCode::Char('<') => {
                 if self.state == AppState::View {
                     if self.selected_container == SelectedContainer::Disk {
@@ -552,6 +640,12 @@ impl App {
                             self.disk_selected_entry = self.sys_info.disks.len() - 1;
                         } else {
                             self.disk_selected_entry -= 1;
+                        }
+                    } else if self.selected_container == SelectedContainer::Network {
+                        if self.network_selected_entry == 0 {
+                            self.network_selected_entry = self.sys_info.networks.len() - 1;
+                        } else {
+                            self.network_selected_entry -= 1;
                         }
                     }
                 }
@@ -563,6 +657,12 @@ impl App {
                             self.disk_selected_entry = 0
                         } else {
                             self.disk_selected_entry += 1;
+                        }
+                    } else if self.selected_container == SelectedContainer::Network {
+                        if self.network_selected_entry == self.sys_info.networks.len() - 1 {
+                            self.network_selected_entry = 0;
+                        } else {
+                            self.network_selected_entry += 1;
                         }
                     }
                 }
