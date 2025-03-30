@@ -5,9 +5,10 @@ pub struct SysInfo {
     pub cpus: Vec<CpuData>,
     pub memory: MemoryData,
     pub disks: HashMap<String, DiskData>,
+    pub networks: HashMap<String, NetworkData>,
 }
 
-const MAXIMUM_DATA_COLLECTION: usize = 10000;
+const MAXIMUM_DATA_COLLECTION: usize = 5000;
 
 pub struct CpuData {
     pub info_type: String,
@@ -37,6 +38,15 @@ pub struct DiskData {
     pub mount_point: String, // mount point of the disk (/ for example). And mount point will also served as the unique identifier for the disk
     pub disk_kind: String,   // kind of disk.( SSD for example )
     pub is_updated: bool, // this was to keep tracked of exsiting disk data we collected was still connected to the system
+}
+
+pub struct NetworkData {
+    pub interface_name: String,
+    pub current_received_vec: Vec<f64>,
+    pub current_transmitted_vec: Vec<f64>,
+    pub total_received: f64,
+    pub total_transmitted: f64,
+    pub is_updated: bool,
 }
 
 impl CpuData {
@@ -193,12 +203,54 @@ impl DiskData {
     }
 }
 
+impl NetworkData {
+    pub fn new(
+        interface_name: String,
+        current_received: f64,
+        current_transmitted: f64,
+        total_received: f64,
+        total_transmitted: f64,
+    ) -> NetworkData {
+        return NetworkData {
+            interface_name,
+            current_received_vec: vec![current_received],
+            current_transmitted_vec: vec![current_transmitted],
+            total_received,
+            total_transmitted,
+            is_updated: true,
+        };
+    }
+
+    pub fn update(
+        &mut self,
+        interface_name: String,
+        current_received: f64,
+        current_transmitted: f64,
+        total_received: f64,
+        total_transmitted: f64,
+    ) {
+        self.interface_name = interface_name;
+        self.current_received_vec.push(current_received);
+        self.current_transmitted_vec.push(current_transmitted);
+        if self.current_received_vec.len() > MAXIMUM_DATA_COLLECTION {
+            self.current_received_vec.remove(0);
+        }
+        if self.current_transmitted_vec.len() > MAXIMUM_DATA_COLLECTION {
+            self.current_transmitted_vec.remove(0);
+        }
+        self.total_received = total_received;
+        self.total_transmitted = total_transmitted;
+        self.is_updated = true;
+    }
+}
+
 // the structure of info collected from a seperated thread
 // a C infront mean Collected
 pub struct CSysInfo {
     pub cpus: Vec<CCpuData>,
     pub memory: CMemoryData,
     pub disks: Vec<CDiskData>,
+    pub networks: Vec<CNetworkData>,
 }
 
 pub struct CCpuData {
@@ -226,4 +278,12 @@ pub struct CDiskData {
     pub file_system: String, // file system used on this disk (so for example: EXT4, NTFS, etc…).
     pub mount_point: String, // mount point of the disk (/ for example).
     pub kind: String,       // kind of disk.( SSD for example )
+}
+
+pub struct CNetworkData {
+    pub interface_name: String,
+    pub current_received: f64,
+    pub total_received: f64,
+    pub current_transmitted: f64,
+    pub total_transmitted: f64,
 }

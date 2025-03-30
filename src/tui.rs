@@ -116,6 +116,7 @@ pub fn tui() {
             cpus: vec![],
             memory: MemoryData::default(),
             disks: HashMap::new(),
+            networks: HashMap::new(),
         },
         selected_container: SelectedContainer::None,
         state: AppState::View,

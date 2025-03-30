@@ -5,8 +5,8 @@ use std::{
     time::{Duration, Instant},
 };
 
-use crate::types::{CCpuData, CDiskData, CMemoryData, CSysInfo};
-use sysinfo::{Disks, System};
+use crate::types::{CCpuData, CDiskData, CMemoryData, CNetworkData, CSysInfo};
+use sysinfo::{Disks, Networks, System};
 
 const TO_GB: f64 = 1_073_741_824.0;
 const TO_KB: f64 = 1024.0;
@@ -20,11 +20,13 @@ pub fn spawn_system_info_collector(
     thread::spawn(move || {
         let mut sys = System::new_all();
         let mut disks = Disks::new();
+        let mut networks = Networks::new();
         let mut last_refresh = Instant::now();
         let mut tick_value = default_tick; // Current tick in ms
 
         sys.refresh_all();
         disks.refresh(true);
+        networks.refresh(true);
 
         loop {
             let elapsed = last_refresh.elapsed().as_millis() as u32;
@@ -117,6 +119,33 @@ pub fn spawn_system_info_collector(
 
                 // -------------------------------------------
                 //
+                //          NETWORK DATA COLLECTION
+                //
+                // -------------------------------------------
+                networks.refresh(true);
+                let mut networks_data = Vec::new();
+                for (interface_name, network_data) in &networks {
+                    let data = CNetworkData {
+                        interface_name: interface_name.to_string(),
+                        current_received: ((network_data.received() as f64 / TO_KB) * 1000.0)
+                            .round()
+                            / 1000.0,
+                        current_transmitted: ((network_data.transmitted() as f64 / TO_KB) * 1000.0)
+                            .round()
+                            / 1000.0,
+                        total_received: ((network_data.total_received() as f64 / TO_KB) * 1000.0)
+                            .round()
+                            / 1000.0,
+                        total_transmitted: ((network_data.total_transmitted() as f64 / TO_KB)
+                            * 1000.0)
+                            .round()
+                            / 1000.0,
+                    };
+                    networks_data.push(data);
+                }
+
+                // -------------------------------------------
+                //
                 //    SEND COLLECTION DATA TO MAIN THREAD
                 //
                 // -------------------------------------------
@@ -124,6 +153,7 @@ pub fn spawn_system_info_collector(
                     cpus: cpu_data,
                     memory: memory_data,
                     disks: disk_data,
+                    networks: networks_data,
                 };
 
                 // Send the data to the main thread
