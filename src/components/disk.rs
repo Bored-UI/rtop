@@ -81,12 +81,15 @@ pub fn draw_disk_info(
         main_block = main_block.title(refresh_tick.right_aligned())
     }
 
+    // bottom border will be the space where the statistics for used, available space, total bytes written and read etc... will be displayed
     let [_, bottom_border, _] = Layout::vertical([
         Constraint::Percentage(5),
         Constraint::Percentage(90),
         Constraint::Percentage(5),
     ])
     .areas(area);
+
+    // padded the bottom border for some space on the left and right
     let [_, padded_bottom, _] = Layout::horizontal([
         Constraint::Percentage(3),
         Constraint::Percentage(94),
