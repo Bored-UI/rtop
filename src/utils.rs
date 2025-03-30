@@ -5,11 +5,15 @@ use ratatui::{
 
 use crate::{
     tui::AppColorInfo,
-    types::{CSysInfo, CpuData, DiskData, MemoryData, SysInfo},
+    types::{CSysInfo, CpuData, DiskData, MemoryData, NetworkData, SysInfo},
 };
 
 pub fn process_sys_info(current_sys_info: &mut SysInfo, collected_sys_info: CSysInfo) {
-    // process for each cpu
+    // -------------------------------------------
+    //
+    //             CPU INFO UPDATE
+    //
+    // -------------------------------------------
     if current_sys_info.cpus.len() == 0 {
         for cpu in collected_sys_info.cpus.iter() {
             let cpu = CpuData::new(cpu.id as i8, cpu.brand.clone(), cpu.usage);
@@ -21,7 +25,11 @@ pub fn process_sys_info(current_sys_info: &mut SysInfo, collected_sys_info: CSys
         }
     }
 
-    // process for memory
+    // -------------------------------------------
+    //
+    //           RAM MEMORY INFO UPDATE
+    //
+    // -------------------------------------------
     if current_sys_info.memory.total_memory == -0.1 {
         current_sys_info.memory = MemoryData::new(
             collected_sys_info.memory.total_memory,
@@ -42,7 +50,11 @@ pub fn process_sys_info(current_sys_info: &mut SysInfo, collected_sys_info: CSys
         );
     }
 
-    // process for disks
+    // -------------------------------------------
+    //
+    //            DISK INFO UPDATE
+    //
+    // -------------------------------------------
     if current_sys_info.disks.len() == 0 {
         for disk in collected_sys_info.disks.iter() {
             let disk = DiskData::new(
@@ -119,6 +131,76 @@ pub fn process_sys_info(current_sys_info: &mut SysInfo, collected_sys_info: CSys
         }
     }
 
+    // -------------------------------------------
+    //
+    //          NETWORKS INFO UPDATE
+    //
+    // -------------------------------------------
+    if current_sys_info.networks.len() == 0 {
+        for network in collected_sys_info.networks.iter() {
+            let network = NetworkData::new(
+                network.interface_name.clone(),
+                network.current_received,
+                network.current_transmitted,
+                network.total_received,
+                network.total_transmitted,
+            );
+            current_sys_info
+                .networks
+                .insert(network.interface_name.clone(), network);
+        }
+    } else {
+        // need slightly more processing to address the following
+        // 1. Update existing network data with new information
+        // 2. Handle network removals and additions due to disconnection or new connection
+
+        // update all existing network data is_updated field to false
+        for network in current_sys_info.networks.values_mut() {
+            network.is_updated = false;
+        }
+
+        // loop through all collected network data and update existing network data or create new one
+        for network in collected_sys_info.networks.iter() {
+            let existing_network = current_sys_info.networks.get_mut(&network.interface_name);
+            match existing_network {
+                Some(e_n) => {
+                    e_n.update(
+                        network.interface_name.clone(),
+                        network.current_received,
+                        network.current_transmitted,
+                        network.total_received,
+                        network.total_transmitted,
+                    );
+                }
+                None => {
+                    let network = NetworkData::new(
+                        network.interface_name.clone(),
+                        network.current_received,
+                        network.current_transmitted,
+                        network.total_received,
+                        network.total_transmitted,
+                    );
+                    current_sys_info
+                        .networks
+                        .insert(network.interface_name.clone(), network);
+                }
+            }
+        }
+
+        // now remove those that is_updated field is false as it was indicated they were no longer connected
+        let keys_to_remove: Vec<String> = current_sys_info
+            .networks
+            .iter()
+            .filter(|(_, network)| !network.is_updated)
+            .map(|(key, _)| key.clone())
+            .collect();
+
+        for key in keys_to_remove {
+            current_sys_info.networks.remove(&key);
+        }
+    }
+
+    // drop the collected system info that we got from a seperated thread
     drop(collected_sys_info);
 }
 
