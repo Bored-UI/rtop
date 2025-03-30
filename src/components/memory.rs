@@ -19,6 +19,11 @@ const MEMORY_GRAPH_HEIGHT_PRCENTAGE: u16 = 70;
 const SMALL_WIDGET_PERCENTAGE: f64 = 25.0;
 const BIG_WIDGET_PERCENTAGE: f64 = 100.0;
 
+// the splitting percentage of memory graph based on current height
+const DEFAULT_SPLIT: u16 = 33;
+const MEDIUM_HEIGHT_SPLIT: u16 = 25;
+const LARGE_HEIGHT_SPLIT: u16 = 20;
+
 pub fn draw_memory_info(
     tick: u64,
     memory: &MemoryData,
@@ -62,12 +67,15 @@ pub fn draw_memory_info(
         main_block = main_block.title(refresh_tick.right_aligned());
     }
 
+    // this will be the layout for the memory usage graph
     let [_, bottom_border, _] = Layout::vertical([
         Constraint::Percentage(5),
         Constraint::Percentage(90),
         Constraint::Percentage(5),
     ])
     .areas(area);
+
+    // padded the layout for the memory usage graph to have some space on the left and right
     let [_, padded_bottom, _] = Layout::horizontal([
         Constraint::Percentage(3),
         Constraint::Percentage(94),
@@ -99,19 +107,19 @@ pub fn draw_memory_info(
     let mut swap_memory_layout = Rect::default();
     let [mut used_memory_layout, mut available_memory_layout, mut free_memory_layout] =
         Layout::vertical([
-            Constraint::Percentage(33),
-            Constraint::Percentage(33),
-            Constraint::Percentage(33),
+            Constraint::Percentage(DEFAULT_SPLIT),
+            Constraint::Percentage(DEFAULT_SPLIT),
+            Constraint::Percentage(DEFAULT_SPLIT),
         ])
         .areas(bottom_graphs);
 
     if area.height >= MEDIUM_HEIGHT {
         let [new_used_memory_layout, new_available_memory_layout, new_free_memory_layout, new_swap_memory_layout] =
             Layout::vertical([
-                Constraint::Percentage(25),
-                Constraint::Percentage(25),
-                Constraint::Percentage(25),
-                Constraint::Percentage(25),
+                Constraint::Percentage(MEDIUM_HEIGHT_SPLIT),
+                Constraint::Percentage(MEDIUM_HEIGHT_SPLIT),
+                Constraint::Percentage(MEDIUM_HEIGHT_SPLIT),
+                Constraint::Percentage(MEDIUM_HEIGHT_SPLIT),
             ])
             .areas(bottom_graphs);
         used_memory_layout = new_used_memory_layout;
@@ -122,11 +130,11 @@ pub fn draw_memory_info(
     if area.height >= LARGE_HEIGHT {
         let [new_used_memory_layout, new_available_memory_layout, new_free_memory_layout, new_cached_memory_layout, new_swap_memory_layout] =
             Layout::vertical([
-                Constraint::Percentage(20),
-                Constraint::Percentage(20),
-                Constraint::Percentage(20),
-                Constraint::Percentage(20),
-                Constraint::Percentage(20),
+                Constraint::Percentage(LARGE_HEIGHT_SPLIT),
+                Constraint::Percentage(LARGE_HEIGHT_SPLIT),
+                Constraint::Percentage(LARGE_HEIGHT_SPLIT),
+                Constraint::Percentage(LARGE_HEIGHT_SPLIT),
+                Constraint::Percentage(LARGE_HEIGHT_SPLIT),
             ])
             .areas(bottom_graphs);
         used_memory_layout = new_used_memory_layout;
