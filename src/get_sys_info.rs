@@ -127,6 +127,21 @@ pub fn spawn_system_info_collector(
                 for (interface_name, network_data) in &networks {
                     let data = CNetworkData {
                         interface_name: interface_name.to_string(),
+                        ip_network: if network_data.ip_networks().len() > 0 {
+                            let mut ipv4_networks = Vec::new();
+                            for ip in network_data.ip_networks() {
+                                if ip.addr.is_ipv4() {
+                                    ipv4_networks.push(ip.addr.to_string());
+                                }
+                            }
+                            if ipv4_networks.is_empty() {
+                                None
+                            } else {
+                                Some(ipv4_networks[0].clone())
+                            }
+                        } else {
+                            None
+                        },
                         current_received: ((network_data.received() as f64 / TO_KB) * 1000.0)
                             .round()
                             / 1000.0,

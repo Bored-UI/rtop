@@ -42,6 +42,7 @@ pub struct DiskData {
 
 pub struct NetworkData {
     pub interface_name: String,
+    pub ip_network: Option<String>,
     pub current_received_vec: Vec<f64>,
     pub current_transmitted_vec: Vec<f64>,
     pub total_received: f64,
@@ -206,6 +207,7 @@ impl DiskData {
 impl NetworkData {
     pub fn new(
         interface_name: String,
+        ip_network: Option<String>,
         current_received: f64,
         current_transmitted: f64,
         total_received: f64,
@@ -213,6 +215,7 @@ impl NetworkData {
     ) -> NetworkData {
         return NetworkData {
             interface_name,
+            ip_network,
             current_received_vec: vec![current_received],
             current_transmitted_vec: vec![current_transmitted],
             total_received,
@@ -224,12 +227,14 @@ impl NetworkData {
     pub fn update(
         &mut self,
         interface_name: String,
+        ip_network: Option<String>,
         current_received: f64,
         current_transmitted: f64,
         total_received: f64,
         total_transmitted: f64,
     ) {
         self.interface_name = interface_name;
+        self.ip_network = ip_network;
         self.current_received_vec.push(current_received);
         self.current_transmitted_vec.push(current_transmitted);
         if self.current_received_vec.len() > MAXIMUM_DATA_COLLECTION {
@@ -282,6 +287,7 @@ pub struct CDiskData {
 
 pub struct CNetworkData {
     pub interface_name: String,
+    pub ip_network: Option<String>,
     pub current_received: f64,
     pub total_received: f64,
     pub current_transmitted: f64,

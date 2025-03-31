@@ -140,6 +140,7 @@ pub fn process_sys_info(current_sys_info: &mut SysInfo, collected_sys_info: CSys
         for network in collected_sys_info.networks.iter() {
             let network = NetworkData::new(
                 network.interface_name.clone(),
+                network.ip_network.clone(),
                 network.current_received,
                 network.current_transmitted,
                 network.total_received,
@@ -166,6 +167,7 @@ pub fn process_sys_info(current_sys_info: &mut SysInfo, collected_sys_info: CSys
                 Some(e_n) => {
                     e_n.update(
                         network.interface_name.clone(),
+                        network.ip_network.clone(),
                         network.current_received,
                         network.current_transmitted,
                         network.total_received,
@@ -175,6 +177,7 @@ pub fn process_sys_info(current_sys_info: &mut SysInfo, collected_sys_info: CSys
                 None => {
                     let network = NetworkData::new(
                         network.interface_name.clone(),
+                        network.ip_network.clone(),
                         network.current_received,
                         network.current_transmitted,
                         network.total_received,

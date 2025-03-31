@@ -79,7 +79,7 @@ pub struct AppColorInfo {
     pub cpu_main_block_color: Color,
     pub cpu_selected_color: Color,
     pub cpu_base_graph_color: Color,
-    pub cpu_info_border_color: Color,
+    pub cpu_info_block_color: Color,
     pub cpu_text_color: Color,
 
     // for memory
@@ -104,6 +104,7 @@ pub struct AppColorInfo {
     pub network_main_block_color: Color,
     pub network_received_base_graph_color: Color,
     pub network_transmitted_base_graph_color: Color,
+    pub network_info_block_color: Color,
     pub network_text_color: Color,
 }
 
@@ -159,8 +160,8 @@ pub fn tui() {
         // CPU graph color: A muted blue to represent graph lines
         cpu_base_graph_color: Color::Rgb(70, 130, 180), // Steel blue
         // CPU info border color: A subtle silver for borders
-        cpu_info_border_color: Color::Rgb(150, 150, 150), // Silver
-        cpu_text_color: Color::Rgb(94, 129, 172),         // color for cpu related text
+        cpu_info_block_color: Color::Rgb(150, 150, 150), // Silver
+        cpu_text_color: Color::Rgb(94, 129, 172),        // color for cpu related text
 
         memory_container_selected_color: Color::Rgb(94, 129, 172),
         // Memory main block: A slightly lighter grayish-blue to contrast with the background
@@ -187,6 +188,7 @@ pub fn tui() {
         // Network selected color: A bright teal for selected Memory items in the list
         network_received_base_graph_color: Color::Rgb(180, 80, 80), // Muted reddish coral
         network_transmitted_base_graph_color: Color::Rgb(80, 160, 160), // Muted teal
+        network_info_block_color: Color::Rgb(76, 86, 106),
         network_text_color: Color::Rgb(143, 188, 187), //  color for network related text
     };
     app.run(&mut terminal, tick_rx, app_color_info);
@@ -511,6 +513,10 @@ impl App {
                     if self.disk_graph_shown_range > 100 {
                         self.disk_graph_shown_range -= 10;
                     }
+                } else if self.selected_container == SelectedContainer::Network {
+                    if self.network_graph_shown_range > 100 {
+                        self.network_graph_shown_range -= 10;
+                    }
                 }
             }
             KeyCode::Right => {
@@ -525,6 +531,10 @@ impl App {
                 } else if self.selected_container == SelectedContainer::Disk {
                     if self.disk_graph_shown_range < 10000 {
                         self.disk_graph_shown_range += 10;
+                    }
+                } else if self.selected_container == SelectedContainer::Network {
+                    if self.network_graph_shown_range < 10000 {
+                        self.network_graph_shown_range += 10;
                     }
                 }
             }

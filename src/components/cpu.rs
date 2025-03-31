@@ -137,7 +137,7 @@ pub fn draw_cpu_info(
         Line::from(format!(" {} ", cpus[0].brand)).style(app_color_info.app_title_color);
     let inner_right_block = Block::bordered()
         .title(cpu_brand.left_aligned())
-        .style(app_color_info.cpu_info_border_color)
+        .style(app_color_info.cpu_info_block_color)
         .border_set(border::ROUNDED);
 
     // split the cpu name and usage info into two parts
