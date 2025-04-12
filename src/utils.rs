@@ -303,3 +303,7 @@ pub fn get_tick_line_ui(tick: u64, app_color_info: &AppColorInfo) -> Line {
 
     return refresh_tick;
 }
+
+pub fn round_to_2_decimal(value: f32) -> f32 {
+    (value * 100.0).round() / 100.0
+}

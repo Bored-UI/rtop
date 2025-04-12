@@ -67,6 +67,8 @@ struct App {
     cpu_selected_state: ListState,
     disk_selected_entry: usize,
     network_selected_entry: usize,
+    process_selectable_entries: usize,
+    process_selected_state: ListState,
     is_renderable: bool,
     is_init: bool,
     container_full_screen: bool,
@@ -161,6 +163,8 @@ pub fn tui() {
         cpu_selected_state: ListState::default(),
         disk_selected_entry: 0,
         network_selected_entry: 0,
+        process_selectable_entries: 0,
+        process_selected_state: ListState::default(),
         is_renderable: true,
         is_init: false,
         container_full_screen: false,
@@ -265,6 +269,9 @@ impl App {
             }
         }
         self.cpu_selected_state.select(Some(0));
+
+        self.process_selectable_entries = self.process_info.processes.len();
+        self.process_selected_state.select(None);
 
         let _ = self.tick_tx.send(self.tick);
         let _ = self.process_tick_tx.send(self.tick);
@@ -422,6 +429,23 @@ impl App {
                         app_color_info,
                         true,
                     )
+                } else if self.selected_container == SelectedContainer::Process {
+                    draw_process_info(
+                        self.tick as u64,
+                        &self.process_info.processes,
+                        &mut self.process_selectable_entries,
+                        &mut self.process_selected_state,
+                        full_frame_view_rect,
+                        frame,
+                        self.process_graph_shown_range,
+                        if self.selected_container == SelectedContainer::Process {
+                            true
+                        } else {
+                            false
+                        },
+                        app_color_info,
+                        true,
+                    )
                 }
             } else {
                 draw_cpu_info(
@@ -487,6 +511,8 @@ impl App {
                 draw_process_info(
                     self.tick as u64,
                     &self.process_info.processes,
+                    &mut self.process_selectable_entries,
+                    &mut self.process_selected_state,
                     process_area,
                     frame,
                     self.process_graph_shown_range,
@@ -555,6 +581,18 @@ impl App {
                                 .select(Some(self.sys_info.cpus.len() - 1))
                         }
                     }
+                } else if self.selected_container == SelectedContainer::Process {
+                    if let Some(selected) = self.process_selected_state.selected() {
+                        if selected > 0 {
+                            self.process_selected_state.select(Some(selected - 1));
+                        } else {
+                            self.process_selected_state
+                                .select(Some(self.process_info.processes.len() - 1))
+                        }
+                    } else {
+                        self.process_selected_state
+                            .select(Some(self.process_info.processes.len() - 1))
+                    }
                 }
             }
             KeyCode::Down => {
@@ -565,6 +603,16 @@ impl App {
                         } else {
                             self.cpu_selected_state.select(Some(0))
                         }
+                    }
+                } else if self.selected_container == SelectedContainer::Process {
+                    if let Some(selected) = self.process_selected_state.selected() {
+                        if selected < self.process_info.processes.len().saturating_sub(1) {
+                            self.process_selected_state.select(Some(selected + 1));
+                        } else {
+                            self.process_selected_state.select(Some(0))
+                        }
+                    } else {
+                        self.process_selected_state.select(Some(0))
                     }
                 }
             }
@@ -704,6 +752,32 @@ impl App {
                         || self.selected_container != SelectedContainer::Network
                     {
                         self.selected_container = SelectedContainer::Network;
+                    } else {
+                        self.container_full_screen = false;
+                        self.selected_container = SelectedContainer::None;
+                    }
+                }
+            }
+
+            // p and P for selecting the Process Block
+            KeyCode::Char('p') => {
+                if self.state == AppState::View {
+                    if self.selected_container == SelectedContainer::None
+                        || self.selected_container != SelectedContainer::Process
+                    {
+                        self.selected_container = SelectedContainer::Process;
+                    } else {
+                        self.container_full_screen = false;
+                        self.selected_container = SelectedContainer::None;
+                    }
+                }
+            }
+            KeyCode::Char('P') => {
+                if self.state == AppState::View {
+                    if self.selected_container == SelectedContainer::None
+                        || self.selected_container != SelectedContainer::Process
+                    {
+                        self.selected_container = SelectedContainer::Process;
                     } else {
                         self.container_full_screen = false;
                         self.selected_container = SelectedContainer::None;
