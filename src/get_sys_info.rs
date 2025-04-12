@@ -5,8 +5,11 @@ use std::{
     time::{Duration, Instant},
 };
 
-use crate::types::{CCpuData, CDiskData, CMemoryData, CNetworkData, CSysInfo};
-use sysinfo::{Disks, Networks, System};
+use crate::types::{
+    CCpuData, CDiskData, CMemoryData, CNetworkData, CProcessData, CProcessesInfo, CSysInfo,
+};
+use libproc::{proc_pid::pidinfo, task_info::TaskInfo};
+use sysinfo::{Disks, Networks, Process, ProcessesToUpdate, System, Users};
 
 const TO_GB: f64 = 1_073_741_824.0;
 const TO_KB: f64 = 1024.0;
@@ -185,6 +188,108 @@ pub fn spawn_system_info_collector(
             thread::sleep(Duration::from_millis(1));
         }
     });
+}
+
+// dedicate thread to collect process info only
+pub fn spawn_process_info_collector(
+    tick_receiver: Receiver<u32>,
+    tx: Sender<CProcessesInfo>,
+    default_tick: u32,
+) {
+    // Spawn a worker thread to gather CPU info
+    thread::spawn(move || {
+        let mut sys = System::new_all();
+        let mut last_refresh = Instant::now();
+        let mut tick_value = default_tick; // Current tick in ms
+
+        sys.refresh_all();
+
+        loop {
+            let elapsed = last_refresh.elapsed().as_millis() as u32;
+            if let Ok(new_tick) = tick_receiver.try_recv() {
+                tick_value = new_tick;
+            }
+
+            if elapsed >= (tick_value - 2) {
+                sys.refresh_processes(ProcessesToUpdate::All, true);
+                let users = Users::new_with_refreshed_list();
+                let mut processes = vec![];
+                // -------------------------------------------
+                //
+                //          PROCESS INFO COLLECTION
+                //
+                // -------------------------------------------
+                for (pid, process) in sys.processes() {
+                    let mut user = "root";
+                    let thread_count = get_thread_count(pid.as_u32() as i32, &process);
+
+                    if process.user_id().is_some() {
+                        let u = users.get_user_by_id(process.user_id().unwrap());
+                        if u.is_some() {
+                            user = u.unwrap().name();
+                        }
+                    }
+                    let process_info = CProcessData {
+                        pid: pid.as_u32(),
+                        name: process.name().to_string_lossy().to_string(),
+                        exe_path: if process.exe().is_some() {
+                            Some(process.exe().unwrap().to_string_lossy().to_string())
+                        } else {
+                            None
+                        },
+                        cmd: process
+                            .cmd()
+                            .into_iter()
+                            .map(|osstr| osstr.to_string_lossy().to_string())
+                            .collect(),
+                        user: user.to_string(),
+                        cpu_usage: process.cpu_usage(),
+                        thread_count,
+                        memory: ((process.memory() as f64 / TO_KB) * 1000.0).round() / 1000.0,
+                        status: process.status().to_string(),
+                        elapsed: process.run_time(),
+                    };
+
+                    processes.push(process_info);
+                }
+
+                // -------------------------------------------
+                //
+                //  SEND COLLECTED PROCESS INFO TO MAIN THREAD
+                //
+                // -------------------------------------------
+                let process_info = CProcessesInfo { processes };
+
+                // Send the data to the main thread
+                if let Err(e) = tx.send(process_info) {
+                    eprintln!("Failed to send Process Info: {}", e);
+                    break; // Exit loop if channel is disconnected
+                }
+
+                // Reset the last refresh time
+                last_refresh = Instant::now();
+            }
+
+            // Sleep for a short interval to prevent busy-waiting
+            thread::sleep(Duration::from_millis(1));
+        }
+    });
+}
+
+fn get_thread_count(pid: i32, process: &Process) -> u32 {
+    let mut thread_count = 0;
+
+    #[cfg(target_os = "macos")]
+    if let Ok(task_info) = pidinfo::<TaskInfo>(pid, 0) {
+        thread_count = task_info.pti_threadnum;
+    }
+
+    #[cfg(target_os = "linux")]
+    {
+        thread_count = process.tasks().unwrap().len() as i32;
+    }
+
+    return thread_count as u32;
 }
 
 fn get_cached_memory() -> f64 {

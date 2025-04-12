@@ -334,7 +334,11 @@ pub fn draw_disk_info(
         .enumerate()
         .map(|(i, &usage)| {
             let x = i as f64;
-            let y = (usage / current_max_written_bytes) * current_graph_percentage as f64;
+            let y = if usage > 0.0 {
+                (usage / current_max_written_bytes) * current_graph_percentage as f64
+            } else {
+                0.0
+            };
             (x, y)
         })
         .collect();
@@ -347,7 +351,7 @@ pub fn draw_disk_info(
 
     let x_axis = Axis::default().bounds([0.0, num_points_to_display as f64]);
 
-    let y_axis = Axis::default().bounds([0.0, current_graph_percentage]);
+    let y_axis = Axis::default().bounds([0.0, current_graph_percentage.min(1.0)]);
 
     let bytes_written_chart = Chart::new(vec![dataset])
         .x_axis(x_axis)
@@ -421,7 +425,11 @@ pub fn draw_disk_info(
         .enumerate()
         .map(|(i, &usage)| {
             let x = i as f64;
-            let y = (usage / current_max_read_bytes) * current_graph_percentage as f64;
+            let y = if usage > 0.0 {
+                (usage / current_max_read_bytes) * current_graph_percentage.min(1.0)
+            } else {
+                0.0
+            };
             (x, y)
         })
         .collect();
@@ -434,7 +442,7 @@ pub fn draw_disk_info(
 
     let x_axis = Axis::default().bounds([0.0, num_points_to_display as f64]);
 
-    let y_axis = Axis::default().bounds([0.0, current_graph_percentage]);
+    let y_axis = Axis::default().bounds([0.0, current_graph_percentage.min(1.0)]);
 
     let bytes_read_chart = Chart::new(vec![dataset])
         .x_axis(x_axis)

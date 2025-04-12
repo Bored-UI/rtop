@@ -5,7 +5,10 @@ use ratatui::{
 
 use crate::{
     tui::AppColorInfo,
-    types::{CSysInfo, CpuData, DiskData, MemoryData, NetworkData, SysInfo},
+    types::{
+        CProcessesInfo, CSysInfo, CpuData, DiskData, MemoryData, NetworkData, ProcessData,
+        ProcessesInfo, SysInfo,
+    },
 };
 
 pub fn process_sys_info(current_sys_info: &mut SysInfo, collected_sys_info: CSysInfo) {
@@ -205,6 +208,85 @@ pub fn process_sys_info(current_sys_info: &mut SysInfo, collected_sys_info: CSys
 
     // drop the collected system info that we got from a seperated thread
     drop(collected_sys_info);
+}
+
+pub fn process_processes_info(
+    current_process_info: &mut ProcessesInfo,
+    collected_process_info: CProcessesInfo,
+) {
+    if current_process_info.processes.len() == 0 {
+        for process in collected_process_info.processes.iter() {
+            let process_data = ProcessData::new(
+                process.pid,
+                process.name.clone(),
+                process.exe_path.clone(),
+                process.cmd.clone(),
+                process.user.clone(),
+                process.cpu_usage,
+                process.thread_count,
+                process.memory,
+                process.status.clone(),
+                process.elapsed,
+            );
+            let pid_string = format!("{}", process.pid);
+            current_process_info
+                .processes
+                .insert(pid_string, process_data);
+        }
+    } else {
+        for process in current_process_info.processes.values_mut() {
+            process.is_updated = false;
+        }
+
+        for process in collected_process_info.processes.iter() {
+            let current_process = current_process_info
+                .processes
+                .get_mut(&process.pid.to_string());
+            match current_process {
+                Some(p) => p.update(
+                    process.pid,
+                    process.name.clone(),
+                    process.exe_path.clone(),
+                    process.cmd.clone(),
+                    process.user.clone(),
+                    process.cpu_usage,
+                    process.thread_count,
+                    process.memory,
+                    process.status.clone(),
+                    process.elapsed,
+                ),
+                None => {
+                    let p = ProcessData::new(
+                        process.pid,
+                        process.name.clone(),
+                        process.exe_path.clone(),
+                        process.cmd.clone(),
+                        process.user.clone(),
+                        process.cpu_usage,
+                        process.thread_count,
+                        process.memory,
+                        process.status.clone(),
+                        process.elapsed,
+                    );
+                    let pid_string = format!("{}", process.pid);
+                    current_process_info.processes.insert(pid_string, p);
+                }
+            }
+        }
+
+        let keys_to_remove: Vec<String> = current_process_info
+            .processes
+            .iter()
+            .filter(|(_, process)| !process.is_updated)
+            .map(|(key, _)| key.clone())
+            .collect();
+
+        for key in keys_to_remove {
+            current_process_info.processes.remove(&key);
+        }
+    }
+
+    drop(collected_process_info);
 }
 
 pub fn get_tick_line_ui(tick: u64, app_color_info: &AppColorInfo) -> Line {

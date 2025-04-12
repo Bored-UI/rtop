@@ -8,6 +8,10 @@ pub struct SysInfo {
     pub networks: HashMap<String, NetworkData>,
 }
 
+pub struct ProcessesInfo {
+    pub processes: HashMap<String, ProcessData>,
+}
+
 const MAXIMUM_DATA_COLLECTION: usize = 5000;
 
 pub struct CpuData {
@@ -47,6 +51,20 @@ pub struct NetworkData {
     pub current_transmitted_vec: Vec<f64>,
     pub total_received: f64,
     pub total_transmitted: f64,
+    pub is_updated: bool,
+}
+
+pub struct ProcessData {
+    pub pid: u32,
+    pub name: String,
+    pub exe_path: Option<String>,
+    pub cmd: Vec<String>,
+    pub user: String,
+    pub cpu_usage: f32,
+    pub thread_count: u32,
+    pub memory: Vec<f64>,
+    pub status: String,
+    pub elapsed: u64,
     pub is_updated: bool,
 }
 
@@ -249,6 +267,66 @@ impl NetworkData {
     }
 }
 
+impl ProcessData {
+    pub fn new(
+        pid: u32,
+        name: String,
+        exe_path: Option<String>,
+        cmd: Vec<String>,
+        user: String,
+        cpu_usage: f32,
+        thread_count: u32,
+        memory: f64,
+        status: String,
+        elapsed: u64,
+    ) -> ProcessData {
+        return ProcessData {
+            pid,
+            name,
+            exe_path,
+            cmd,
+            user,
+            cpu_usage,
+            thread_count,
+            memory: vec![memory],
+            status,
+            elapsed,
+            is_updated: true,
+        };
+    }
+
+    pub fn update(
+        &mut self,
+        pid: u32,
+        name: String,
+        exe_path: Option<String>,
+        cmd: Vec<String>,
+        user: String,
+        cpu_usage: f32,
+        thread_count: u32,
+        memory: f64,
+        status: String,
+        elapsed: u64,
+    ) {
+        if self.pid == pid {
+            self.name = name;
+            self.exe_path = exe_path;
+            self.cmd = cmd;
+            self.user = user;
+            self.cpu_usage = cpu_usage;
+            self.thread_count = thread_count;
+            self.memory.push(memory);
+            self.status = status;
+            self.elapsed = elapsed;
+
+            if self.memory.len() > MAXIMUM_DATA_COLLECTION {
+                self.memory.remove(0);
+            }
+            self.is_updated = true;
+        }
+    }
+}
+
 // the structure of info collected from a seperated thread
 // a C infront mean Collected
 pub struct CSysInfo {
@@ -256,6 +334,10 @@ pub struct CSysInfo {
     pub memory: CMemoryData,
     pub disks: Vec<CDiskData>,
     pub networks: Vec<CNetworkData>,
+}
+
+pub struct CProcessesInfo {
+    pub processes: Vec<CProcessData>,
 }
 
 pub struct CCpuData {
@@ -292,4 +374,17 @@ pub struct CNetworkData {
     pub total_received: f64,
     pub current_transmitted: f64,
     pub total_transmitted: f64,
+}
+
+pub struct CProcessData {
+    pub pid: u32,
+    pub name: String,
+    pub exe_path: Option<String>,
+    pub cmd: Vec<String>,
+    pub user: String,
+    pub cpu_usage: f32,
+    pub thread_count: u32,
+    pub memory: f64,
+    pub status: String,
+    pub elapsed: u64,
 }

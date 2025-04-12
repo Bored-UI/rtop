@@ -19,13 +19,13 @@ use ratatui::{
 };
 
 use crate::{
-    components::network::draw_network_info,
+    components::{network::draw_network_info, process::draw_process_info},
     cpu::draw_cpu_info,
     disk::draw_disk_info,
-    get_sys_info::spawn_system_info_collector,
+    get_sys_info::{spawn_process_info_collector, spawn_system_info_collector},
     memory::draw_memory_info,
-    types::{CSysInfo, MemoryData, SysInfo},
-    utils::process_sys_info,
+    types::{CProcessesInfo, CSysInfo, MemoryData, ProcessesInfo, SysInfo},
+    utils::{process_processes_info, process_sys_info},
 };
 
 #[derive(PartialEq)]
@@ -51,14 +51,19 @@ struct App {
     tick: u32,
     tx: Sender<CSysInfo>,
     rx: Receiver<CSysInfo>,
+    process_tx: Sender<CProcessesInfo>,
+    process_rx: Receiver<CProcessesInfo>,
     tick_tx: Sender<u32>,
+    process_tick_tx: Sender<u32>,
     sys_info: SysInfo,
+    process_info: ProcessesInfo,
     selected_container: SelectedContainer,
     state: AppState,
     cpu_graph_shown_range: usize,
     memory_graph_shown_range: usize,
     disk_graph_shown_range: usize,
     network_graph_shown_range: usize,
+    process_graph_shown_range: usize,
     cpu_selected_state: ListState,
     disk_selected_entry: usize,
     network_selected_entry: usize,
@@ -106,6 +111,15 @@ pub struct AppColorInfo {
     pub network_transmitted_base_graph_color: Color,
     pub network_info_block_color: Color,
     pub network_text_color: Color,
+
+    // for process
+    pub process_container_selected_color: Color,
+    pub process_main_block_color: Color,
+    pub process_received_base_graph_color: Color,
+    pub process_transmitted_base_graph_color: Color,
+    pub process_info_block_color: Color,
+    pub process_text_color: Color,
+    pub process_selected_color: Color,
 }
 
 const MIN_HEIGHT: u16 = 25;
@@ -115,19 +129,27 @@ pub fn tui() {
     enable_raw_mode().unwrap();
     let mut terminal = init();
     let (tx, rx) = mpsc::channel();
+    let (process_tx, process_rx) = mpsc::channel();
     let (tick_tx, tick_rx) = mpsc::channel();
+    let (process_tick_tx, process_tick_rx) = mpsc::channel();
 
     let mut app = App {
         is_quit: false,
         tick: 100,
         tx,
         rx,
+        process_tx,
+        process_rx,
         tick_tx,
+        process_tick_tx,
         sys_info: SysInfo {
             cpus: vec![],
             memory: MemoryData::default(),
             disks: HashMap::new(),
             networks: HashMap::new(),
+        },
+        process_info: ProcessesInfo {
+            processes: HashMap::new(),
         },
         selected_container: SelectedContainer::None,
         state: AppState::View,
@@ -135,6 +157,7 @@ pub fn tui() {
         memory_graph_shown_range: 100,
         disk_graph_shown_range: 100,
         network_graph_shown_range: 100,
+        process_graph_shown_range: 100,
         cpu_selected_state: ListState::default(),
         disk_selected_entry: 0,
         network_selected_entry: 0,
@@ -190,8 +213,18 @@ pub fn tui() {
         network_transmitted_base_graph_color: Color::Rgb(80, 160, 160), // Muted teal
         network_info_block_color: Color::Rgb(76, 86, 106),
         network_text_color: Color::Rgb(143, 188, 187), //  color for network related text
+
+        process_container_selected_color: Color::Rgb(94, 129, 172),
+        // Network main block: A slightly lighter grayish-blue to contrast with the background
+        process_main_block_color: Color::Rgb(76, 86, 106),
+        // Network selected color: A bright teal for selected Memory items in the list
+        process_received_base_graph_color: Color::Rgb(180, 80, 80), // Muted reddish coral
+        process_transmitted_base_graph_color: Color::Rgb(80, 160, 160), // Muted teal
+        process_info_block_color: Color::Rgb(76, 86, 106),
+        process_text_color: Color::Rgb(143, 188, 187), //  color for network related text
+        process_selected_color: Color::Rgb(94, 129, 172),
     };
-    app.run(&mut terminal, tick_rx, app_color_info);
+    app.run(&mut terminal, tick_rx, process_tick_rx, app_color_info);
     disable_raw_mode().unwrap();
     restore();
 }
@@ -202,11 +235,13 @@ impl App {
         &mut self,
         terminal: &mut DefaultTerminal,
         tick_rx: Receiver<u32>,
+        process_tick_rx: Receiver<u32>,
         app_color_info: AppColorInfo,
     ) {
         // when the program start, we let the info collector to collect at 100ms
         // only after the initial collection, we reset to the user selected tick ( this will be able to be configure at a later stage )
         spawn_system_info_collector(tick_rx, self.tx.clone(), 100);
+        spawn_process_info_collector(process_tick_rx, self.process_tx.clone(), 100);
 
         while !self.is_init {
             match self.rx.try_recv() {
@@ -214,17 +249,35 @@ impl App {
                     process_sys_info(&mut self.sys_info, c_sys_info);
                     self.is_init = true;
                 }
-                Err(_) => {}
+                Err(_) => {
+                    self.is_init = false;
+                }
+            }
+
+            match self.process_rx.try_recv() {
+                Ok(c_processes_info) => {
+                    process_processes_info(&mut self.process_info, c_processes_info);
+                    self.is_init = true;
+                }
+                Err(_) => {
+                    self.is_init = false;
+                }
             }
         }
         self.cpu_selected_state.select(Some(0));
 
         let _ = self.tick_tx.send(self.tick);
+        let _ = self.process_tick_tx.send(self.tick);
 
         while !self.is_quit {
             let c_sys_info = self.rx.try_recv();
             if c_sys_info.is_ok() {
                 process_sys_info(&mut self.sys_info, c_sys_info.unwrap());
+            }
+
+            let c_process_info = self.process_rx.try_recv();
+            if c_process_info.is_ok() {
+                process_processes_info(&mut self.process_info, c_process_info.unwrap());
             }
             let _ = terminal.draw(|frame| self.draw(frame, &app_color_info));
 
@@ -430,6 +483,21 @@ impl App {
                     app_color_info,
                     false,
                 );
+
+                draw_process_info(
+                    self.tick as u64,
+                    &self.process_info.processes,
+                    process_area,
+                    frame,
+                    self.process_graph_shown_range,
+                    if self.selected_container == SelectedContainer::Process {
+                        true
+                    } else {
+                        false
+                    },
+                    app_color_info,
+                    false,
+                )
             }
         }
     }
