@@ -614,7 +614,7 @@ impl App {
                     }
                 }
             }
-            KeyCode::Left => {
+            KeyCode::Char('[') => {
                 if self.selected_container == SelectedContainer::Cpu {
                     if self.cpu_graph_shown_range > 100 {
                         self.cpu_graph_shown_range -= 10;
@@ -631,9 +631,29 @@ impl App {
                     if self.network_graph_shown_range > 100 {
                         self.network_graph_shown_range -= 10;
                     }
+                } else if self.selected_container == SelectedContainer::Process {
+                    if self.process_graph_shown_range > 100 {
+                        self.process_graph_shown_range -= 10;
+                    }
+                } else if self.selected_container == SelectedContainer::None {
+                    if self.cpu_graph_shown_range > 100 {
+                        self.cpu_graph_shown_range -= 10;
+                    }
+                    if self.memory_graph_shown_range > 100 {
+                        self.memory_graph_shown_range -= 10;
+                    }
+                    if self.disk_graph_shown_range > 100 {
+                        self.disk_graph_shown_range -= 10;
+                    }
+                    if self.network_graph_shown_range > 100 {
+                        self.network_graph_shown_range -= 10;
+                    }
+                    if self.process_graph_shown_range > 100 {
+                        self.process_graph_shown_range -= 10;
+                    }
                 }
             }
-            KeyCode::Right => {
+            KeyCode::Char(']') => {
                 if self.selected_container == SelectedContainer::Cpu {
                     if self.cpu_graph_shown_range < 10000 {
                         self.cpu_graph_shown_range += 10;
@@ -649,6 +669,26 @@ impl App {
                 } else if self.selected_container == SelectedContainer::Network {
                     if self.network_graph_shown_range < 10000 {
                         self.network_graph_shown_range += 10;
+                    }
+                } else if self.selected_container == SelectedContainer::Process {
+                    if self.process_graph_shown_range < 10000 {
+                        self.process_graph_shown_range += 10;
+                    }
+                } else if self.selected_container == SelectedContainer::None {
+                    if self.cpu_graph_shown_range < 10000 {
+                        self.cpu_graph_shown_range += 10;
+                    }
+                    if self.memory_graph_shown_range < 10000 {
+                        self.memory_graph_shown_range += 10;
+                    }
+                    if self.disk_graph_shown_range < 10000 {
+                        self.disk_graph_shown_range += 10;
+                    }
+                    if self.network_graph_shown_range < 10000 {
+                        self.network_graph_shown_range += 10;
+                    }
+                    if self.process_graph_shown_range < 10000 {
+                        self.process_graph_shown_range += 10;
                     }
                 }
             }
@@ -783,7 +823,7 @@ impl App {
                 }
             }
 
-            KeyCode::Char('<') => {
+            KeyCode::Left => {
                 if self.state == AppState::View {
                     if self.selected_container == SelectedContainer::Disk {
                         if self.disk_selected_entry == 0 {
@@ -800,7 +840,7 @@ impl App {
                     }
                 }
             }
-            KeyCode::Char('>') => {
+            KeyCode::Right => {
                 if self.state == AppState::View {
                     if self.selected_container == SelectedContainer::Disk {
                         if self.disk_selected_entry == self.sys_info.disks.len() - 1 {
