@@ -251,17 +251,15 @@ impl App {
             match self.rx.try_recv() {
                 Ok(c_sys_info) => {
                     process_sys_info(&mut self.sys_info, c_sys_info);
-                    self.is_init = true;
-                }
-                Err(_) => {
-                    self.is_init = false;
-                }
-            }
-
-            match self.process_rx.try_recv() {
-                Ok(c_processes_info) => {
-                    process_processes_info(&mut self.process_info, c_processes_info);
-                    self.is_init = true;
+                    match self.process_rx.try_recv() {
+                        Ok(c_processes_info) => {
+                            process_processes_info(&mut self.process_info, c_processes_info);
+                            self.is_init = true;
+                        }
+                        Err(_) => {
+                            self.is_init = false;
+                        }
+                    }
                 }
                 Err(_) => {
                     self.is_init = false;
