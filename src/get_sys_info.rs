@@ -8,7 +8,6 @@ use std::{
 use crate::types::{
     CCpuData, CDiskData, CMemoryData, CNetworkData, CProcessData, CProcessesInfo, CSysInfo,
 };
-use libproc::{proc_pid::pidinfo, task_info::TaskInfo};
 use sysinfo::{Disks, Networks, Process, ProcessesToUpdate, System, Users};
 
 const TO_GB: f64 = 1_073_741_824.0;
@@ -280,8 +279,12 @@ fn get_thread_count(pid: i32, process: &Process) -> u32 {
     let mut thread_count = 0;
 
     #[cfg(target_os = "macos")]
-    if let Ok(task_info) = pidinfo::<TaskInfo>(pid, 0) {
-        thread_count = task_info.pti_threadnum;
+    {
+        use libproc::{proc_pid::pidinfo, task_info::TaskInfo};
+        if let Ok(task_info) = pidinfo::<TaskInfo>(pid, 0) {
+            thread_count = task_info.pti_threadnum;
+        }
+
     }
 
     #[cfg(target_os = "linux")]
