@@ -284,7 +284,6 @@ fn get_thread_count(pid: i32, process: &Process) -> u32 {
         if let Ok(task_info) = pidinfo::<TaskInfo>(pid, 0) {
             thread_count = task_info.pti_threadnum;
         }
-
     }
 
     #[cfg(target_os = "linux")]

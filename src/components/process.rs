@@ -234,7 +234,10 @@ pub fn draw_process_info(
                 let new_memory =
                     ((value.memory[value.memory.len() - 1] / 1024.0) * 1000.0).round() / 1000.0;
                 if new_memory > 1024.0 {
-                    format!("{} GB", ((new_memory * 1000.0).round() / 1000.0) as usize)
+                    format!(
+                        "{} GB",
+                        (((new_memory / 1024.0) * 1000.0).round() / 1000.0) as usize
+                    )
                 } else {
                     format!("{} MB", new_memory as usize)
                 }
@@ -245,7 +248,11 @@ pub fn draw_process_info(
             // Pad the string to take up respective width
             let pid = String::from(key);
             let program = value.name.clone();
-            let command = value.cmd.join(" ");
+            let command = if value.cmd.len() > 0 {
+                value.cmd.join(" ")
+            } else {
+                value.name.clone()
+            };
             let thread = value.thread_count.to_string();
             let user = value.user.clone();
             let memory = processed_memory;
@@ -297,88 +304,54 @@ pub fn draw_process_info(
                 cpu_usage.chars().take(cpu_usage_width).collect::<String>()
             };
 
-            let process = if area.width > MEDIUM_WIDTH && area.width <= LARGE_WIDTH {
-                Line::from(vec![
-                    Span::styled(
-                        padded_pid,
-                        Style::default().fg(app_color_info.process_text_color),
-                    ),
-                    Span::styled(
-                        padded_program,
-                        Style::default().fg(app_color_info.process_text_color),
-                    ),
+            let mut process_inline_content_vec = vec![
+                Span::styled(
+                    padded_pid,
+                    Style::default().fg(app_color_info.process_text_color),
+                ),
+                Span::styled(
+                    padded_program,
+                    Style::default().fg(app_color_info.process_text_color),
+                ),
+                Span::styled(
+                    padded_user,
+                    Style::default().fg(app_color_info.process_text_color),
+                ),
+                Span::styled(
+                    padded_memory,
+                    Style::default().fg(app_color_info.process_text_color),
+                ),
+                Span::styled(
+                    padded_cpu_usage,
+                    Style::default().fg(app_color_info.process_text_color),
+                ),
+            ];
+            if area.width > MEDIUM_WIDTH && area.width <= LARGE_WIDTH {
+                process_inline_content_vec.insert(
+                    2,
                     Span::styled(
                         padded_command,
                         Style::default().fg(app_color_info.process_text_color),
                     ),
-                    Span::styled(
-                        padded_user,
-                        Style::default().fg(app_color_info.process_text_color),
-                    ),
-                    Span::styled(
-                        padded_memory,
-                        Style::default().fg(app_color_info.process_text_color),
-                    ),
-                    Span::styled(
-                        padded_cpu_usage,
-                        Style::default().fg(app_color_info.process_text_color),
-                    ),
-                ])
+                );
             } else if area.width > LARGE_WIDTH {
-                Line::from(vec![
-                    Span::styled(
-                        padded_pid,
-                        Style::default().fg(app_color_info.process_text_color),
-                    ),
-                    Span::styled(
-                        padded_program,
-                        Style::default().fg(app_color_info.process_text_color),
-                    ),
+                process_inline_content_vec.insert(
+                    2,
                     Span::styled(
                         padded_command,
                         Style::default().fg(app_color_info.process_text_color),
                     ),
+                );
+                process_inline_content_vec.insert(
+                    3,
                     Span::styled(
                         padded_thread,
                         Style::default().fg(app_color_info.process_text_color),
                     ),
-                    Span::styled(
-                        padded_user,
-                        Style::default().fg(app_color_info.process_text_color),
-                    ),
-                    Span::styled(
-                        padded_memory,
-                        Style::default().fg(app_color_info.process_text_color),
-                    ),
-                    Span::styled(
-                        padded_cpu_usage,
-                        Style::default().fg(app_color_info.process_text_color),
-                    ),
-                ])
-            } else {
-                Line::from(vec![
-                    Span::styled(
-                        padded_pid,
-                        Style::default().fg(app_color_info.process_text_color),
-                    ),
-                    Span::styled(
-                        padded_program,
-                        Style::default().fg(app_color_info.process_text_color),
-                    ),
-                    Span::styled(
-                        padded_user,
-                        Style::default().fg(app_color_info.process_text_color),
-                    ),
-                    Span::styled(
-                        padded_memory,
-                        Style::default().fg(app_color_info.process_text_color),
-                    ),
-                    Span::styled(
-                        padded_cpu_usage,
-                        Style::default().fg(app_color_info.process_text_color),
-                    ),
-                ])
-            };
+                );
+            }
+
+            let process = Line::from(process_inline_content_vec);
 
             ListItem::new(process)
         })
