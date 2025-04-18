@@ -289,7 +289,9 @@ fn get_thread_count(pid: i32, process: &Process) -> u32 {
 
     #[cfg(target_os = "linux")]
     {
-        thread_count = process.tasks().unwrap().len() as i32;
+        if let Some(tasks) = process.tasks() {
+            thread_count = tasks.len() as i32;
+        }
     }
 
     return thread_count as u32;
