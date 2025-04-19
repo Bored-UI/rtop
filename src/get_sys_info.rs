@@ -326,7 +326,7 @@ fn get_cached_memory() -> f64 {
     return cached_memory;
 }
 
-// A hack, it gets the job done
+// A hack, but it gets the job done
 #[cfg(target_os = "macos")]
 fn get_macos_cache_memory() -> Option<u64> {
     use libc::sysconf;

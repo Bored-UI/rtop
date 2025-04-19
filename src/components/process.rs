@@ -11,8 +11,8 @@ use ratatui::{
 
 use crate::{
     tui::AppColorInfo,
-    types::ProcessData,
-    utils::{get_tick_line_ui, round_to_2_decimal},
+    types::{ProcessData, ProcessSortType},
+    utils::{get_tick_line_ui, round_to_2_decimal, sort_process},
 };
 
 const MEDIUM_WIDTH: u16 = 60;
@@ -23,6 +23,9 @@ pub fn draw_process_info(
     process_data: &HashMap<String, ProcessData>,
     process_selectable_entries: &mut usize,
     process_selected_state: &mut ListState,
+    process_sort_type: &ProcessSortType,
+    process_sort_is_reversed: bool,
+    process_filter: String,
     area: Rect,
     frame: &mut Frame,
     graph_show_range: usize,
@@ -41,8 +44,30 @@ pub fn draw_process_info(
         ),
     ]);
 
+    let process_sort_is_reversed_intruction = Line::from(vec![
+        Span::styled(" ", Style::default().fg(app_color_info.app_title_color)),
+        Span::styled("R", Style::default().fg(app_color_info.key_text_color))
+            .bold()
+            .underlined(),
+        Span::styled(
+            "everse ",
+            Style::default().fg(app_color_info.app_title_color),
+        ),
+    ]);
+
+    let process_sort_slect_instruction = Line::from(vec![
+        Span::styled("　< ", Style::default().fg(app_color_info.key_text_color)).bold(),
+        Span::styled(
+            ProcessSortType::get_sort_string_name(process_sort_type),
+            Style::default().fg(app_color_info.app_title_color),
+        ),
+        Span::styled(" >　", Style::default().fg(app_color_info.key_text_color)).bold(),
+    ]);
+
     let mut main_block = Block::bordered()
         .title(select_instruction.left_aligned())
+        .title_bottom(process_sort_is_reversed_intruction.right_aligned())
+        .title_bottom(process_sort_slect_instruction.right_aligned())
         .style(app_color_info.process_main_block_color)
         .border_set(border::ROUNDED);
 
@@ -227,9 +252,16 @@ pub fn draw_process_info(
 
     frame.render_widget(process_title, title_layout);
 
-    let process_list: Vec<ListItem> = process_data
+    let sorted_process = sort_process(
+        process_sort_type.clone(),
+        process_sort_is_reversed,
+        process_filter,
+        process_data,
+    );
+
+    let process_list: Vec<ListItem> = sorted_process
         .iter()
-        .map(|(key, value)| {
+        .map(|value| {
             let processed_memory = if value.memory[value.memory.len() - 1] > 1024.0 {
                 let new_memory =
                     ((value.memory[value.memory.len() - 1] / 1024.0) * 1000.0).round() / 1000.0;
@@ -246,7 +278,7 @@ pub fn draw_process_info(
             };
 
             // Pad the string to take up respective width
-            let pid = String::from(key);
+            let pid = format!("{}", value.pid);
             let program = value.name.clone();
             let command = if value.cmd.len() > 0 {
                 value.cmd.join(" ")

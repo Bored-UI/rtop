@@ -1,3 +1,5 @@
+use std::{cmp::Ordering, collections::HashMap};
+
 use ratatui::{
     style::{Style, Stylize},
     text::{Line, Span},
@@ -7,7 +9,7 @@ use crate::{
     tui::AppColorInfo,
     types::{
         CProcessesInfo, CSysInfo, CpuData, DiskData, MemoryData, NetworkData, ProcessData,
-        ProcessesInfo, SysInfo,
+        ProcessSortType, ProcessesInfo, SysInfo,
     },
 };
 
@@ -306,4 +308,109 @@ pub fn get_tick_line_ui(tick: u64, app_color_info: &AppColorInfo) -> Line {
 
 pub fn round_to_2_decimal(value: f32) -> f32 {
     (value * 100.0).round() / 100.0
+}
+
+pub fn sort_process(
+    sort_type: ProcessSortType,
+    is_reversed: bool,
+    filter: String,
+    process_data: &HashMap<String, ProcessData>,
+) -> Vec<ProcessData> {
+    let mut processes: Vec<ProcessData> = process_data
+        .iter()
+        .map(|(_, value)| value)
+        .cloned()
+        .collect();
+    if !filter.is_empty() {
+        processes.retain(|process| {
+            process.name.contains(&filter)
+                || process.cmd.join(" ").contains(&filter)
+                || process.user.contains(&filter)
+        });
+    }
+
+    if sort_type == ProcessSortType::Thread {
+        processes.sort_by(|a, b| {
+            let ordering = a
+                .thread_count
+                .partial_cmp(&b.thread_count)
+                .unwrap_or(Ordering::Equal);
+            if is_reversed {
+                ordering.reverse()
+            } else {
+                ordering
+            }
+        });
+    } else if sort_type == ProcessSortType::Memory {
+        processes.sort_by(|a, b| {
+            let ordering = a.memory[a.memory.len() - 1]
+                .partial_cmp(&b.memory[b.memory.len() - 1])
+                .unwrap_or(Ordering::Equal);
+            if is_reversed {
+                ordering.reverse()
+            } else {
+                ordering
+            }
+        });
+    } else if sort_type == ProcessSortType::Cpu {
+        processes.sort_by(|a, b| {
+            let ordering = a
+                .cpu_usage
+                .partial_cmp(&b.cpu_usage)
+                .unwrap_or(Ordering::Equal);
+            if is_reversed {
+                ordering.reverse()
+            } else {
+                ordering
+            }
+        });
+    } else if sort_type == ProcessSortType::Pid {
+        processes.sort_by(|a, b| {
+            let ordering = a.pid.partial_cmp(&b.pid).unwrap_or(Ordering::Equal);
+            if is_reversed {
+                ordering.reverse()
+            } else {
+                ordering
+            }
+        });
+    } else if sort_type == ProcessSortType::Name {
+        processes.sort_by(|a, b| {
+            let ordering = a.name.to_lowercase().cmp(&b.name.to_lowercase());
+            if is_reversed {
+                ordering.reverse()
+            } else {
+                ordering
+            }
+        });
+    } else if sort_type == ProcessSortType::Command {
+        processes.sort_by(|a, b| {
+            // there is cases where command is empty vector, in this case it will be replace by the process name
+            let a_command = if a.cmd.is_empty() {
+                a.name.clone()
+            } else {
+                a.cmd.join(" ")
+            };
+            let b_command = if b.cmd.is_empty() {
+                b.name.clone()
+            } else {
+                b.cmd.join(" ")
+            };
+            let ordering = a_command.to_lowercase().cmp(&b_command.to_lowercase());
+            if is_reversed {
+                ordering.reverse()
+            } else {
+                ordering
+            }
+        })
+    } else if sort_type == ProcessSortType::User {
+        processes.sort_by(|a, b| {
+            let ordering = a.user.to_lowercase().cmp(&b.user.to_lowercase());
+            if is_reversed {
+                ordering.reverse()
+            } else {
+                ordering
+            }
+        })
+    }
+    return processes;
 }

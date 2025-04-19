@@ -12,7 +12,7 @@ pub struct ProcessesInfo {
     pub processes: HashMap<String, ProcessData>,
 }
 
-const MAXIMUM_DATA_COLLECTION: usize = 5000;
+const MAXIMUM_DATA_COLLECTION: usize = 500;
 
 pub struct CpuData {
     pub info_type: String,
@@ -54,6 +54,7 @@ pub struct NetworkData {
     pub is_updated: bool,
 }
 
+#[derive(Debug, Clone)]
 pub struct ProcessData {
     pub pid: u32,
     pub name: String,
@@ -387,4 +388,64 @@ pub struct CProcessData {
     pub memory: f64,
     pub status: String,
     pub elapsed: u64,
+}
+
+#[derive(PartialEq)]
+pub enum SelectedContainer {
+    Cpu,
+    Memory,
+    Disk,
+    Network,
+    Process,
+    Menu,
+    None,
+}
+
+#[derive(PartialEq)]
+pub enum AppState {
+    View,
+    Typing,
+    Menu,
+}
+
+#[derive(PartialEq, Clone)]
+pub enum ProcessSortType {
+    Thread,
+    Memory,
+    Cpu,
+    Pid,
+    Name,
+    Command,
+    User,
+}
+
+impl ProcessSortType {
+    pub fn get_process_sort_type_from_int(id: u8) -> ProcessSortType {
+        match id {
+            0 => ProcessSortType::Thread,
+            1 => ProcessSortType::Memory,
+            2 => ProcessSortType::Cpu,
+            3 => ProcessSortType::Pid,
+            4 => ProcessSortType::Name,
+            5 => ProcessSortType::Command,
+            6 => ProcessSortType::User,
+            _ => ProcessSortType::Thread,
+        }
+    }
+
+    pub fn get_sort_string_name(&self) -> String {
+        match self {
+            ProcessSortType::Thread => "Thread".to_string(),
+            ProcessSortType::Memory => "Memory".to_string(),
+            ProcessSortType::Cpu => "CPU".to_string(),
+            ProcessSortType::Pid => "PID".to_string(),
+            ProcessSortType::Name => "Name".to_string(),
+            ProcessSortType::Command => "Command".to_string(),
+            ProcessSortType::User => "User".to_string(),
+        }
+    }
+
+    pub fn total_selection_count() -> u8 {
+        7
+    }
 }

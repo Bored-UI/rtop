@@ -24,27 +24,15 @@ use crate::{
     disk::draw_disk_info,
     get_sys_info::{spawn_process_info_collector, spawn_system_info_collector},
     memory::draw_memory_info,
-    types::{CProcessesInfo, CSysInfo, MemoryData, ProcessesInfo, SysInfo},
+    types::{
+        AppState, CProcessesInfo, CSysInfo, MemoryData, ProcessSortType, ProcessesInfo,
+        SelectedContainer, SysInfo,
+    },
     utils::{process_processes_info, process_sys_info},
 };
 
-#[derive(PartialEq)]
-pub enum SelectedContainer {
-    Cpu,
-    Memory,
-    Disk,
-    Network,
-    Process,
-    Menu,
-    None,
-}
-
-#[derive(PartialEq)]
-pub enum AppState {
-    View,
-    Typing,
-    Menu,
-}
+// this need to be the same as MAXIMUM_DATA_COLLECTION in types.rs
+const MAX_GRAPH_SHOWN_RANGE: usize = 500;
 
 struct App {
     is_quit: bool,
@@ -69,6 +57,10 @@ struct App {
     network_selected_entry: usize,
     process_selectable_entries: usize,
     process_selected_state: ListState,
+    process_sort_selected_state: u8,
+    process_sort_type: ProcessSortType,
+    process_sort_is_reversed: bool, // by default the sorting will be in descending order (true), by setting this to false, the sort will be in ascending order
+    process_filter: String,
     is_renderable: bool,
     is_init: bool,
     container_full_screen: bool,
@@ -165,6 +157,10 @@ pub fn tui() {
         network_selected_entry: 0,
         process_selectable_entries: 0,
         process_selected_state: ListState::default(),
+        process_sort_selected_state: 0,
+        process_sort_type: ProcessSortType::Thread,
+        process_sort_is_reversed: true,
+        process_filter: String::new(),
         is_renderable: true,
         is_init: false,
         container_full_screen: false,
@@ -433,6 +429,9 @@ impl App {
                         &self.process_info.processes,
                         &mut self.process_selectable_entries,
                         &mut self.process_selected_state,
+                        &self.process_sort_type,
+                        self.process_sort_is_reversed,
+                        self.process_filter.clone(),
                         full_frame_view_rect,
                         frame,
                         self.process_graph_shown_range,
@@ -511,6 +510,9 @@ impl App {
                     &self.process_info.processes,
                     &mut self.process_selectable_entries,
                     &mut self.process_selected_state,
+                    &self.process_sort_type,
+                    self.process_sort_is_reversed,
+                    self.process_filter.clone(),
                     process_area,
                     frame,
                     self.process_graph_shown_range,
@@ -655,39 +657,39 @@ impl App {
             }
             KeyCode::Char(']') => {
                 if self.selected_container == SelectedContainer::Cpu {
-                    if self.cpu_graph_shown_range < 10000 {
+                    if self.cpu_graph_shown_range < MAX_GRAPH_SHOWN_RANGE {
                         self.cpu_graph_shown_range += 10;
                     }
                 } else if self.selected_container == SelectedContainer::Memory {
-                    if self.memory_graph_shown_range < 10000 {
+                    if self.memory_graph_shown_range < MAX_GRAPH_SHOWN_RANGE {
                         self.memory_graph_shown_range += 10;
                     }
                 } else if self.selected_container == SelectedContainer::Disk {
-                    if self.disk_graph_shown_range < 10000 {
+                    if self.disk_graph_shown_range < MAX_GRAPH_SHOWN_RANGE {
                         self.disk_graph_shown_range += 10;
                     }
                 } else if self.selected_container == SelectedContainer::Network {
-                    if self.network_graph_shown_range < 10000 {
+                    if self.network_graph_shown_range < MAX_GRAPH_SHOWN_RANGE {
                         self.network_graph_shown_range += 10;
                     }
                 } else if self.selected_container == SelectedContainer::Process {
-                    if self.process_graph_shown_range < 10000 {
+                    if self.process_graph_shown_range < MAX_GRAPH_SHOWN_RANGE {
                         self.process_graph_shown_range += 10;
                     }
                 } else if self.selected_container == SelectedContainer::None {
-                    if self.cpu_graph_shown_range < 10000 {
+                    if self.cpu_graph_shown_range < MAX_GRAPH_SHOWN_RANGE {
                         self.cpu_graph_shown_range += 10;
                     }
-                    if self.memory_graph_shown_range < 10000 {
+                    if self.memory_graph_shown_range < MAX_GRAPH_SHOWN_RANGE {
                         self.memory_graph_shown_range += 10;
                     }
-                    if self.disk_graph_shown_range < 10000 {
+                    if self.disk_graph_shown_range < MAX_GRAPH_SHOWN_RANGE {
                         self.disk_graph_shown_range += 10;
                     }
-                    if self.network_graph_shown_range < 10000 {
+                    if self.network_graph_shown_range < MAX_GRAPH_SHOWN_RANGE {
                         self.network_graph_shown_range += 10;
                     }
-                    if self.process_graph_shown_range < 10000 {
+                    if self.process_graph_shown_range < MAX_GRAPH_SHOWN_RANGE {
                         self.process_graph_shown_range += 10;
                     }
                 }
@@ -823,6 +825,30 @@ impl App {
                 }
             }
 
+            KeyCode::Char('R') => {
+                if self.state == AppState::View {
+                    if self.selected_container == SelectedContainer::Process {
+                        if self.process_sort_is_reversed {
+                            self.process_sort_is_reversed = false;
+                        } else {
+                            self.process_sort_is_reversed = true;
+                        }
+                    }
+                }
+            }
+
+            KeyCode::Char('r') => {
+                if self.state == AppState::View {
+                    if self.selected_container == SelectedContainer::Process {
+                        if self.process_sort_is_reversed {
+                            self.process_sort_is_reversed = false;
+                        } else {
+                            self.process_sort_is_reversed = true;
+                        }
+                    }
+                }
+            }
+
             KeyCode::Left => {
                 if self.state == AppState::View {
                     if self.selected_container == SelectedContainer::Disk {
@@ -837,6 +863,16 @@ impl App {
                         } else {
                             self.network_selected_entry -= 1;
                         }
+                    } else if self.selected_container == SelectedContainer::Process {
+                        if self.process_sort_selected_state == 0 {
+                            self.process_sort_selected_state =
+                                ProcessSortType::total_selection_count() - 1;
+                        } else {
+                            self.process_sort_selected_state -= 1;
+                        }
+                        self.process_sort_type = ProcessSortType::get_process_sort_type_from_int(
+                            self.process_sort_selected_state,
+                        )
                     }
                 }
             }
@@ -854,6 +890,17 @@ impl App {
                         } else {
                             self.network_selected_entry += 1;
                         }
+                    } else if self.selected_container == SelectedContainer::Process {
+                        if self.process_sort_selected_state
+                            == ProcessSortType::total_selection_count() - 1
+                        {
+                            self.process_sort_selected_state = 0;
+                        } else {
+                            self.process_sort_selected_state += 1;
+                        }
+                        self.process_sort_type = ProcessSortType::get_process_sort_type_from_int(
+                            self.process_sort_selected_state,
+                        )
                     }
                 }
             }
