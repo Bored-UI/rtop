@@ -26,6 +26,7 @@ pub fn draw_process_info(
     process_sort_type: &ProcessSortType,
     process_sort_is_reversed: bool,
     process_filter: String,
+    is_filtering: bool, // to indicate if the app enter typing state for process filtering
     area: Rect,
     frame: &mut Frame,
     graph_show_range: usize,
@@ -63,9 +64,51 @@ pub fn draw_process_info(
         ),
         Span::styled(" >　", Style::default().fg(app_color_info.key_text_color)).bold(),
     ]);
+    let process_filter_without_underscore_extension: String = process_filter
+        .chars()
+        .take(process_filter.len() - 1)
+        .collect();
+
+    let process_filter_instruction = if is_filtering {
+        Line::from(vec![
+            Span::styled(" ", Style::default().fg(app_color_info.app_title_color)),
+            Span::styled("F", Style::default().fg(app_color_info.key_text_color))
+                .bold()
+                .underlined(),
+            Span::styled(
+                format!(" {} ", process_filter),
+                Style::default().fg(app_color_info.app_title_color),
+            ),
+        ])
+    } else {
+        if process_filter.is_empty() || process_filter == "_".to_string() {
+            Line::from(vec![
+                Span::styled(" ", Style::default().fg(app_color_info.app_title_color)),
+                Span::styled("F", Style::default().fg(app_color_info.key_text_color))
+                    .bold()
+                    .underlined(),
+                Span::styled(
+                    "ilter ",
+                    Style::default().fg(app_color_info.app_title_color),
+                ),
+            ])
+        } else {
+            Line::from(vec![
+                Span::styled(" ", Style::default().fg(app_color_info.app_title_color)),
+                Span::styled("F", Style::default().fg(app_color_info.key_text_color))
+                    .bold()
+                    .underlined(),
+                Span::styled(
+                    format!(" {} ", process_filter_without_underscore_extension),
+                    Style::default().fg(app_color_info.app_title_color),
+                ),
+            ])
+        }
+    };
 
     let mut main_block = Block::bordered()
         .title(select_instruction.left_aligned())
+        .title(process_filter_instruction.left_aligned())
         .title_bottom(process_sort_is_reversed_intruction.right_aligned())
         .title_bottom(process_sort_slect_instruction.right_aligned())
         .style(app_color_info.process_main_block_color)
@@ -255,7 +298,7 @@ pub fn draw_process_info(
     let sorted_process = sort_process(
         process_sort_type.clone(),
         process_sort_is_reversed,
-        process_filter,
+        process_filter_without_underscore_extension,
         process_data,
     );
 

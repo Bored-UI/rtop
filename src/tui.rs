@@ -432,6 +432,7 @@ impl App {
                         &self.process_sort_type,
                         self.process_sort_is_reversed,
                         self.process_filter.clone(),
+                        self.state == AppState::Typing,
                         full_frame_view_rect,
                         frame,
                         self.process_graph_shown_range,
@@ -513,6 +514,7 @@ impl App {
                     &self.process_sort_type,
                     self.process_sort_is_reversed,
                     self.process_filter.clone(),
+                    self.state == AppState::Typing,
                     process_area,
                     frame,
                     self.process_graph_shown_range,
@@ -534,7 +536,11 @@ impl App {
                 // it's important to check that the event is a key press event as
                 // crossterm also emits key release and repeat events on Windows.
                 Event::Key(key_event) if key_event.kind == KeyEventKind::Press => {
-                    self.handle_key_event(key_event)
+                    if self.state == AppState::View {
+                        self.handle_key_event(key_event);
+                    } else if self.state == AppState::Typing {
+                        self.handle_typing_key_event(key_event);
+                    }
                 }
                 _ => {}
             };
@@ -544,17 +550,20 @@ impl App {
     fn handle_key_event(&mut self, key_event: KeyEvent) {
         match key_event.code {
             KeyCode::Esc => {
-                // quit the ratatui terminal user interface
-                if self.selected_container == SelectedContainer::None {
-                    self.is_quit = true;
-                } else {
-                    if self.container_full_screen {
-                        self.container_full_screen = false;
+                if self.state == AppState::View {
+                    // quit the ratatui terminal user interface
+                    if self.selected_container == SelectedContainer::None {
+                        self.is_quit = true;
                     } else {
-                        self.selected_container = SelectedContainer::None;
+                        if self.container_full_screen {
+                            self.container_full_screen = false;
+                        } else {
+                            self.selected_container = SelectedContainer::None;
+                        }
                     }
                 }
             }
+
             KeyCode::Char('-') => {
                 if self.state == AppState::View {
                     if self.tick > 100 {
@@ -571,126 +580,136 @@ impl App {
                     }
                 }
             }
+
             KeyCode::Up => {
-                if self.selected_container == SelectedContainer::Cpu {
-                    if let Some(selected) = self.cpu_selected_state.selected() {
-                        if selected > 0 {
-                            self.cpu_selected_state.select(Some(selected - 1));
-                        } else {
-                            self.cpu_selected_state
-                                .select(Some(self.sys_info.cpus.len() - 1))
+                if self.state == AppState::View {
+                    if self.selected_container == SelectedContainer::Cpu {
+                        if let Some(selected) = self.cpu_selected_state.selected() {
+                            if selected > 0 {
+                                self.cpu_selected_state.select(Some(selected - 1));
+                            } else {
+                                self.cpu_selected_state
+                                    .select(Some(self.sys_info.cpus.len() - 1))
+                            }
                         }
-                    }
-                } else if self.selected_container == SelectedContainer::Process {
-                    if let Some(selected) = self.process_selected_state.selected() {
-                        if selected > 0 {
-                            self.process_selected_state.select(Some(selected - 1));
+                    } else if self.selected_container == SelectedContainer::Process {
+                        if let Some(selected) = self.process_selected_state.selected() {
+                            if selected > 0 {
+                                self.process_selected_state.select(Some(selected - 1));
+                            } else {
+                                self.process_selected_state
+                                    .select(Some(self.process_info.processes.len() - 1))
+                            }
                         } else {
                             self.process_selected_state
                                 .select(Some(self.process_info.processes.len() - 1))
                         }
-                    } else {
-                        self.process_selected_state
-                            .select(Some(self.process_info.processes.len() - 1))
                     }
                 }
             }
             KeyCode::Down => {
-                if self.selected_container == SelectedContainer::Cpu {
-                    if let Some(selected) = self.cpu_selected_state.selected() {
-                        if selected < self.sys_info.cpus.len().saturating_sub(1) {
-                            self.cpu_selected_state.select(Some(selected + 1));
-                        } else {
-                            self.cpu_selected_state.select(Some(0))
+                if self.state == AppState::View {
+                    if self.selected_container == SelectedContainer::Cpu {
+                        if let Some(selected) = self.cpu_selected_state.selected() {
+                            if selected < self.sys_info.cpus.len().saturating_sub(1) {
+                                self.cpu_selected_state.select(Some(selected + 1));
+                            } else {
+                                self.cpu_selected_state.select(Some(0))
+                            }
                         }
-                    }
-                } else if self.selected_container == SelectedContainer::Process {
-                    if let Some(selected) = self.process_selected_state.selected() {
-                        if selected < self.process_info.processes.len().saturating_sub(1) {
-                            self.process_selected_state.select(Some(selected + 1));
+                    } else if self.selected_container == SelectedContainer::Process {
+                        if let Some(selected) = self.process_selected_state.selected() {
+                            if selected < self.process_info.processes.len().saturating_sub(1) {
+                                self.process_selected_state.select(Some(selected + 1));
+                            } else {
+                                self.process_selected_state.select(Some(0))
+                            }
                         } else {
                             self.process_selected_state.select(Some(0))
                         }
-                    } else {
-                        self.process_selected_state.select(Some(0))
                     }
                 }
             }
             KeyCode::Char('[') => {
-                if self.selected_container == SelectedContainer::Cpu {
-                    if self.cpu_graph_shown_range > 100 {
-                        self.cpu_graph_shown_range -= 10;
-                    }
-                } else if self.selected_container == SelectedContainer::Memory {
-                    if self.memory_graph_shown_range > 100 {
-                        self.memory_graph_shown_range -= 10;
-                    }
-                } else if self.selected_container == SelectedContainer::Disk {
-                    if self.disk_graph_shown_range > 100 {
-                        self.disk_graph_shown_range -= 10;
-                    }
-                } else if self.selected_container == SelectedContainer::Network {
-                    if self.network_graph_shown_range > 100 {
-                        self.network_graph_shown_range -= 10;
-                    }
-                } else if self.selected_container == SelectedContainer::Process {
-                    if self.process_graph_shown_range > 100 {
-                        self.process_graph_shown_range -= 10;
-                    }
-                } else if self.selected_container == SelectedContainer::None {
-                    if self.cpu_graph_shown_range > 100 {
-                        self.cpu_graph_shown_range -= 10;
-                    }
-                    if self.memory_graph_shown_range > 100 {
-                        self.memory_graph_shown_range -= 10;
-                    }
-                    if self.disk_graph_shown_range > 100 {
-                        self.disk_graph_shown_range -= 10;
-                    }
-                    if self.network_graph_shown_range > 100 {
-                        self.network_graph_shown_range -= 10;
-                    }
-                    if self.process_graph_shown_range > 100 {
-                        self.process_graph_shown_range -= 10;
+                if self.state == AppState::View {
+                    if self.selected_container == SelectedContainer::Cpu {
+                        if self.cpu_graph_shown_range > 100 {
+                            self.cpu_graph_shown_range -= 10;
+                        }
+                    } else if self.selected_container == SelectedContainer::Memory {
+                        if self.memory_graph_shown_range > 100 {
+                            self.memory_graph_shown_range -= 10;
+                        }
+                    } else if self.selected_container == SelectedContainer::Disk {
+                        if self.disk_graph_shown_range > 100 {
+                            self.disk_graph_shown_range -= 10;
+                        }
+                    } else if self.selected_container == SelectedContainer::Network {
+                        if self.network_graph_shown_range > 100 {
+                            self.network_graph_shown_range -= 10;
+                        }
+                    } else if self.selected_container == SelectedContainer::Process {
+                        if self.process_graph_shown_range > 100 {
+                            self.process_graph_shown_range -= 10;
+                        }
+                    } else if self.selected_container == SelectedContainer::None {
+                        if self.cpu_graph_shown_range > 100 {
+                            self.cpu_graph_shown_range -= 10;
+                        }
+                        if self.memory_graph_shown_range > 100 {
+                            self.memory_graph_shown_range -= 10;
+                        }
+                        if self.disk_graph_shown_range > 100 {
+                            self.disk_graph_shown_range -= 10;
+                        }
+                        if self.network_graph_shown_range > 100 {
+                            self.network_graph_shown_range -= 10;
+                        }
+                        if self.process_graph_shown_range > 100 {
+                            self.process_graph_shown_range -= 10;
+                        }
                     }
                 }
             }
+
             KeyCode::Char(']') => {
-                if self.selected_container == SelectedContainer::Cpu {
-                    if self.cpu_graph_shown_range < MAX_GRAPH_SHOWN_RANGE {
-                        self.cpu_graph_shown_range += 10;
-                    }
-                } else if self.selected_container == SelectedContainer::Memory {
-                    if self.memory_graph_shown_range < MAX_GRAPH_SHOWN_RANGE {
-                        self.memory_graph_shown_range += 10;
-                    }
-                } else if self.selected_container == SelectedContainer::Disk {
-                    if self.disk_graph_shown_range < MAX_GRAPH_SHOWN_RANGE {
-                        self.disk_graph_shown_range += 10;
-                    }
-                } else if self.selected_container == SelectedContainer::Network {
-                    if self.network_graph_shown_range < MAX_GRAPH_SHOWN_RANGE {
-                        self.network_graph_shown_range += 10;
-                    }
-                } else if self.selected_container == SelectedContainer::Process {
-                    if self.process_graph_shown_range < MAX_GRAPH_SHOWN_RANGE {
-                        self.process_graph_shown_range += 10;
-                    }
-                } else if self.selected_container == SelectedContainer::None {
-                    if self.cpu_graph_shown_range < MAX_GRAPH_SHOWN_RANGE {
-                        self.cpu_graph_shown_range += 10;
-                    }
-                    if self.memory_graph_shown_range < MAX_GRAPH_SHOWN_RANGE {
-                        self.memory_graph_shown_range += 10;
-                    }
-                    if self.disk_graph_shown_range < MAX_GRAPH_SHOWN_RANGE {
-                        self.disk_graph_shown_range += 10;
-                    }
-                    if self.network_graph_shown_range < MAX_GRAPH_SHOWN_RANGE {
-                        self.network_graph_shown_range += 10;
-                    }
-                    if self.process_graph_shown_range < MAX_GRAPH_SHOWN_RANGE {
-                        self.process_graph_shown_range += 10;
+                if self.state == AppState::View {
+                    if self.selected_container == SelectedContainer::Cpu {
+                        if self.cpu_graph_shown_range < MAX_GRAPH_SHOWN_RANGE {
+                            self.cpu_graph_shown_range += 10;
+                        }
+                    } else if self.selected_container == SelectedContainer::Memory {
+                        if self.memory_graph_shown_range < MAX_GRAPH_SHOWN_RANGE {
+                            self.memory_graph_shown_range += 10;
+                        }
+                    } else if self.selected_container == SelectedContainer::Disk {
+                        if self.disk_graph_shown_range < MAX_GRAPH_SHOWN_RANGE {
+                            self.disk_graph_shown_range += 10;
+                        }
+                    } else if self.selected_container == SelectedContainer::Network {
+                        if self.network_graph_shown_range < MAX_GRAPH_SHOWN_RANGE {
+                            self.network_graph_shown_range += 10;
+                        }
+                    } else if self.selected_container == SelectedContainer::Process {
+                        if self.process_graph_shown_range < MAX_GRAPH_SHOWN_RANGE {
+                            self.process_graph_shown_range += 10;
+                        }
+                    } else if self.selected_container == SelectedContainer::None {
+                        if self.cpu_graph_shown_range < MAX_GRAPH_SHOWN_RANGE {
+                            self.cpu_graph_shown_range += 10;
+                        }
+                        if self.memory_graph_shown_range < MAX_GRAPH_SHOWN_RANGE {
+                            self.memory_graph_shown_range += 10;
+                        }
+                        if self.disk_graph_shown_range < MAX_GRAPH_SHOWN_RANGE {
+                            self.disk_graph_shown_range += 10;
+                        }
+                        if self.network_graph_shown_range < MAX_GRAPH_SHOWN_RANGE {
+                            self.network_graph_shown_range += 10;
+                        }
+                        if self.process_graph_shown_range < MAX_GRAPH_SHOWN_RANGE {
+                            self.process_graph_shown_range += 10;
+                        }
                     }
                 }
             }
@@ -849,6 +868,24 @@ impl App {
                 }
             }
 
+            KeyCode::Char('f') => {
+                if self.state == AppState::View {
+                    self.state = AppState::Typing;
+                    if self.process_filter.is_empty() || self.process_filter == "_".to_string() {
+                        self.process_filter = "_".to_string();
+                    }
+                }
+            }
+
+            KeyCode::Char('F') => {
+                if self.state == AppState::View {
+                    self.state = AppState::Typing;
+                    if self.process_filter.is_empty() || self.process_filter == "_".to_string() {
+                        self.process_filter = "_".to_string();
+                    }
+                }
+            }
+
             KeyCode::Left => {
                 if self.state == AppState::View {
                     if self.selected_container == SelectedContainer::Disk {
@@ -906,16 +943,43 @@ impl App {
             }
 
             KeyCode::Tab => {
-                // for a container to be full screen, it need to be selected first
-                if self.container_full_screen && self.selected_container != SelectedContainer::None
-                {
-                    self.container_full_screen = false;
-                } else if !self.container_full_screen
-                    && self.selected_container != SelectedContainer::None
-                {
-                    self.container_full_screen = true;
+                if self.state == AppState::View {
+                    // for a container to be full screen, it need to be selected first
+                    if self.container_full_screen
+                        && self.selected_container != SelectedContainer::None
+                    {
+                        self.container_full_screen = false;
+                    } else if !self.container_full_screen
+                        && self.selected_container != SelectedContainer::None
+                    {
+                        self.container_full_screen = true;
+                    }
                 }
             }
+            _ => {}
+        }
+    }
+
+    fn handle_typing_key_event(&mut self, key_event: KeyEvent) {
+        match key_event.code {
+            KeyCode::Backspace => {
+                if !self.process_filter.is_empty() && self.process_filter != "_".to_string() {
+                    self.process_filter.remove(self.process_filter.len() - 2); // there will be a "_" character at the end and we don't want to remove that
+                }
+            }
+
+            KeyCode::Enter => {
+                self.state = AppState::View;
+            }
+
+            KeyCode::Esc => {
+                self.state = AppState::View;
+            }
+
+            KeyCode::Char(c) => {
+                self.process_filter.insert(self.process_filter.len() - 1, c); // there will be a "_" character at the end and we want to insert the newly typed character before it
+            }
+
             _ => {}
         }
     }

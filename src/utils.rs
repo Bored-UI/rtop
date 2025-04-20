@@ -323,9 +323,9 @@ pub fn sort_process(
         .collect();
     if !filter.is_empty() {
         processes.retain(|process| {
-            process.name.contains(&filter)
-                || process.cmd.join(" ").contains(&filter)
-                || process.user.contains(&filter)
+            process.name.to_lowercase().contains(&filter)
+                || process.cmd.join(" ").to_lowercase().contains(&filter)
+                || process.user.to_lowercase().contains(&filter)
         });
     }
 

@@ -404,7 +404,7 @@ pub enum SelectedContainer {
 #[derive(PartialEq)]
 pub enum AppState {
     View,
-    Typing,
+    Typing, // mainly to indicated that user is typing ( will be used for process filtering )
     Menu,
 }
 
