@@ -323,9 +323,13 @@ pub fn sort_process(
         .collect();
     if !filter.is_empty() {
         processes.retain(|process| {
-            process.name.to_lowercase().contains(&filter)
-                || process.cmd.join(" ").to_lowercase().contains(&filter)
-                || process.user.to_lowercase().contains(&filter)
+            process.name.to_lowercase().contains(&filter.to_lowercase())
+                || process
+                    .cmd
+                    .join(" ")
+                    .to_lowercase()
+                    .contains(&filter.to_lowercase())
+                || process.user.to_lowercase().contains(&filter.to_lowercase())
         });
     }
 

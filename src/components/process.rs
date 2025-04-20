@@ -76,9 +76,10 @@ pub fn draw_process_info(
                 .bold()
                 .underlined(),
             Span::styled(
-                format!(" {} ", process_filter),
+                format!(" {}_ ", process_filter_without_underscore_extension),
                 Style::default().fg(app_color_info.app_title_color),
             ),
+            Span::styled("↵", Style::default().fg(app_color_info.key_text_color)).bold(),
         ])
     } else {
         if process_filter.is_empty() || process_filter == "_".to_string() {
@@ -108,7 +109,7 @@ pub fn draw_process_info(
 
     let mut main_block = Block::bordered()
         .title(select_instruction.left_aligned())
-        .title(process_filter_instruction.left_aligned())
+        .title_bottom(process_filter_instruction.left_aligned())
         .title_bottom(process_sort_is_reversed_intruction.right_aligned())
         .title_bottom(process_sort_slect_instruction.right_aligned())
         .style(app_color_info.process_main_block_color)
