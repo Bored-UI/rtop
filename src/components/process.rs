@@ -362,8 +362,8 @@ pub fn draw_process_info(
                     ((value.memory[value.memory.len() - 1] / 1024.0) * 1000.0).round() / 1000.0;
                 if new_memory > 1024.0 {
                     format!(
-                        "{} GB",
-                        (((new_memory / 1024.0) * 1000.0).round() / 1000.0) as usize
+                        "{:.1} GB",
+                        (((new_memory / 1024.0) * 1000.0).round() / 1000.0) as f32
                     )
                 } else {
                     format!("{} MB", new_memory as usize)
