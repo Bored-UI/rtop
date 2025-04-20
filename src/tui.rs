@@ -942,6 +942,12 @@ impl App {
                 }
             }
 
+            KeyCode::Backspace => {
+                if self.state == AppState::View {
+                    self.process_filter = "".to_string();
+                }
+            }
+
             KeyCode::Tab => {
                 if self.state == AppState::View {
                     // for a container to be full screen, it need to be selected first

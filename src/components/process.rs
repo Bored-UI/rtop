@@ -17,6 +17,8 @@ use crate::{
 
 const MEDIUM_WIDTH: u16 = 60;
 const LARGE_WIDTH: u16 = 75;
+const X_LARGE_WIDTH: u16 = 95;
+const XX_LARGE_WIDTH: u16 = 120;
 
 pub fn draw_process_info(
     tick: u64,
@@ -64,10 +66,58 @@ pub fn draw_process_info(
         ),
         Span::styled(" >　", Style::default().fg(app_color_info.key_text_color)).bold(),
     ]);
-    let process_filter_without_underscore_extension: String = process_filter
+    let mut process_filter_without_underscore_extension: String = process_filter
         .chars()
         .take(process_filter.len() - 1)
         .collect();
+
+    process_filter_without_underscore_extension =
+        if area.width > MEDIUM_WIDTH && area.width <= LARGE_WIDTH {
+            if process_filter_without_underscore_extension.len() > 20 {
+                process_filter_without_underscore_extension
+                    .chars()
+                    .skip(process_filter_without_underscore_extension.len() - 20)
+                    .collect()
+            } else {
+                process_filter_without_underscore_extension
+            }
+        } else if area.width > LARGE_WIDTH && area.width <= X_LARGE_WIDTH {
+            if process_filter_without_underscore_extension.len() > 30 {
+                process_filter_without_underscore_extension
+                    .chars()
+                    .skip(process_filter_without_underscore_extension.len() - 30)
+                    .collect()
+            } else {
+                process_filter_without_underscore_extension
+            }
+        } else if area.width > X_LARGE_WIDTH && area.width <= XX_LARGE_WIDTH {
+            if process_filter_without_underscore_extension.len() > 45 {
+                process_filter_without_underscore_extension
+                    .chars()
+                    .skip(process_filter_without_underscore_extension.len() - 45)
+                    .collect()
+            } else {
+                process_filter_without_underscore_extension
+            }
+        } else if area.width > XX_LARGE_WIDTH {
+            if process_filter_without_underscore_extension.len() > 60 {
+                process_filter_without_underscore_extension
+                    .chars()
+                    .skip(process_filter_without_underscore_extension.len() - 60)
+                    .collect()
+            } else {
+                process_filter_without_underscore_extension
+            }
+        } else {
+            if process_filter_without_underscore_extension.len() > 10 {
+                process_filter_without_underscore_extension
+                    .chars()
+                    .skip(process_filter_without_underscore_extension.len() - 10)
+                    .collect()
+            } else {
+                process_filter_without_underscore_extension
+            }
+        };
 
     let process_filter_instruction = if is_filtering {
         Line::from(vec![
@@ -79,7 +129,7 @@ pub fn draw_process_info(
                 format!(" {}_ ", process_filter_without_underscore_extension),
                 Style::default().fg(app_color_info.app_title_color),
             ),
-            Span::styled("↵", Style::default().fg(app_color_info.key_text_color)).bold(),
+            Span::styled("↵ ", Style::default().fg(app_color_info.key_text_color)).bold(),
         ])
     } else {
         if process_filter.is_empty() || process_filter == "_".to_string() {
@@ -103,6 +153,7 @@ pub fn draw_process_info(
                     format!(" {} ", process_filter_without_underscore_extension),
                     Style::default().fg(app_color_info.app_title_color),
                 ),
+                Span::styled("← ", Style::default().fg(app_color_info.key_text_color)).bold(),
             ])
         }
     };
