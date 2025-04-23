@@ -220,7 +220,7 @@ pub fn draw_network_info(
 
     let x_axis = Axis::default().bounds([0.0, num_points_to_display as f64]);
 
-    let y_axis = Axis::default().bounds([0.0, current_graph_percentage.min(1.0)]);
+    let y_axis = Axis::default().bounds([0.0, current_graph_percentage]);
 
     let network_received_chart = Chart::new(vec![dataset])
         .x_axis(x_axis)
@@ -336,7 +336,7 @@ pub fn draw_network_info(
 
     let x_axis = Axis::default().bounds([0.0, num_points_to_display as f64]);
 
-    let y_axis = Axis::default().bounds([0.0, current_graph_percentage.min(1.0)]);
+    let y_axis = Axis::default().bounds([0.0, current_graph_percentage]);
 
     let network_transmitted_chart = Chart::new(vec![dataset])
         .x_axis(x_axis)
