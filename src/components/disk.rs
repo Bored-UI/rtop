@@ -351,7 +351,7 @@ pub fn draw_disk_info(
 
     let x_axis = Axis::default().bounds([0.0, num_points_to_display as f64]);
 
-    let y_axis = Axis::default().bounds([0.0, current_graph_percentage.min(1.0)]);
+    let y_axis = Axis::default().bounds([0.0, current_graph_percentage.max(1.0)]);
 
     let bytes_written_chart = Chart::new(vec![dataset])
         .x_axis(x_axis)
