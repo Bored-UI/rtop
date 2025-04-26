@@ -5,9 +5,7 @@ use std::{
     time::{Duration, Instant},
 };
 
-use crate::types::{
-    CCpuData, CDiskData, CMemoryData, CNetworkData, CProcessData, CProcessesInfo, CSysInfo,
-};
+use crate::types::{CCpuData, CDiskData, CMemoryData, CNetworkData, CProcessData, CSysInfo};
 use sysinfo::{Disks, Networks, Process, ProcessesToUpdate, System, Users};
 
 const TO_GB: f64 = 1_073_741_824.0;
@@ -163,61 +161,13 @@ pub fn spawn_system_info_collector(
 
                 // -------------------------------------------
                 //
-                //    SEND COLLECTION DATA TO MAIN THREAD
-                //
-                // -------------------------------------------
-                let sys_info = CSysInfo {
-                    cpus: cpu_data,
-                    memory: memory_data,
-                    disks: disk_data,
-                    networks: networks_data,
-                };
-
-                // Send the data to the main thread
-                if let Err(e) = tx.send(sys_info) {
-                    eprintln!("Failed to send System Info: {}", e);
-                    break; // Exit loop if channel is disconnected
-                }
-
-                // Reset the last refresh time
-                last_refresh = Instant::now();
-            }
-
-            // Sleep for a short interval to prevent busy-waiting
-            thread::sleep(Duration::from_millis(1));
-        }
-    });
-}
-
-// dedicate thread to collect process info only
-pub fn spawn_process_info_collector(
-    tick_receiver: Receiver<u32>,
-    tx: Sender<CProcessesInfo>,
-    default_tick: u32,
-) {
-    // Spawn a worker thread to gather CPU info
-    thread::spawn(move || {
-        let mut sys = System::new_all();
-        let mut last_refresh = Instant::now();
-        let mut tick_value = default_tick; // Current tick in ms
-
-        sys.refresh_all();
-
-        loop {
-            let elapsed = last_refresh.elapsed().as_millis() as u32;
-            if let Ok(new_tick) = tick_receiver.try_recv() {
-                tick_value = new_tick;
-            }
-
-            if elapsed >= (tick_value - 2) {
-                sys.refresh_processes(ProcessesToUpdate::All, true);
-                let users = Users::new_with_refreshed_list();
-                let mut processes = vec![];
-                // -------------------------------------------
-                //
                 //          PROCESS INFO COLLECTION
                 //
                 // -------------------------------------------
+                sys.refresh_processes(ProcessesToUpdate::All, true);
+                let users = Users::new_with_refreshed_list();
+                let mut processes = vec![];
+
                 for (pid, process) in sys.processes() {
                     let mut user = "root";
                     let thread_count = get_thread_count(pid.as_u32() as i32, &process);
@@ -254,14 +204,20 @@ pub fn spawn_process_info_collector(
 
                 // -------------------------------------------
                 //
-                //  SEND COLLECTED PROCESS INFO TO MAIN THREAD
+                //    SEND COLLECTION DATA TO MAIN THREAD
                 //
                 // -------------------------------------------
-                let process_info = CProcessesInfo { processes };
+                let sys_info = CSysInfo {
+                    cpus: cpu_data,
+                    memory: memory_data,
+                    disks: disk_data,
+                    networks: networks_data,
+                    processes,
+                };
 
                 // Send the data to the main thread
-                if let Err(e) = tx.send(process_info) {
-                    eprintln!("Failed to send Process Info: {}", e);
+                if let Err(e) = tx.send(sys_info) {
+                    eprintln!("Failed to send System Info: {}", e);
                     break; // Exit loop if channel is disconnected
                 }
 

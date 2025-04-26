@@ -22,13 +22,10 @@ use crate::{
     components::{network::draw_network_info, process::draw_process_info},
     cpu::draw_cpu_info,
     disk::draw_disk_info,
-    get_sys_info::{spawn_process_info_collector, spawn_system_info_collector},
+    get_sys_info::spawn_system_info_collector,
     memory::draw_memory_info,
-    types::{
-        AppState, CProcessesInfo, CSysInfo, MemoryData, ProcessSortType, ProcessesInfo,
-        SelectedContainer, SysInfo,
-    },
-    utils::{process_processes_info, process_sys_info},
+    types::{AppState, CSysInfo, MemoryData, ProcessSortType, SelectedContainer, SysInfo},
+    utils::process_sys_info,
 };
 
 // this need to be the same as MAXIMUM_DATA_COLLECTION in types.rs
@@ -39,12 +36,8 @@ struct App {
     tick: u32,
     tx: Sender<CSysInfo>,
     rx: Receiver<CSysInfo>,
-    process_tx: Sender<CProcessesInfo>,
-    process_rx: Receiver<CProcessesInfo>,
     tick_tx: Sender<u32>,
-    process_tick_tx: Sender<u32>,
     sys_info: SysInfo,
-    process_info: ProcessesInfo,
     selected_container: SelectedContainer,
     state: AppState,
     cpu_graph_shown_range: usize,
@@ -123,26 +116,19 @@ pub fn tui() {
     enable_raw_mode().unwrap();
     let mut terminal = init();
     let (tx, rx) = mpsc::channel();
-    let (process_tx, process_rx) = mpsc::channel();
     let (tick_tx, tick_rx) = mpsc::channel();
-    let (process_tick_tx, process_tick_rx) = mpsc::channel();
 
     let mut app = App {
         is_quit: false,
         tick: 100,
         tx,
         rx,
-        process_tx,
-        process_rx,
         tick_tx,
-        process_tick_tx,
         sys_info: SysInfo {
             cpus: vec![],
             memory: MemoryData::default(),
             disks: HashMap::new(),
             networks: HashMap::new(),
-        },
-        process_info: ProcessesInfo {
             processes: HashMap::new(),
         },
         selected_container: SelectedContainer::None,
@@ -224,7 +210,7 @@ pub fn tui() {
         process_text_color: Color::Rgb(143, 188, 187), //  color for network related text
         process_selected_color: Color::Rgb(94, 129, 172),
     };
-    app.run(&mut terminal, tick_rx, process_tick_rx, app_color_info);
+    app.run(&mut terminal, tick_rx, app_color_info);
     disable_raw_mode().unwrap();
     restore();
 }
@@ -235,27 +221,17 @@ impl App {
         &mut self,
         terminal: &mut DefaultTerminal,
         tick_rx: Receiver<u32>,
-        process_tick_rx: Receiver<u32>,
         app_color_info: AppColorInfo,
     ) {
         // when the program start, we let the info collector to collect at 100ms
         // only after the initial collection, we reset to the user selected tick ( this will be able to be configure at a later stage )
         spawn_system_info_collector(tick_rx, self.tx.clone(), 100);
-        spawn_process_info_collector(process_tick_rx, self.process_tx.clone(), 100);
 
         while !self.is_init {
             match self.rx.try_recv() {
                 Ok(c_sys_info) => {
                     process_sys_info(&mut self.sys_info, c_sys_info);
-                    match self.process_rx.try_recv() {
-                        Ok(c_processes_info) => {
-                            process_processes_info(&mut self.process_info, c_processes_info);
-                            self.is_init = true;
-                        }
-                        Err(_) => {
-                            self.is_init = false;
-                        }
-                    }
+                    self.is_init = true;
                 }
                 Err(_) => {
                     self.is_init = false;
@@ -264,11 +240,10 @@ impl App {
         }
         self.cpu_selected_state.select(Some(0));
 
-        self.process_selectable_entries = self.process_info.processes.len();
+        self.process_selectable_entries = self.sys_info.processes.len();
         self.process_selected_state.select(None);
 
         let _ = self.tick_tx.send(self.tick);
-        let _ = self.process_tick_tx.send(self.tick);
 
         while !self.is_quit {
             let c_sys_info = self.rx.try_recv();
@@ -276,10 +251,6 @@ impl App {
                 process_sys_info(&mut self.sys_info, c_sys_info.unwrap());
             }
 
-            let c_process_info = self.process_rx.try_recv();
-            if c_process_info.is_ok() {
-                process_processes_info(&mut self.process_info, c_process_info.unwrap());
-            }
             let _ = terminal.draw(|frame| self.draw(frame, &app_color_info));
 
             // we only handle event if the tui is renderable
@@ -426,7 +397,7 @@ impl App {
                 } else if self.selected_container == SelectedContainer::Process {
                     draw_process_info(
                         self.tick as u64,
-                        &self.process_info.processes,
+                        &self.sys_info.processes,
                         &mut self.process_selectable_entries,
                         &mut self.process_selected_state,
                         &self.process_sort_type,
@@ -508,7 +479,7 @@ impl App {
 
                 draw_process_info(
                     self.tick as u64,
-                    &self.process_info.processes,
+                    &self.sys_info.processes,
                     &mut self.process_selectable_entries,
                     &mut self.process_selected_state,
                     &self.process_sort_type,

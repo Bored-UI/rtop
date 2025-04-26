@@ -8,8 +8,7 @@ use ratatui::{
 use crate::{
     tui::AppColorInfo,
     types::{
-        CProcessesInfo, CSysInfo, CpuData, DiskData, MemoryData, NetworkData, ProcessData,
-        ProcessSortType, ProcessesInfo, SysInfo,
+        CSysInfo, CpuData, DiskData, MemoryData, NetworkData, ProcessData, ProcessSortType, SysInfo,
     },
 };
 
@@ -208,16 +207,13 @@ pub fn process_sys_info(current_sys_info: &mut SysInfo, collected_sys_info: CSys
         }
     }
 
-    // drop the collected system info that we got from a seperated thread
-    drop(collected_sys_info);
-}
-
-pub fn process_processes_info(
-    current_process_info: &mut ProcessesInfo,
-    collected_process_info: CProcessesInfo,
-) {
-    if current_process_info.processes.len() == 0 {
-        for process in collected_process_info.processes.iter() {
+    // -------------------------------------------
+    //
+    //          PROCESS INFO UPDATE
+    //
+    // -------------------------------------------
+    if current_sys_info.processes.len() == 0 {
+        for process in collected_sys_info.processes.iter() {
             let process_data = ProcessData::new(
                 process.pid,
                 process.name.clone(),
@@ -231,19 +227,15 @@ pub fn process_processes_info(
                 process.elapsed,
             );
             let pid_string = format!("{}", process.pid);
-            current_process_info
-                .processes
-                .insert(pid_string, process_data);
+            current_sys_info.processes.insert(pid_string, process_data);
         }
     } else {
-        for process in current_process_info.processes.values_mut() {
+        for process in current_sys_info.processes.values_mut() {
             process.is_updated = false;
         }
 
-        for process in collected_process_info.processes.iter() {
-            let current_process = current_process_info
-                .processes
-                .get_mut(&process.pid.to_string());
+        for process in collected_sys_info.processes.iter() {
+            let current_process = current_sys_info.processes.get_mut(&process.pid.to_string());
             match current_process {
                 Some(p) => p.update(
                     process.pid,
@@ -271,12 +263,12 @@ pub fn process_processes_info(
                         process.elapsed,
                     );
                     let pid_string = format!("{}", process.pid);
-                    current_process_info.processes.insert(pid_string, p);
+                    current_sys_info.processes.insert(pid_string, p);
                 }
             }
         }
 
-        let keys_to_remove: Vec<String> = current_process_info
+        let keys_to_remove: Vec<String> = current_sys_info
             .processes
             .iter()
             .filter(|(_, process)| !process.is_updated)
@@ -284,11 +276,12 @@ pub fn process_processes_info(
             .collect();
 
         for key in keys_to_remove {
-            current_process_info.processes.remove(&key);
+            current_sys_info.processes.remove(&key);
         }
     }
 
-    drop(collected_process_info);
+    // drop the collected system info that we got from a seperated thread
+    drop(collected_sys_info);
 }
 
 pub fn get_tick_line_ui(tick: u64, app_color_info: &AppColorInfo) -> Line {
