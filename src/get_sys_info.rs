@@ -179,7 +179,7 @@ pub fn spawn_system_info_collector(
             let users = Users::new_with_refreshed_list();
             let mut processes = vec![];
 
-            for (pid, process) in sys.processes() {
+            for (pid, process) in sys.processes().iter() {
                 let mut user = "root";
                 let thread_count = get_thread_count(pid.as_u32() as i32, &process);
 
