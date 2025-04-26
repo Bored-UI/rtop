@@ -244,13 +244,9 @@ pub fn spawn_process_info_collector(
                         let thread_count = get_thread_count(pid.as_u32() as i32, &process, None);
 
                         #[cfg(target_os = "windows")]
-                        let thread_hashmap_win_only = get_win_thread_counts();
+                        // let thread_hashmap_win_only = get_win_thread_counts();
                         #[cfg(target_os = "windows")]
-                        let thread_count = get_thread_count(
-                            pid.as_u32() as i32,
-                            &process,
-                            Some(thread_hashmap_win_only),
-                        );
+                        let thread_count = get_thread_count(pid.as_u32() as i32, &process, None);
 
                         if process.user_id().is_some() {
                             let u = users.get_user_by_id(process.user_id().unwrap());
