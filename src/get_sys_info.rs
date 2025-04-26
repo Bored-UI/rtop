@@ -1,8 +1,5 @@
 use std::{
-    process::Command,
-    sync::mpsc::{Receiver, RecvTimeoutError, Sender},
-    thread,
-    time::{Duration, Instant},
+    collections::HashMap, sync::mpsc::{Receiver, RecvTimeoutError, Sender}, thread, time::{Duration, Instant}
 };
 
 use crate::types::{
@@ -239,7 +236,13 @@ pub fn spawn_process_info_collector(
                     // -------------------------------------------
                     for (pid, process) in sys.processes() {
                         let mut user = "root";
-                        let thread_count = get_thread_count(pid.as_u32() as i32, &process);
+
+                        #[cfg(any(target_os = "linux", target_os = "macos"))]
+                        let thread_count = get_thread_count(pid.as_u32() as i32, &process, None);
+
+                        #[cfg(target_os = "windows")]
+                        let thread_hashmap_win_only = get_win_thread_counts();
+                        let thread_count = get_thread_count(pid.as_u32() as i32, &process, Some(thread_hashmap_win_only));
 
                         if process.user_id().is_some() {
                             let u = users.get_user_by_id(process.user_id().unwrap());
@@ -288,10 +291,6 @@ pub fn spawn_process_info_collector(
                     last_refresh = Instant::now();
                 }
                 Err(RecvTimeoutError::Disconnected) => {
-                    eprintln!(
-                        "Tick receiver channel disconnected. latest tick: {}",
-                        tick_value
-                    );
                     break;
                 }
             }
@@ -299,7 +298,7 @@ pub fn spawn_process_info_collector(
     });
 }
 
-fn get_thread_count(pid: i32, process: &Process) -> u32 {
+fn get_thread_count(pid: i32, process: &Process, thread_hashmap_win_only: Option<HashMap<String, u32>>) -> u32 {
     let mut thread_count = 0;
 
     #[cfg(target_os = "macos")]
@@ -315,6 +314,16 @@ fn get_thread_count(pid: i32, process: &Process) -> u32 {
         if let Some(tasks) = process.tasks() {
             thread_count = tasks.len() as i32;
         }
+    }
+
+    #[cfg(target_os = "windows")]
+    {
+        // match thread_hashmap_win_only.unwrap().get(& format!("{}", pid)) {
+        //     Some(value) => {
+        //         thread_count = *value;
+        //     }
+        //     None => {}
+        // }
     }
 
     return thread_count as u32;
@@ -355,6 +364,7 @@ fn get_cached_memory() -> f64 {
 fn get_macos_cache_memory() -> Option<u64> {
     use libc::sysconf;
     use libc::_SC_PAGESIZE;
+    use std::process::Command;
 
     let page_size = unsafe {
         let size = sysconf(_SC_PAGESIZE);
@@ -417,6 +427,60 @@ fn get_window_cached_memory() -> Option<u64> {
         }
     }
 }
-// Get-WmiObject -Class Win32_PerfFormattedData_PerfOS_Memory | Select-Object CacheBytes
-// Get-CimInstance -ClassName Win32_OperatingSystem | Select-Object FreePhysicalMemory, TotalVisibleMemorySize, TotalVisibleMemorySize -Property *
-//Get-CimInstance -ClassName Win32_PerfFormattedData_PerfOS_Memory | Select-Object CacheBytes
+
+#[cfg(target_os = "windows")]
+fn get_win_thread_counts() -> HashMap<String, u32> {
+    // not very optimize it seems ( not fast enough, tho was tested in VM )
+    use winapi::shared::minwindef::{DWORD, TRUE};
+    use winapi::shared::ntdef::NULL;
+    use winapi::um::handleapi::CloseHandle;
+    use winapi::um::tlhelp32::{
+        CreateToolhelp32Snapshot, Thread32First, Thread32Next, TH32CS_SNAPTHREAD, THREADENTRY32,
+    };
+
+    let mut thread_counts: HashMap<String, u32> = HashMap::new();
+
+    // Create a snapshot of all threads in the system
+    let snapshot = unsafe { CreateToolhelp32Snapshot(TH32CS_SNAPTHREAD, 0) };
+    if snapshot == NULL {
+        // Handle error: Snapshot creation failed.
+        // In a real application, you might want to log this or return a Result.
+        eprintln!("Failed to create thread snapshot.");
+        return thread_counts; // Return an empty HashMap on error
+    }
+
+    let mut thread_entry = THREADENTRY32 {
+        dwSize: std::mem::size_of::<THREADENTRY32>() as DWORD,
+        cntUsage: 0,
+        th32ThreadID: 0,
+        th32OwnerProcessID: 0,
+        tpBasePri: 0,
+        tpDeltaPri: 0,
+        dwFlags: 0,
+    };
+
+    // Iterate through threads
+    if unsafe { Thread32First(snapshot, &mut thread_entry) } == TRUE {
+        loop {
+            let pid = thread_entry.th32OwnerProcessID;
+            let pid_str = pid.to_string();
+
+            // Increment the thread count for this PID
+            *thread_counts.entry(pid_str).or_insert(0) += 1;
+
+            // Move to the next thread
+            if unsafe { Thread32Next(snapshot, &mut thread_entry) } != TRUE {
+                break;
+            }
+        }
+    } else {
+        // If Thread32First fails, it might mean no threads were found or an error occurred.
+        // Again, more robust error handling might be needed here.
+        eprintln!("Failed to get the first thread.");
+    }
+
+    // Close the snapshot handle
+    unsafe { CloseHandle(snapshot) };
+
+    return thread_counts;
+}
