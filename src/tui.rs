@@ -129,7 +129,7 @@ pub fn tui() {
 
     let mut app = App {
         is_quit: false,
-        tick: 100,
+        tick: 1000,
         tx,
         rx,
         process_tx,
@@ -266,7 +266,6 @@ impl App {
 
         self.process_selectable_entries = self.process_info.processes.len();
         self.process_selected_state.select(None);
-
         let _ = self.tick_tx.send(self.tick);
         let _ = self.process_tick_tx.send(self.tick);
 
@@ -569,6 +568,7 @@ impl App {
                     if self.tick > 100 {
                         self.tick -= 100;
                         self.tick_tx.send(self.tick).unwrap();
+                        self.process_tick_tx.send(self.tick).unwrap();
                     }
                 }
             }
@@ -577,6 +577,7 @@ impl App {
                     if self.tick < 10000 {
                         self.tick += 100;
                         self.tick_tx.send(self.tick).unwrap();
+                        self.process_tick_tx.send(self.tick).unwrap();
                     }
                 }
             }
