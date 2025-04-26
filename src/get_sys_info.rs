@@ -1,6 +1,6 @@
 use std::{
     process::Command,
-    sync::mpsc::{Receiver, Sender},
+    sync::mpsc::{Receiver, RecvTimeoutError, Sender},
     thread,
     time::{Duration, Instant},
 };
@@ -29,204 +29,211 @@ pub fn spawn_system_info_collector(
         networks.refresh(true);
 
         loop {
-            let elapsed = last_refresh.elapsed().as_millis() as u32;
-            if let Ok(new_tick) = tick_receiver.try_recv() {
-                tick_value = new_tick;
+            let elapsed = last_refresh.elapsed();
+            let sleep_duration = if tick_value > elapsed.as_millis() as u32 {
+                Duration::from_millis((tick_value - elapsed.as_millis() as u32).into())
+            } else {
+                Duration::from_millis(0)
+            };
+
+            match tick_receiver.recv_timeout(sleep_duration) {
+                Ok(new_tick) => {
+                    tick_value = new_tick;
+                    continue; // don't collect this cycle, just updated tick
+                }
+                Err(RecvTimeoutError::Timeout) => {
+                    // time to collect system info
+                }
+                Err(RecvTimeoutError::Disconnected) => {
+                    eprintln!("Tick receiver channel disconnected.");
+                    break;
+                }
+            }
+            // -------------------------------------------
+            //
+            //             CPU DATA COLLECTION
+            //
+            // -------------------------------------------
+
+            // Refresh CPU data
+            sys.refresh_cpu_all();
+            let cpus = sys.cpus();
+
+            // Gather CPU data
+            let mut cpu_data: Vec<CCpuData> = cpus
+                .iter()
+                .enumerate()
+                .map(|(index, cpu)| CCpuData {
+                    id: index as i8,
+                    brand: cpu.brand().to_string(),
+                    usage: cpu.cpu_usage(),
+                })
+                .collect();
+
+            // we later add cpu avg info as the first entry of the collected cpu info vector
+            let avg_cpu_data = CCpuData {
+                id: -1 as i8,
+                brand: cpu_data[0].brand.clone(),
+                usage: sys.global_cpu_usage(),
+            };
+            cpu_data.insert(0, avg_cpu_data);
+
+            // -------------------------------------------
+            //
+            //          RAM MEMORY DATA COLLECTION
+            //
+            // -------------------------------------------
+
+            sys.refresh_memory();
+            let total_memory = ((sys.total_memory() as f64 / TO_GB) * 100.0).round() / 100.0;
+            let available_memory =
+                ((sys.available_memory() as f64 / TO_GB) * 100.0).round() / 100.0;
+            let used_memory = ((sys.used_memory() as f64 / TO_GB) * 100.0).round() / 100.0;
+            let used_swap = ((sys.used_swap() as f64 / TO_GB) * 100.0).round() / 100.0;
+            let free_memory = ((sys.free_memory() as f64 / TO_GB) * 100.0).round() / 100.0;
+            let cached_memory = get_cached_memory();
+
+            let memory_data = CMemoryData {
+                total_memory,
+                available_memory,
+                used_memory,
+                used_swap,
+                free_memory,
+                cached_memory,
+            };
+
+            // -------------------------------------------
+            //
+            //            DISK DATA COLLECTION
+            //
+            // -------------------------------------------
+            disks.refresh(true);
+            let mut disk_data = Vec::new();
+            for disk in &disks {
+                let total_space = ((disk.total_space() as f64 / TO_GB) * 100.0).round() / 100.0;
+                let available_space =
+                    ((disk.available_space() as f64 / TO_GB) * 100.0).round() / 100.0;
+                let data = CDiskData {
+                    name: disk.name().to_string_lossy().to_string(),
+                    total_space,
+                    available_space,
+                    used_space: ((total_space - available_space) * 100.0).round() / 100.0,
+                    bytes_written: ((disk.usage().written_bytes as f64 / TO_KB) * 1000.0).round()
+                        / 1000.0,
+                    bytes_read: ((disk.usage().read_bytes as f64 / TO_KB) * 1000.0).round()
+                        / 1000.0,
+                    file_system: disk.file_system().to_string_lossy().to_string(),
+                    mount_point: disk.mount_point().to_string_lossy().to_string(),
+                    kind: disk.kind().to_string(),
+                };
+
+                disk_data.push(data);
             }
 
-            if elapsed >= (tick_value - 2) {
-                // -------------------------------------------
-                //
-                //             CPU DATA COLLECTION
-                //
-                // -------------------------------------------
-
-                // Refresh CPU data
-                sys.refresh_cpu_all();
-                let cpus = sys.cpus();
-
-                // Gather CPU data
-                let mut cpu_data: Vec<CCpuData> = cpus
-                    .iter()
-                    .enumerate()
-                    .map(|(index, cpu)| CCpuData {
-                        id: index as i8,
-                        brand: cpu.brand().to_string(),
-                        usage: cpu.cpu_usage(),
-                    })
-                    .collect();
-
-                // we later add cpu avg info as the first entry of the collected cpu info vector
-                let avg_cpu_data = CCpuData {
-                    id: -1 as i8,
-                    brand: cpu_data[0].brand.clone(),
-                    usage: sys.global_cpu_usage(),
-                };
-                cpu_data.insert(0, avg_cpu_data);
-
-                // -------------------------------------------
-                //
-                //          RAM MEMORY DATA COLLECTION
-                //
-                // -------------------------------------------
-
-                sys.refresh_memory();
-                let total_memory = ((sys.total_memory() as f64 / TO_GB) * 100.0).round() / 100.0;
-                let available_memory =
-                    ((sys.available_memory() as f64 / TO_GB) * 100.0).round() / 100.0;
-                let used_memory = ((sys.used_memory() as f64 / TO_GB) * 100.0).round() / 100.0;
-                let used_swap = ((sys.used_swap() as f64 / TO_GB) * 100.0).round() / 100.0;
-                let free_memory = ((sys.free_memory() as f64 / TO_GB) * 100.0).round() / 100.0;
-                let cached_memory = get_cached_memory();
-
-                let memory_data = CMemoryData {
-                    total_memory,
-                    available_memory,
-                    used_memory,
-                    used_swap,
-                    free_memory,
-                    cached_memory,
-                };
-
-                // -------------------------------------------
-                //
-                //            DISK DATA COLLECTION
-                //
-                // -------------------------------------------
-                disks.refresh(true);
-                let mut disk_data = Vec::new();
-                for disk in &disks {
-                    let total_space = ((disk.total_space() as f64 / TO_GB) * 100.0).round() / 100.0;
-                    let available_space =
-                        ((disk.available_space() as f64 / TO_GB) * 100.0).round() / 100.0;
-                    let data = CDiskData {
-                        name: disk.name().to_string_lossy().to_string(),
-                        total_space,
-                        available_space,
-                        used_space: ((total_space - available_space) * 100.0).round() / 100.0,
-                        bytes_written: ((disk.usage().written_bytes as f64 / TO_KB) * 1000.0)
-                            .round()
-                            / 1000.0,
-                        bytes_read: ((disk.usage().read_bytes as f64 / TO_KB) * 1000.0).round()
-                            / 1000.0,
-                        file_system: disk.file_system().to_string_lossy().to_string(),
-                        mount_point: disk.mount_point().to_string_lossy().to_string(),
-                        kind: disk.kind().to_string(),
-                    };
-
-                    disk_data.push(data);
-                }
-
-                // -------------------------------------------
-                //
-                //          NETWORK DATA COLLECTION
-                //
-                // -------------------------------------------
-                networks.refresh(true);
-                let mut networks_data = Vec::new();
-                for (interface_name, network_data) in &networks {
-                    let data = CNetworkData {
-                        interface_name: interface_name.to_string(),
-                        ip_network: if network_data.ip_networks().len() > 0 {
-                            let mut ipv4_networks = Vec::new();
-                            for ip in network_data.ip_networks() {
-                                if ip.addr.is_ipv4() {
-                                    ipv4_networks.push(ip.addr.to_string());
-                                }
+            // -------------------------------------------
+            //
+            //          NETWORK DATA COLLECTION
+            //
+            // -------------------------------------------
+            networks.refresh(true);
+            let mut networks_data = Vec::new();
+            for (interface_name, network_data) in &networks {
+                let data = CNetworkData {
+                    interface_name: interface_name.to_string(),
+                    ip_network: if network_data.ip_networks().len() > 0 {
+                        let mut ipv4_networks = Vec::new();
+                        for ip in network_data.ip_networks() {
+                            if ip.addr.is_ipv4() {
+                                ipv4_networks.push(ip.addr.to_string());
                             }
-                            if ipv4_networks.is_empty() {
-                                None
-                            } else {
-                                Some(ipv4_networks[0].clone())
-                            }
-                        } else {
-                            None
-                        },
-                        current_received: ((network_data.received() as f64 / TO_KB) * 1000.0)
-                            .round()
-                            / 1000.0,
-                        current_transmitted: ((network_data.transmitted() as f64 / TO_KB) * 1000.0)
-                            .round()
-                            / 1000.0,
-                        total_received: ((network_data.total_received() as f64 / TO_KB) * 1000.0)
-                            .round()
-                            / 1000.0,
-                        total_transmitted: ((network_data.total_transmitted() as f64 / TO_KB)
-                            * 1000.0)
-                            .round()
-                            / 1000.0,
-                    };
-                    networks_data.push(data);
-                }
-
-                // -------------------------------------------
-                //
-                //          PROCESS INFO COLLECTION
-                //
-                // -------------------------------------------
-                sys.refresh_processes(ProcessesToUpdate::All, true);
-                let users = Users::new_with_refreshed_list();
-                let mut processes = vec![];
-
-                for (pid, process) in sys.processes() {
-                    let mut user = "root";
-                    let thread_count = get_thread_count(pid.as_u32() as i32, &process);
-
-                    if process.user_id().is_some() {
-                        let u = users.get_user_by_id(process.user_id().unwrap());
-                        if u.is_some() {
-                            user = u.unwrap().name();
                         }
-                    }
-                    let process_info = CProcessData {
-                        pid: pid.as_u32(),
-                        name: process.name().to_string_lossy().to_string(),
-                        exe_path: if process.exe().is_some() {
-                            Some(process.exe().unwrap().to_string_lossy().to_string())
-                        } else {
+                        if ipv4_networks.is_empty() {
                             None
-                        },
-                        cmd: process
-                            .cmd()
-                            .into_iter()
-                            .map(|osstr| osstr.to_string_lossy().to_string())
-                            .collect(),
-                        user: user.to_string(),
-                        cpu_usage: process.cpu_usage(),
-                        thread_count,
-                        memory: ((process.memory() as f64 / TO_KB) * 1000.0).round() / 1000.0,
-                        status: process.status().to_string(),
-                        elapsed: process.run_time(),
-                    };
-
-                    processes.push(process_info);
-                }
-
-                // -------------------------------------------
-                //
-                //    SEND COLLECTION DATA TO MAIN THREAD
-                //
-                // -------------------------------------------
-                let sys_info = CSysInfo {
-                    cpus: cpu_data,
-                    memory: memory_data,
-                    disks: disk_data,
-                    networks: networks_data,
-                    processes,
+                        } else {
+                            Some(ipv4_networks[0].clone())
+                        }
+                    } else {
+                        None
+                    },
+                    current_received: ((network_data.received() as f64 / TO_KB) * 1000.0).round()
+                        / 1000.0,
+                    current_transmitted: ((network_data.transmitted() as f64 / TO_KB) * 1000.0)
+                        .round()
+                        / 1000.0,
+                    total_received: ((network_data.total_received() as f64 / TO_KB) * 1000.0)
+                        .round()
+                        / 1000.0,
+                    total_transmitted: ((network_data.total_transmitted() as f64 / TO_KB) * 1000.0)
+                        .round()
+                        / 1000.0,
                 };
-
-                // Send the data to the main thread
-                if let Err(e) = tx.send(sys_info) {
-                    eprintln!("Failed to send System Info: {}", e);
-                    break; // Exit loop if channel is disconnected
-                }
-
-                // Reset the last refresh time
-                last_refresh = Instant::now();
+                networks_data.push(data);
             }
 
-            // Sleep for a short interval to prevent busy-waiting
-            thread::sleep(Duration::from_millis(1));
+            // -------------------------------------------
+            //
+            //          PROCESS INFO COLLECTION
+            //
+            // -------------------------------------------
+            sys.refresh_processes(ProcessesToUpdate::All, true);
+            let users = Users::new_with_refreshed_list();
+            let mut processes = vec![];
+
+            for (pid, process) in sys.processes() {
+                let mut user = "root";
+                let thread_count = get_thread_count(pid.as_u32() as i32, &process);
+
+                if process.user_id().is_some() {
+                    let u = users.get_user_by_id(process.user_id().unwrap());
+                    if u.is_some() {
+                        user = u.unwrap().name();
+                    }
+                }
+                let process_info = CProcessData {
+                    pid: pid.as_u32(),
+                    name: process.name().to_string_lossy().to_string(),
+                    exe_path: if process.exe().is_some() {
+                        Some(process.exe().unwrap().to_string_lossy().to_string())
+                    } else {
+                        None
+                    },
+                    cmd: process
+                        .cmd()
+                        .into_iter()
+                        .map(|osstr| osstr.to_string_lossy().to_string())
+                        .collect(),
+                    user: user.to_string(),
+                    cpu_usage: process.cpu_usage(),
+                    thread_count,
+                    memory: ((process.memory() as f64 / TO_KB) * 1000.0).round() / 1000.0,
+                    status: process.status().to_string(),
+                    elapsed: process.run_time(),
+                };
+
+                processes.push(process_info);
+            }
+
+            // -------------------------------------------
+            //
+            //    SEND COLLECTION DATA TO MAIN THREAD
+            //
+            // -------------------------------------------
+            let sys_info = CSysInfo {
+                cpus: cpu_data,
+                memory: memory_data,
+                disks: disk_data,
+                networks: networks_data,
+                processes,
+            };
+
+            // Send the data to the main thread
+            if let Err(e) = tx.send(sys_info) {
+                eprintln!("Failed to send System Info: {}", e);
+                break; // Exit loop if channel is disconnected
+            }
+
+            // Reset the last refresh time
+            last_refresh = Instant::now();
         }
     });
 }
