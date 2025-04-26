@@ -280,6 +280,7 @@ pub fn spawn_process_info_collector(
 
                     // Send the data to the main thread
                     if let Err(e) = tx.send(process_info) {
+                        eprintln!("Failed to send Process Info: {}", e);
                         break; // Exit loop if channel is disconnected
                     }
 

@@ -317,31 +317,31 @@ pub fn draw_process_info(
     let process_title = Line::from(vec![
         Span::styled(
             padded_pid_title,
-            Style::default().fg(app_color_info.process_text_color),
+            Style::default().fg(app_color_info.process_title_color),
         ),
         Span::styled(
             padded_program_title,
-            Style::default().fg(app_color_info.process_text_color),
+            Style::default().fg(app_color_info.process_title_color),
         ),
         Span::styled(
             padded_command_title,
-            Style::default().fg(app_color_info.process_text_color),
+            Style::default().fg(app_color_info.process_title_color),
         ),
         Span::styled(
             padded_thread_title,
-            Style::default().fg(app_color_info.process_text_color),
+            Style::default().fg(app_color_info.process_title_color),
         ),
         Span::styled(
             padded_user_title,
-            Style::default().fg(app_color_info.process_text_color),
+            Style::default().fg(app_color_info.process_title_color),
         ),
         Span::styled(
             padded_memory_title,
-            Style::default().fg(app_color_info.process_text_color),
+            Style::default().fg(app_color_info.process_title_color),
         ),
         Span::styled(
             padded_cpu_usage_title,
-            Style::default().fg(app_color_info.process_text_color),
+            Style::default().fg(app_color_info.process_title_color),
         ),
     ]);
 
@@ -434,7 +434,7 @@ pub fn draw_process_info(
             let mut process_inline_content_vec = vec![
                 Span::styled(
                     padded_pid,
-                    Style::default().fg(app_color_info.process_text_color),
+                    Style::default().fg(app_color_info.base_app_text_color),
                 ),
                 Span::styled(
                     padded_program,
@@ -442,7 +442,7 @@ pub fn draw_process_info(
                 ),
                 Span::styled(
                     padded_user,
-                    Style::default().fg(app_color_info.process_text_color),
+                    Style::default().fg(app_color_info.base_app_text_color),
                 ),
                 Span::styled(
                     padded_memory,
@@ -450,7 +450,7 @@ pub fn draw_process_info(
                 ),
                 Span::styled(
                     padded_cpu_usage,
-                    Style::default().fg(app_color_info.process_text_color),
+                    Style::default().fg(app_color_info.base_app_text_color),
                 ),
             ];
             if area.width > MEDIUM_WIDTH && area.width <= LARGE_WIDTH {
@@ -458,7 +458,7 @@ pub fn draw_process_info(
                     2,
                     Span::styled(
                         padded_command,
-                        Style::default().fg(app_color_info.process_text_color),
+                        Style::default().fg(app_color_info.base_app_text_color),
                     ),
                 );
             } else if area.width > LARGE_WIDTH {
@@ -466,7 +466,7 @@ pub fn draw_process_info(
                     2,
                     Span::styled(
                         padded_command,
-                        Style::default().fg(app_color_info.process_text_color),
+                        Style::default().fg(app_color_info.base_app_text_color),
                     ),
                 );
                 process_inline_content_vec.insert(
@@ -493,9 +493,11 @@ pub fn draw_process_info(
     }
 
     // Create the combined list
-    let process_info_list = List::new(process_list)
-        .style(Style::default().fg(app_color_info.process_selected_color))
-        .highlight_style(Style::default().fg(app_color_info.process_selected_color));
+    let process_info_list = List::new(process_list).highlight_style(
+        Style::default()
+            .bg(app_color_info.process_selected_color_bg)
+            .fg(app_color_info.process_selected_color_fg),
+    );
     // Render the combined list with state
     frame.render_stateful_widget(
         process_info_list,

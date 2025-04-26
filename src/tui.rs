@@ -109,11 +109,12 @@ pub struct AppColorInfo {
     // for process
     pub process_container_selected_color: Color,
     pub process_main_block_color: Color,
-    pub process_received_base_graph_color: Color,
-    pub process_transmitted_base_graph_color: Color,
+    pub process_base_graph_color: Color,
     pub process_info_block_color: Color,
+    pub process_title_color: Color,
     pub process_text_color: Color,
-    pub process_selected_color: Color,
+    pub process_selected_color_bg: Color,
+    pub process_selected_color_fg: Color,
 }
 
 const MIN_HEIGHT: u16 = 25;
@@ -171,8 +172,8 @@ pub fn tui() {
         background_color: Color::Rgb(46, 52, 64), // Polar Knight
         // Text color: A soft white for general text readability
         base_app_text_color: Color::Rgb(216, 222, 233), // Snow Storm
-        // Key text color: A bright magenta for key text (e.g., "C" in "Cpu")
-        key_text_color: Color::Rgb(94, 129, 172), // Bright magenta
+        // Key text color: Nord10 for key text (e.g., "C" in "Cpu")
+        key_text_color: Color::Rgb(94, 129, 172),   // Nord10
         app_title_color: Color::Rgb(143, 188, 187), // Frost
 
         cpu_container_selected_color: Color::Rgb(94, 129, 172),
@@ -181,48 +182,49 @@ pub fn tui() {
         // CPU selected color: A bright teal for selected CPU items in the list
         cpu_selected_color: Color::Rgb(94, 129, 172),
         // CPU graph color: A muted blue to represent graph lines
-        cpu_base_graph_color: Color::Rgb(70, 130, 180), // Steel blue
+        cpu_base_graph_color: Color::Rgb(129, 161, 193), // Nord Light Blue
         // CPU info border color: A subtle silver for borders
-        cpu_info_block_color: Color::Rgb(150, 150, 150), // Silver
-        cpu_text_color: Color::Rgb(94, 129, 172),        // color for cpu related text
+        cpu_info_block_color: Color::Rgb(76, 86, 106), // Nord3
+        cpu_text_color: Color::Rgb(94, 129, 172),      // color for cpu related text
 
         memory_container_selected_color: Color::Rgb(94, 129, 172),
         // Memory main block: A slightly lighter grayish-blue to contrast with the background
         memory_main_block_color: Color::Rgb(76, 86, 106),
         // Memory related graph color
-        used_memory_base_graph_color: Color::Rgb(180, 80, 80), // Muted reddish coral
-        available_memory_base_graph_color: Color::Rgb(80, 160, 160), // Muted teal
-        free_memory_base_graph_color: Color::Rgb(80, 180, 80), // Muted green
-        cached_memory_base_graph_color: Color::Rgb(120, 100, 180), // Muted purple-blue
-        swap_memory_base_graph_color: Color::Rgb(180, 140, 60), // Muted golden orange
-        memory_text_color: Color::Rgb(143, 188, 187),          // color for memory related text
+        used_memory_base_graph_color: Color::Rgb(129, 161, 193), // Nord Light Blue
+        available_memory_base_graph_color: Color::Rgb(129, 161, 193), // Nord Light Blue
+        free_memory_base_graph_color: Color::Rgb(129, 161, 193), // Nord Light Blue
+        cached_memory_base_graph_color: Color::Rgb(129, 161, 193), // Nord Light Blue
+        swap_memory_base_graph_color: Color::Rgb(129, 161, 193), // Nord Light Blue
+        memory_text_color: Color::Rgb(143, 188, 187),            // color for memory related text
 
         disk_container_selected_color: Color::Rgb(94, 129, 172),
         // Disk main block: A slightly lighter grayish-blue to contrast with the background
         disk_main_block_color: Color::Rgb(76, 86, 106),
-        // Disk selected color: A bright teal for selected Memory items in the list
-        disk_bytes_written_base_graph_color: Color::Rgb(180, 80, 80), // Muted reddish coral
-        disk_bytes_read_base_graph_color: Color::Rgb(80, 160, 160),   // Muted teal
+        // Disk selected color: A bright teal for selected Disk items in the list
+        disk_bytes_written_base_graph_color: Color::Rgb(129, 161, 193), // Nord Light Blue
+        disk_bytes_read_base_graph_color: Color::Rgb(129, 161, 193),    // Nord Light Blue
         disk_text_color: Color::Rgb(143, 188, 187), //  color for disk related text
 
         network_container_selected_color: Color::Rgb(94, 129, 172),
         // Network main block: A slightly lighter grayish-blue to contrast with the background
         network_main_block_color: Color::Rgb(76, 86, 106),
-        // Network selected color: A bright teal for selected Memory items in the list
-        network_received_base_graph_color: Color::Rgb(180, 80, 80), // Muted reddish coral
-        network_transmitted_base_graph_color: Color::Rgb(80, 160, 160), // Muted teal
+        // Network selected color: A bright teal for selected Network items in the list
+        network_received_base_graph_color: Color::Rgb(129, 161, 193), // Nord Light Blue
+        network_transmitted_base_graph_color: Color::Rgb(129, 161, 193), // Nord Light Blue
         network_info_block_color: Color::Rgb(76, 86, 106),
         network_text_color: Color::Rgb(143, 188, 187), //  color for network related text
 
         process_container_selected_color: Color::Rgb(94, 129, 172),
         // Network main block: A slightly lighter grayish-blue to contrast with the background
         process_main_block_color: Color::Rgb(76, 86, 106),
-        // Network selected color: A bright teal for selected Memory items in the list
-        process_received_base_graph_color: Color::Rgb(180, 80, 80), // Muted reddish coral
-        process_transmitted_base_graph_color: Color::Rgb(80, 160, 160), // Muted teal
+        // Network selected color: A bright teal for selected Process items in the list
+        process_base_graph_color: Color::Rgb(129, 161, 193), // Nord Light Blue
         process_info_block_color: Color::Rgb(76, 86, 106),
-        process_text_color: Color::Rgb(143, 188, 187), //  color for network related text
-        process_selected_color: Color::Rgb(94, 129, 172),
+        process_title_color: Color::Rgb(143, 188, 187), //  color for process related title text
+        process_text_color: Color::Rgb(94, 129, 172),   //  color for process related text
+        process_selected_color_bg: Color::Rgb(76, 86, 106), // Nord3
+        process_selected_color_fg: Color::Rgb(236, 239, 244), //Nord6
     };
     app.run(&mut terminal, tick_rx, process_tick_rx, app_color_info);
     disable_raw_mode().unwrap();
