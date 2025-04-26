@@ -596,13 +596,7 @@ impl App {
                         if let Some(selected) = self.process_selected_state.selected() {
                             if selected > 0 {
                                 self.process_selected_state.select(Some(selected - 1));
-                            } else {
-                                self.process_selected_state
-                                    .select(Some(self.process_info.processes.len() - 1))
                             }
-                        } else {
-                            self.process_selected_state
-                                .select(Some(self.process_info.processes.len() - 1))
                         }
                     }
                 }
@@ -619,10 +613,8 @@ impl App {
                         }
                     } else if self.selected_container == SelectedContainer::Process {
                         if let Some(selected) = self.process_selected_state.selected() {
-                            if selected < self.process_info.processes.len().saturating_sub(1) {
+                            if selected < self.process_selectable_entries.saturating_sub(1) {
                                 self.process_selected_state.select(Some(selected + 1));
-                            } else {
-                                self.process_selected_state.select(Some(0))
                             }
                         } else {
                             self.process_selected_state.select(Some(0))
@@ -945,6 +937,7 @@ impl App {
             KeyCode::Backspace => {
                 if self.state == AppState::View {
                     self.process_filter = "".to_string();
+                    self.process_selected_state.select(None);
                 }
             }
 
@@ -971,11 +964,17 @@ impl App {
             KeyCode::Backspace => {
                 if !self.process_filter.is_empty() && self.process_filter != "_".to_string() {
                     self.process_filter.remove(self.process_filter.len() - 2); // there will be a "_" character at the end and we don't want to remove that
+                    self.process_selected_state.select(None);
                 }
             }
 
             KeyCode::Enter => {
                 self.state = AppState::View;
+            }
+
+            KeyCode::Down => {
+                self.state = AppState::View;
+                self.process_selected_state.select(Some(0));
             }
 
             KeyCode::Esc => {
@@ -984,6 +983,7 @@ impl App {
 
             KeyCode::Char(c) => {
                 self.process_filter.insert(self.process_filter.len() - 1, c); // there will be a "_" character at the end and we want to insert the newly typed character before it
+                self.process_selected_state.select(None);
             }
 
             _ => {}
