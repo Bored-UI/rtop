@@ -1,5 +1,8 @@
 use std::{
-    collections::HashMap, sync::mpsc::{Receiver, RecvTimeoutError, Sender}, thread, time::{Duration, Instant}
+    collections::HashMap,
+    sync::mpsc::{Receiver, RecvTimeoutError, Sender},
+    thread,
+    time::{Duration, Instant},
 };
 
 use crate::types::{
@@ -242,7 +245,12 @@ pub fn spawn_process_info_collector(
 
                         #[cfg(target_os = "windows")]
                         let thread_hashmap_win_only = get_win_thread_counts();
-                        let thread_count = get_thread_count(pid.as_u32() as i32, &process, Some(thread_hashmap_win_only));
+                        #[cfg(target_os = "windows")]
+                        let thread_count = get_thread_count(
+                            pid.as_u32() as i32,
+                            &process,
+                            Some(thread_hashmap_win_only),
+                        );
 
                         if process.user_id().is_some() {
                             let u = users.get_user_by_id(process.user_id().unwrap());
@@ -298,7 +306,11 @@ pub fn spawn_process_info_collector(
     });
 }
 
-fn get_thread_count(pid: i32, process: &Process, thread_hashmap_win_only: Option<HashMap<String, u32>>) -> u32 {
+fn get_thread_count(
+    pid: i32,
+    process: &Process,
+    thread_hashmap_win_only: Option<HashMap<String, u32>>,
+) -> u32 {
     let mut thread_count = 0;
 
     #[cfg(target_os = "macos")]
