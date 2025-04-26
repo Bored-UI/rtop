@@ -6,6 +6,9 @@ pub struct SysInfo {
     pub memory: MemoryData,
     pub disks: HashMap<String, DiskData>,
     pub networks: HashMap<String, NetworkData>,
+}
+
+pub struct ProcessesInfo {
     pub processes: HashMap<String, ProcessData>,
 }
 
@@ -332,6 +335,9 @@ pub struct CSysInfo {
     pub memory: CMemoryData,
     pub disks: Vec<CDiskData>,
     pub networks: Vec<CNetworkData>,
+}
+
+pub struct CProcessesInfo {
     pub processes: Vec<CProcessData>,
 }
 
