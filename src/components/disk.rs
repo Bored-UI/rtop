@@ -329,7 +329,7 @@ pub fn draw_disk_info(
         current_max_written_bytes = current_max_written_bytes.max(*usage);
     });
 
-    let bytes_written_data_points: Vec<(f64, f64)> = bytes_written_history[start_idx..]
+    let mut bytes_written_data_points: Vec<(f64, f64)> = bytes_written_history[start_idx..]
         .iter()
         .enumerate()
         .map(|(i, &usage)| {
@@ -343,13 +343,23 @@ pub fn draw_disk_info(
         })
         .collect();
 
+    bytes_written_data_points = bytes_written_data_points
+        .iter()
+        .map(|(x, y)| {
+            (
+                graph_show_range as f64 - (bytes_written_data_points.len() as f64 - x),
+                *y,
+            )
+        })
+        .collect();
+
     let dataset = Dataset::default()
         .data(&bytes_written_data_points)
         .graph_type(GraphType::Bar)
         .marker(Marker::Braille)
         .style(Style::default().fg(app_color_info.disk_bytes_written_base_graph_color));
 
-    let x_axis = Axis::default().bounds([0.0, num_points_to_display as f64]);
+    let x_axis = Axis::default().bounds([0.0, graph_show_range as f64]);
 
     let y_axis = Axis::default().bounds([0.0, current_graph_percentage]);
 
@@ -420,7 +430,7 @@ pub fn draw_disk_info(
         current_max_read_bytes = current_max_read_bytes.max(*usage);
     });
 
-    let bytes_read_data_points: Vec<(f64, f64)> = bytes_read_history[start_idx..]
+    let mut bytes_read_data_points: Vec<(f64, f64)> = bytes_read_history[start_idx..]
         .iter()
         .enumerate()
         .map(|(i, &usage)| {
@@ -434,13 +444,23 @@ pub fn draw_disk_info(
         })
         .collect();
 
+    bytes_read_data_points = bytes_read_data_points
+        .iter()
+        .map(|(x, y)| {
+            (
+                graph_show_range as f64 - (bytes_read_data_points.len() as f64 - x),
+                *y,
+            )
+        })
+        .collect();
+
     let dataset = Dataset::default()
         .data(&bytes_read_data_points)
         .graph_type(GraphType::Bar)
         .marker(Marker::Braille)
         .style(Style::default().fg(app_color_info.disk_bytes_read_base_graph_color));
 
-    let x_axis = Axis::default().bounds([0.0, num_points_to_display as f64]);
+    let x_axis = Axis::default().bounds([0.0, graph_show_range as f64]);
 
     let y_axis = Axis::default().bounds([0.0, current_graph_percentage]);
 

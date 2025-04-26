@@ -183,7 +183,7 @@ pub fn draw_memory_info(
     let start_idx = used_memory_history
         .len()
         .saturating_sub(num_points_to_display);
-    let used_memory_data_points: Vec<(f64, f64)> = used_memory_history[start_idx..]
+    let mut used_memory_data_points: Vec<(f64, f64)> = used_memory_history[start_idx..]
         .iter()
         .enumerate()
         .map(|(i, &usage)| {
@@ -193,13 +193,23 @@ pub fn draw_memory_info(
         })
         .collect();
 
+    used_memory_data_points = used_memory_data_points
+        .iter()
+        .map(|(x, y)| {
+            (
+                graph_show_range as f64 - (used_memory_data_points.len() as f64 - x),
+                *y,
+            )
+        })
+        .collect();
+
     let dataset = Dataset::default()
         .data(&used_memory_data_points)
         .graph_type(GraphType::Bar)
         .marker(Marker::Braille)
         .style(Style::default().fg(app_color_info.used_memory_base_graph_color));
 
-    let x_axis = Axis::default().bounds([0.0, num_points_to_display as f64]);
+    let x_axis = Axis::default().bounds([0.0, graph_show_range as f64]);
 
     let y_axis = Axis::default().bounds([0.0, current_graph_percentage]);
 
@@ -247,7 +257,7 @@ pub fn draw_memory_info(
     let start_idx = available_memory_history
         .len()
         .saturating_sub(num_points_to_display);
-    let available_memory_data_points: Vec<(f64, f64)> = available_memory_history[start_idx..]
+    let mut available_memory_data_points: Vec<(f64, f64)> = available_memory_history[start_idx..]
         .iter()
         .enumerate()
         .map(|(i, &remain)| {
@@ -257,13 +267,23 @@ pub fn draw_memory_info(
         })
         .collect();
 
+    available_memory_data_points = available_memory_data_points
+        .iter()
+        .map(|(x, y)| {
+            (
+                graph_show_range as f64 - (available_memory_data_points.len() as f64 - x),
+                *y,
+            )
+        })
+        .collect();
+
     let dataset = Dataset::default()
         .data(&available_memory_data_points)
         .graph_type(GraphType::Bar)
         .marker(Marker::Braille)
         .style(Style::default().fg(app_color_info.available_memory_base_graph_color));
 
-    let x_axis = Axis::default().bounds([0.0, num_points_to_display as f64]);
+    let x_axis = Axis::default().bounds([0.0, graph_show_range as f64]);
 
     let y_axis = Axis::default().bounds([0.0, current_graph_percentage]);
 
@@ -311,7 +331,7 @@ pub fn draw_memory_info(
     let start_idx = free_memory_history
         .len()
         .saturating_sub(num_points_to_display);
-    let free_memory_data_points: Vec<(f64, f64)> = free_memory_history[start_idx..]
+    let mut free_memory_data_points: Vec<(f64, f64)> = free_memory_history[start_idx..]
         .iter()
         .enumerate()
         .map(|(i, &free)| {
@@ -321,13 +341,23 @@ pub fn draw_memory_info(
         })
         .collect();
 
+    free_memory_data_points = free_memory_data_points
+        .iter()
+        .map(|(x, y)| {
+            (
+                graph_show_range as f64 - (free_memory_data_points.len() as f64 - x),
+                *y,
+            )
+        })
+        .collect();
+
     let dataset = Dataset::default()
         .data(&free_memory_data_points)
         .graph_type(GraphType::Bar)
         .marker(Marker::Braille)
         .style(Style::default().fg(app_color_info.free_memory_base_graph_color));
 
-    let x_axis = Axis::default().bounds([0.0, num_points_to_display as f64]);
+    let x_axis = Axis::default().bounds([0.0, graph_show_range as f64]);
 
     let y_axis = Axis::default().bounds([0.0, current_graph_percentage]);
 
@@ -376,7 +406,7 @@ pub fn draw_memory_info(
         let start_idx = swap_memory_history
             .len()
             .saturating_sub(num_points_to_display);
-        let swap_memory_data_points: Vec<(f64, f64)> = swap_memory_history[start_idx..]
+        let mut swap_memory_data_points: Vec<(f64, f64)> = swap_memory_history[start_idx..]
             .iter()
             .enumerate()
             .map(|(i, &swap)| {
@@ -387,13 +417,23 @@ pub fn draw_memory_info(
             })
             .collect();
 
+        swap_memory_data_points = swap_memory_data_points
+            .iter()
+            .map(|(x, y)| {
+                (
+                    graph_show_range as f64 - (swap_memory_data_points.len() as f64 - x),
+                    *y,
+                )
+            })
+            .collect();
+
         let dataset = Dataset::default()
             .data(&swap_memory_data_points)
             .graph_type(GraphType::Bar)
             .marker(Marker::Braille)
             .style(Style::default().fg(app_color_info.swap_memory_base_graph_color));
 
-        let x_axis = Axis::default().bounds([0.0, num_points_to_display as f64]);
+        let x_axis = Axis::default().bounds([0.0, graph_show_range as f64]);
 
         let y_axis = Axis::default().bounds([0.0, current_graph_percentage]);
 
@@ -443,7 +483,7 @@ pub fn draw_memory_info(
         let start_idx = cached_memory_history
             .len()
             .saturating_sub(num_points_to_display);
-        let cached_memory_data_points: Vec<(f64, f64)> = cached_memory_history[start_idx..]
+        let mut cached_memory_data_points: Vec<(f64, f64)> = cached_memory_history[start_idx..]
             .iter()
             .enumerate()
             .map(|(i, &cached)| {
@@ -454,13 +494,23 @@ pub fn draw_memory_info(
             })
             .collect();
 
+        cached_memory_data_points = cached_memory_data_points
+            .iter()
+            .map(|(x, y)| {
+                (
+                    graph_show_range as f64 - (cached_memory_data_points.len() as f64 - x),
+                    *y,
+                )
+            })
+            .collect();
+
         let dataset = Dataset::default()
             .data(&cached_memory_data_points)
             .graph_type(GraphType::Bar)
             .marker(Marker::Braille)
             .style(Style::default().fg(app_color_info.cached_memory_base_graph_color));
 
-        let x_axis = Axis::default().bounds([0.0, num_points_to_display as f64]);
+        let x_axis = Axis::default().bounds([0.0, graph_show_range as f64]);
 
         let y_axis = Axis::default().bounds([0.0, current_graph_percentage]);
 

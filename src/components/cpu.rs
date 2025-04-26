@@ -92,7 +92,7 @@ pub fn draw_cpu_info(
     let start_idx = cpu_usage_history
         .len()
         .saturating_sub(num_points_to_display);
-    let data_points: Vec<(f64, f64)> = cpu_usage_history[start_idx..]
+    let mut data_points: Vec<(f64, f64)> = cpu_usage_history[start_idx..]
         .iter()
         .enumerate()
         .map(|(i, &usage)| {
@@ -105,6 +105,11 @@ pub fn draw_cpu_info(
         })
         .collect();
 
+    data_points = data_points
+        .iter()
+        .map(|(x, y)| (graph_show_range as f64 - (data_points.len() as f64 - x), *y))
+        .collect();
+
     // Create the dataset for the chart
     let dataset = Dataset::default()
         .name("")
@@ -115,7 +120,7 @@ pub fn draw_cpu_info(
 
     let x_axis = Axis::default()
         .style(Style::default().fg(app_color_info.base_app_text_color))
-        .bounds([0.0, num_points_to_display as f64]);
+        .bounds([0.0, graph_show_range as f64]);
 
     // Define the x-axis (CPU Usage) and y-axis (Time)
     let y_axis = Axis::default()

@@ -198,7 +198,7 @@ pub fn draw_network_info(
             current_max_network_received = current_max_network_received.max(*usage);
         });
 
-    let network_received_points: Vec<(f64, f64)> = network_received_history[start_idx..]
+    let mut network_received_points: Vec<(f64, f64)> = network_received_history[start_idx..]
         .iter()
         .enumerate()
         .map(|(i, &usage)| {
@@ -212,13 +212,23 @@ pub fn draw_network_info(
         })
         .collect();
 
+    network_received_points = network_received_points
+        .iter()
+        .map(|(x, y)| {
+            (
+                graph_show_range as f64 - (network_received_points.len() as f64 - x),
+                *y,
+            )
+        })
+        .collect();
+
     let dataset = Dataset::default()
         .data(&network_received_points)
         .graph_type(GraphType::Bar)
         .marker(Marker::Braille)
         .style(Style::default().fg(app_color_info.network_received_base_graph_color));
 
-    let x_axis = Axis::default().bounds([0.0, num_points_to_display as f64]);
+    let x_axis = Axis::default().bounds([0.0, graph_show_range as f64]);
 
     let y_axis = Axis::default().bounds([0.0, current_graph_percentage]);
 
@@ -314,7 +324,7 @@ pub fn draw_network_info(
             current_max_network_transmitted = current_max_network_transmitted.max(*usage);
         });
 
-    let network_transmitted_points: Vec<(f64, f64)> = network_transmitted_history[start_idx..]
+    let mut network_transmitted_points: Vec<(f64, f64)> = network_transmitted_history[start_idx..]
         .iter()
         .enumerate()
         .map(|(i, &usage)| {
@@ -328,13 +338,23 @@ pub fn draw_network_info(
         })
         .collect();
 
+    network_transmitted_points = network_transmitted_points
+        .iter()
+        .map(|(x, y)| {
+            (
+                graph_show_range as f64 - (network_transmitted_points.len() as f64 - x),
+                *y,
+            )
+        })
+        .collect();
+
     let dataset = Dataset::default()
         .data(&network_transmitted_points)
         .graph_type(GraphType::Bar)
         .marker(Marker::Braille)
         .style(Style::default().fg(app_color_info.network_transmitted_base_graph_color));
 
-    let x_axis = Axis::default().bounds([0.0, num_points_to_display as f64]);
+    let x_axis = Axis::default().bounds([0.0, graph_show_range as f64]);
 
     let y_axis = Axis::default().bounds([0.0, current_graph_percentage]);
 
