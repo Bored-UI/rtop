@@ -313,28 +313,30 @@ fn get_thread_count(
     {
         use libproc::{proc_pid::pidinfo, task_info::TaskInfo};
         if let Ok(task_info) = pidinfo::<TaskInfo>(pid, 0) {
-            thread_count = task_info.pti_threadnum;
+            thread_count = task_info.pti_threadnum as u32;
         }
     }
 
     #[cfg(target_os = "linux")]
     {
         if let Some(tasks) = process.tasks() {
-            thread_count = tasks.len() as i32;
+            thread_count = tasks.len() as u32;
         }
     }
 
     #[cfg(target_os = "windows")]
     {
-        // match thread_hashmap_win_only.unwrap().get(& format!("{}", pid)) {
-        //     Some(value) => {
-        //         thread_count = *value;
-        //     }
-        //     None => {}
-        // }
+        if thread_hashmap_win_only.is_some() {
+            match thread_hashmap_win_only.unwrap().get(&format!("{}", pid)) {
+                Some(value) => {
+                    thread_count = *value;
+                }
+                None => {}
+            }
+        }
     }
 
-    return thread_count as u32;
+    return thread_count;
 }
 
 fn get_cached_memory() -> f64 {

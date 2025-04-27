@@ -380,7 +380,13 @@ pub fn draw_process_info(
             } else {
                 value.name.clone()
             };
+            #[cfg(target_os = "windows")]
+            // due to unoptimized way of getting thread count on window platform which hurt performence, will not support this till a solution is found
+            let thread = "?".to_string();
+
+            #[cfg(any(target_os = "macos", target_os = "linux"))]
             let thread = value.thread_count.to_string();
+
             let user = value.user.clone();
             let memory = processed_memory;
             let cpu_usage = format!("{:.2}%", round_to_2_decimal(value.cpu_usage));
