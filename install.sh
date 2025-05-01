@@ -11,7 +11,7 @@ case "$OS" in
         PLATFORM="linux"
         if [ "$ARCH" = "x86_64" ]; then
             # Specific name for Linux x86_64
-            BINARY_NAME="rtop-linux_x86_64"
+            BINARY_NAME="rtop-linux-x86_64"
         elif [[ "$ARCH" == "aarch64" || "$ARCH" == "arm64" ]]; then
              # Name for Linux ARM64 (adjust if repo uses a different name like 'rtop-linux_arm64')
             BINARY_NAME="rtop-linux" # Assuming 'rtop-linux' is the ARM binary based on your request
