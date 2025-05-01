@@ -5,6 +5,22 @@ $INSTALL_DIR = "$env:USERPROFILE\bin"
 $BINARY_NAME = "rtop.exe"
 $TEMP_DIR = [System.IO.Path]::GetTempPath() + "rtop_install"
 
+# Determine system architecture
+$ARCH = $env:PROCESSOR_ARCHITECTURE
+Write-Host "Detected Architecture: $ARCH"
+
+# Determine the correct source binary name based on architecture
+$SOURCE_BINARY_NAME = ""
+if ($ARCH -eq 'AMD64') { # x86_64
+    $SOURCE_BINARY_NAME = "rtop-windows-x86_64.exe"
+} elseif ($ARCH -eq 'ARM64') { # ARM64
+    $SOURCE_BINARY_NAME = "rtop-windows.exe" # Assuming this is the name for ARM64 builds
+} else {
+    Write-Error "Unsupported processor architecture: $ARCH. Only AMD64 (x86_64) and ARM64 are supported by this script."
+    exit 1
+}
+Write-Host "Expecting Source Binary: $SOURCE_BINARY_NAME"
+
 # Create directories
 New-Item -ItemType Directory -Force -Path $INSTALL_DIR | Out-Null
 New-Item -ItemType Directory -Force -Path $TEMP_DIR | Out-Null
@@ -14,7 +30,7 @@ $REPO = "gohyuhan/rtop"
 $API_URL = "https://api.github.com/repos/$REPO/releases/latest"
 try {
     $release = Invoke-RestMethod -Uri $API_URL
-    $DOWNLOAD_URL = ($release.assets | Where-Object { $_.name -eq "rtop-windows.exe" }).browser_download_url
+    $DOWNLOAD_URL = ($release.assets | Where-Object { $_.name -eq $SOURCE_BINARY_NAME }).browser_download_url
 } catch {
     Write-Error "Failed to query GitHub API: $_"
     Remove-Item -Path $TEMP_DIR -Recurse -Force

@@ -4,19 +4,37 @@
 
 # Determine the platform
 OS=$(uname -s)
+ARCH=$(uname -m) # e.g., x86_64, aarch64, arm64
+# Determine the correct binary name based on OS and Arch
 case "$OS" in
-    Linux*)     PLATFORM=linux; BINARY_NAME="rtop-linux";;
-    Darwin*)    PLATFORM=mac; BINARY_NAME="rtop-darwin";;
-    CYGWIN*|MINGW*|MSYS*) PLATFORM=windows; BINARY_NAME="rtop-windows.exe";;
-    *)          echo "Unsupported platform: $OS"; exit 1;;
+    Linux)
+        PLATFORM="linux"
+        if [ "$ARCH" = "x86_64" ]; then
+            # Specific name for Linux x86_64
+            BINARY_NAME="rtop-linux_x86_64"
+        elif [[ "$ARCH" == "aarch64" || "$ARCH" == "arm64" ]]; then
+             # Name for Linux ARM64 (adjust if repo uses a different name like 'rtop-linux_arm64')
+            BINARY_NAME="rtop-linux" # Assuming 'rtop-linux' is the ARM binary based on your request
+        else
+            # Fallback or other architectures - assumes 'rtop-linux' exists or fails later
+            echo "Warning: Detected Linux architecture '$ARCH'. Attempting to use 'rtop-linux'."
+            echo "Please verify this asset exists in the release if you encounter issues."
+            BINARY_NAME="rtop-linux"
+        fi
+        ;;
+    Darwin)
+        PLATFORM="mac"
+        # mac only support for mac that are on apple silicon
+        BINARY_NAME="rtop-darwin"
+        ;;
+    *)
+        echo "Error: Unsupported operating system: $OS"
+        exit 1
+        ;;
 esac
 
 # Define installation directory
 INSTALL_DIR="/usr/local/bin"
-if [ "$PLATFORM" = "windows" ]; then
-    INSTALL_DIR="$HOME/bin"
-    mkdir -p "$INSTALL_DIR"
-fi
 TEMP_DIR=$(mktemp -d)
 
 # Fetch the latest release download URL using GitHub API
@@ -59,15 +77,11 @@ fi
 rm -rf "$TEMP_DIR"
 
 # Update PATH
-if [ "$PLATFORM" != "windows" ]; then
-    if [[ ":$PATH:" != *":$INSTALL_DIR:"* ]]; then
-        echo "Adding $INSTALL_DIR to PATH..."
-        echo "export PATH=\$PATH:$INSTALL_DIR" >> ~/.bashrc
-        echo "export PATH=\$PATH:$INSTALL_DIR" >> ~/.zshrc
-        export PATH=$PATH:$INSTALL_DIR
-    fi
-else
-    echo "Please manually add $INSTALL_DIR to your system PATH in Windows settings."
+if [[ ":$PATH:" != *":$INSTALL_DIR:"* ]]; then
+    echo "Adding $INSTALL_DIR to PATH..."
+    echo "export PATH=\$PATH:$INSTALL_DIR" >> ~/.bashrc
+    echo "export PATH=\$PATH:$INSTALL_DIR" >> ~/.zshrc
+    export PATH=$PATH:$INSTALL_DIR
 fi
 
 # Verify installation
