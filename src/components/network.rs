@@ -11,11 +11,7 @@ use crate::{tui::AppColorInfo, types::NetworkData, utils::get_tick_line_ui};
 
 // width smaller than this will be consider small width for the network container
 const SMALL_WIDTH: u16 = 40;
-const NETWORK_GRAPH_HEIGHT_PRCENTAGE: u16 = 70;
-
-// this was to indicate that the network graph y axis will be either shown as 25% or 100% (based on the widget size)
-const SMALL_WIDGET_PERCENTAGE: f64 = 25.0;
-const BIG_WIDGET_PERCENTAGE: f64 = 100.0;
+const GRPAH_PERCENTAGE: f64 = 100.0;
 
 pub fn draw_network_info(
     tick: u64,
@@ -27,12 +23,6 @@ pub fn draw_network_info(
     app_color_info: &AppColorInfo,
     is_full_screen: bool,
 ) {
-    let current_graph_percentage = if is_full_screen {
-        BIG_WIDGET_PERCENTAGE
-    } else {
-        SMALL_WIDGET_PERCENTAGE
-    };
-
     let mut network_name = network_data.interface_name.clone();
     if area.width <= SMALL_WIDTH + 5 {
         let extension = if network_name.len() > 16 { ".." } else { "" };
@@ -98,28 +88,23 @@ pub fn draw_network_info(
 
     // this will be the layout for the network block for graph and info
     let [_, network_block, _] = Layout::vertical([
-        Constraint::Percentage(5),
-        Constraint::Percentage(90),
-        Constraint::Percentage(5),
+        Constraint::Length(1),
+        Constraint::Fill(1),
+        Constraint::Length(1),
     ])
     .areas(area);
 
     // padded the layout for the network graph to have some space on the left and right
     let [_, padded_network_block, _] = Layout::horizontal([
-        Constraint::Percentage(3),
-        Constraint::Percentage(94),
-        Constraint::Percentage(3),
+        Constraint::Length(2),
+        Constraint::Fill(1),
+        Constraint::Length(2),
     ])
     .areas(network_block);
 
-    let [_, network_received_layout, _, network_transmitted_layout, _] = Layout::vertical([
-        Constraint::Percentage(10),
-        Constraint::Percentage(35),
-        Constraint::Percentage(10),
-        Constraint::Percentage(35),
-        Constraint::Percentage(10),
-    ])
-    .areas(padded_network_block);
+    let [network_received_layout, network_transmitted_layout] =
+        Layout::vertical([Constraint::Ratio(1, 2), Constraint::Ratio(1, 2)])
+            .areas(padded_network_block);
 
     // render the network received graph
     // ----------------------------------------
@@ -175,11 +160,8 @@ pub fn draw_network_info(
     .bold();
 
     let [network_received_padded_info_layout, network_received_padded_graph_layout] =
-        Layout::vertical([
-            Constraint::Percentage(100 - NETWORK_GRAPH_HEIGHT_PRCENTAGE),
-            Constraint::Percentage(NETWORK_GRAPH_HEIGHT_PRCENTAGE),
-        ])
-        .areas(network_received_layout);
+        Layout::vertical([Constraint::Length(1), Constraint::Fill(1)])
+            .areas(network_received_layout);
 
     // network received info
     let network_received_info_block = Block::bordered()
@@ -207,7 +189,7 @@ pub fn draw_network_info(
         .map(|(i, &usage)| {
             let x = i as f64;
             let y = if usage > 0.0 {
-                (usage / current_max_network_received) * current_graph_percentage as f64
+                (usage / current_max_network_received) * GRPAH_PERCENTAGE as f64
             } else {
                 0.0
             };
@@ -233,7 +215,7 @@ pub fn draw_network_info(
 
     let x_axis = Axis::default().bounds([0.0, graph_show_range as f64]);
 
-    let y_axis = Axis::default().bounds([0.0, current_graph_percentage]);
+    let y_axis = Axis::default().bounds([0.0, GRPAH_PERCENTAGE]);
 
     let network_received_chart = Chart::new(vec![dataset])
         .x_axis(x_axis)
@@ -302,11 +284,8 @@ pub fn draw_network_info(
     .style(app_color_info.network_text_color);
 
     let [network_transmitted_padded_info_layout, network_transmitted_padded_graph_layout] =
-        Layout::vertical([
-            Constraint::Percentage(100 - NETWORK_GRAPH_HEIGHT_PRCENTAGE),
-            Constraint::Percentage(NETWORK_GRAPH_HEIGHT_PRCENTAGE),
-        ])
-        .areas(network_transmitted_layout);
+        Layout::vertical([Constraint::Length(1), Constraint::Fill(1)])
+            .areas(network_transmitted_layout);
 
     // network transmitted info
     let network_transmitted_info_block = Block::bordered()
@@ -334,7 +313,7 @@ pub fn draw_network_info(
         .map(|(i, &usage)| {
             let x = i as f64;
             let y = if usage > 0.0 {
-                (usage / current_max_network_transmitted) * current_graph_percentage as f64
+                (usage / current_max_network_transmitted) * GRPAH_PERCENTAGE as f64
             } else {
                 0.0
             };
@@ -360,7 +339,7 @@ pub fn draw_network_info(
 
     let x_axis = Axis::default().bounds([0.0, graph_show_range as f64]);
 
-    let y_axis = Axis::default().bounds([0.0, current_graph_percentage]);
+    let y_axis = Axis::default().bounds([0.0, GRPAH_PERCENTAGE]);
 
     let network_transmitted_chart = Chart::new(vec![dataset])
         .x_axis(x_axis)

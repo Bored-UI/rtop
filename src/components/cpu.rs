@@ -53,30 +53,29 @@ pub fn draw_cpu_info(
 
     // Constrain the block to have space at the right and left
     let [_, cpu_block, _] = Layout::horizontal([
-        Constraint::Percentage(1),
-        Constraint::Percentage(98),
-        Constraint::Percentage(1),
+        Constraint::Length(2),
+        Constraint::Fill(1),
+        Constraint::Length(2),
     ])
     .areas(size);
 
     // Split into cpu_graph_layout and cpu_info_layout (cpu name and usage info)
     let [cpu_graph_layout, cpu_info_layout] =
-        Layout::horizontal([Constraint::Percentage(70), Constraint::Percentage(30)])
-            .areas(cpu_block);
+        Layout::horizontal([Constraint::Fill(7), Constraint::Fill(3)]).areas(cpu_block);
 
     // Constrain the block to have space at the top and bottom for cpu graph
     let [_, constraint_inner_cpu_graph_layout, _] = Layout::vertical([
-        Constraint::Percentage(10),
-        Constraint::Percentage(80),
-        Constraint::Percentage(10),
+        Constraint::Fill(1),
+        Constraint::Fill(8),
+        Constraint::Fill(1),
     ])
     .areas(cpu_graph_layout);
 
     // Constrain the block to have space at the top and bottom for cpu name and usage info
     let [_, constraint_inner_cpu_info_layout, _] = Layout::vertical([
-        Constraint::Percentage(10),
-        Constraint::Percentage(80),
-        Constraint::Percentage(10),
+        Constraint::Fill(1),
+        Constraint::Fill(8),
+        Constraint::Fill(1),
     ])
     .areas(cpu_info_layout);
 
@@ -150,9 +149,9 @@ pub fn draw_cpu_info(
 
     // split the cpu name and usage info into two parts
     let [_, cpu_info_inner_container, _] = Layout::horizontal([
-        Constraint::Percentage(5),
-        Constraint::Percentage(90),
-        Constraint::Percentage(5),
+        Constraint::Length(1),
+        Constraint::Fill(1),
+        Constraint::Length(1),
     ])
     .areas(constraint_inner_cpu_info_layout);
 

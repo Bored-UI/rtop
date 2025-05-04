@@ -20,6 +20,17 @@ const LARGE_WIDTH: u16 = 75;
 const X_LARGE_WIDTH: u16 = 95;
 const XX_LARGE_WIDTH: u16 = 120;
 
+// following is the process detail container required space percentage in different window height and also the height definetion
+const MEDIUM_HEIGHT: u16 = 15;
+const LARGE_HEIGHT: u16 = 20;
+const X_LARGE_HEIGHT: u16 = 30;
+const XX_LARGE_HEIGHT: u16 = 40;
+
+const MEDIUM_HEIGHT_FILL: u16 = 5;
+const LARGE_HEIGHT_FILL: u16 = 4;
+const X_LARGE_HEIGHT_FILL: u16 = 3;
+const XX_LARGE_HEIGHT_FILL: u16 = 2;
+
 pub fn draw_process_info(
     tick: u64,
     process_data: &HashMap<String, ProcessData>,
@@ -258,32 +269,62 @@ pub fn draw_process_info(
 
     // padded the inner container
     let [_, padded_vertical_inner, _] = Layout::vertical([
-        Constraint::Percentage(3),
-        Constraint::Percentage(94),
-        Constraint::Percentage(3),
+        Constraint::Length(1),
+        Constraint::Fill(1),
+        Constraint::Length(1),
     ])
     .areas(area);
 
     let [_, process_block, _] = Layout::horizontal([
-        Constraint::Percentage(2),
-        Constraint::Percentage(95),
-        Constraint::Percentage(3),
+        Constraint::Length(2),
+        Constraint::Fill(1),
+        Constraint::Length(2),
     ])
     .areas(padded_vertical_inner);
 
-    let [title_layout, _, process_list_layout] = Layout::vertical([
-        Constraint::Percentage(3),
-        Constraint::Percentage(2),
-        Constraint::Percentage(95),
-    ])
-    .areas(process_block);
+    let mut process_detail_layout = Rect::default();
+    let [mut title_layout, mut process_list_layout] =
+        Layout::vertical([Constraint::Length(1), Constraint::Fill(1)]).areas(process_block);
 
+    // layout for process detail
+    if process_show_detail {
+        // to determine how much space should the process detail layout takes
+        let percentage_of_process_detail_container_space =
+            if area.height >= MEDIUM_HEIGHT && area.height < LARGE_HEIGHT {
+                MEDIUM_HEIGHT_FILL
+            } else if area.height >= LARGE_HEIGHT && area.height < X_LARGE_HEIGHT {
+                LARGE_HEIGHT_FILL
+            } else if area.height >= X_LARGE_HEIGHT && area.height < XX_LARGE_HEIGHT {
+                X_LARGE_HEIGHT_FILL
+            } else {
+                XX_LARGE_HEIGHT_FILL
+            };
+
+        let [new_process_detail_layout, new_title_layout, new_process_list_layout] =
+            Layout::vertical([
+                Constraint::Fill(percentage_of_process_detail_container_space),
+                Constraint::Length(1),
+                Constraint::Fill(10 - percentage_of_process_detail_container_space),
+            ])
+            .areas(process_block);
+
+        title_layout = new_title_layout;
+        process_detail_layout = new_process_detail_layout;
+        process_list_layout = new_process_list_layout;
+    }
+
+    // for each column of different info of process
     let [pid, program, user, memory, cpu_usage] = Layout::horizontal([
-        Constraint::Percentage(15),
-        Constraint::Percentage(40),
-        Constraint::Percentage(15),
-        Constraint::Percentage(15),
-        Constraint::Percentage(15),
+        // Constraint::Ratio(15, 100),
+        // Constraint::Ratio(40, 100),
+        // Constraint::Ratio(15, 100),
+        // Constraint::Ratio(20, 100),
+        // Constraint::Ratio(10, 100),
+        Constraint::Fill(1),
+        Constraint::Fill(4),
+        Constraint::Fill(1),
+        Constraint::Fill(2),
+        Constraint::Fill(1),
     ])
     .areas(title_layout);
 
@@ -297,12 +338,12 @@ pub fn draw_process_info(
 
     if area.width > MEDIUM_WIDTH && area.width <= LARGE_WIDTH {
         let [pid, program, command, user, memory, cpu_usage] = Layout::horizontal([
-            Constraint::Percentage(10),
-            Constraint::Percentage(20),
-            Constraint::Percentage(40),
-            Constraint::Percentage(10),
-            Constraint::Percentage(10),
-            Constraint::Percentage(10),
+            Constraint::Fill(1),
+            Constraint::Fill(2),
+            Constraint::Fill(4),
+            Constraint::Fill(1),
+            Constraint::Fill(1),
+            Constraint::Fill(1),
         ])
         .areas(title_layout);
         pid_width = pid.width as usize;
@@ -313,13 +354,13 @@ pub fn draw_process_info(
         cpu_usage_width = cpu_usage.width as usize;
     } else if area.width > LARGE_WIDTH {
         let [pid, program, command, thread, user, memory, cpu_usage] = Layout::horizontal([
-            Constraint::Percentage(10),
-            Constraint::Percentage(17),
-            Constraint::Percentage(35),
-            Constraint::Percentage(13),
-            Constraint::Percentage(10),
-            Constraint::Percentage(10),
-            Constraint::Percentage(10),
+            Constraint::Fill(1),
+            Constraint::Fill(1),
+            Constraint::Fill(3),
+            Constraint::Fill(1),
+            Constraint::Fill(1),
+            Constraint::Fill(1),
+            Constraint::Fill(1),
         ])
         .areas(title_layout);
         pid_width = pid.width as usize;
@@ -453,14 +494,14 @@ pub fn draw_process_info(
                     ((value.memory[value.memory.len() - 1] / 1024.0) * 1000.0).round() / 1000.0;
                 if new_memory > 1024.0 {
                     format!(
-                        "{:.1} GB",
+                        "{:.1} GiB",
                         (((new_memory / 1024.0) * 1000.0).round() / 1000.0) as f32
                     )
                 } else {
-                    format!("{} MB", new_memory as usize)
+                    format!("{} MiB", new_memory as usize)
                 }
             } else {
-                format!("{} KB", value.memory[value.memory.len() - 1] as usize)
+                format!("{} KiB", value.memory[value.memory.len() - 1] as usize)
             };
 
             // Pad the string to take up respective width
@@ -513,7 +554,9 @@ pub fn draw_process_info(
             let padded_user = if user.len() < user_width {
                 format!("{:width$}", user, width = user_width)
             } else {
-                user.chars().take(user_width).collect::<String>()
+                let mut user = user.chars().take(user_width - 2).collect::<String>();
+                user.push_str("  ");
+                user
             };
 
             let padded_memory = if memory.len() < memory_width {

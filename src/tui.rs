@@ -312,17 +312,14 @@ impl App {
         //   |     & bottom (35%)      |                                |
         //   ------------------------------------------------------------
 
-        let top_and_bottom =
-            Layout::vertical([Constraint::Percentage(30), Constraint::Percentage(70)]);
+        let top_and_bottom = Layout::vertical([Constraint::Fill(30), Constraint::Fill(70)]);
         let [cpu_area, bottom] = top_and_bottom.areas(frame.area());
         let [bottom_left, process_area] =
-            Layout::horizontal([Constraint::Percentage(45), Constraint::Percentage(55)])
-                .areas(bottom);
+            Layout::horizontal([Constraint::Fill(45), Constraint::Fill(55)]).areas(bottom);
         let [memory_disk_area, network_area] =
-            Layout::vertical([Constraint::Percentage(65), Constraint::Percentage(35)])
-                .areas(bottom_left);
+            Layout::vertical([Constraint::Fill(65), Constraint::Fill(35)]).areas(bottom_left);
         let [memory_area, disk_area] =
-            Layout::horizontal([Constraint::Percentage(50), Constraint::Percentage(50)])
+            Layout::horizontal([Constraint::Fill(50), Constraint::Fill(50)])
                 .areas(memory_disk_area);
 
         // set the bg
@@ -963,6 +960,21 @@ impl App {
                         && self.selected_container != SelectedContainer::None
                     {
                         self.container_full_screen = true;
+                    }
+                }
+            }
+
+            KeyCode::Enter => {
+                if self.state == AppState::View {
+                    if self.selected_container == SelectedContainer::Process {
+                        if self.process_show_details {
+                            self.process_show_details = false;
+                            self.current_showing_process_detail = None;
+                        } else {
+                            if let Some(_) = self.process_selected_state.selected() {
+                                self.process_show_details = true;
+                            }
+                        }
                     }
                 }
             }

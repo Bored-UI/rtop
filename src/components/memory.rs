@@ -13,16 +13,7 @@ use crate::{tui::AppColorInfo, types::MemoryData, utils::get_tick_line_ui};
 const SMALL_WIDTH: u16 = 20;
 const MEDIUM_HEIGHT: u16 = 16;
 const LARGE_HEIGHT: u16 = 21;
-const MEMORY_GRAPH_HEIGHT_PRCENTAGE: u16 = 70;
-
-// this was to indicate that the memory graph y axis will be either shown as 25% or 100% (based on the widget size)
-const SMALL_WIDGET_PERCENTAGE: f64 = 25.0;
-const BIG_WIDGET_PERCENTAGE: f64 = 100.0;
-
-// the splitting percentage of memory graph based on current height
-const DEFAULT_SPLIT: u16 = 33;
-const MEDIUM_HEIGHT_SPLIT: u16 = 25;
-const LARGE_HEIGHT_SPLIT: u16 = 20;
+const GRAPH_PERCENTAGE: f64 = 100.0;
 
 pub fn draw_memory_info(
     tick: u64,
@@ -34,12 +25,6 @@ pub fn draw_memory_info(
     app_color_info: &AppColorInfo,
     is_full_screen: bool,
 ) {
-    let current_graph_percentage = if is_full_screen {
-        BIG_WIDGET_PERCENTAGE
-    } else {
-        SMALL_WIDGET_PERCENTAGE
-    };
-
     let select_instruction = Line::from(vec![
         Span::styled(" ", Style::default().fg(app_color_info.app_title_color)),
         Span::styled("M", Style::default().fg(app_color_info.key_text_color))
@@ -69,25 +54,24 @@ pub fn draw_memory_info(
 
     // this will be the layout for the memory usage graph
     let [_, memory_block, _] = Layout::vertical([
-        Constraint::Percentage(5),
-        Constraint::Percentage(90),
-        Constraint::Percentage(5),
+        Constraint::Length(1),
+        Constraint::Fill(1),
+        Constraint::Length(1),
     ])
     .areas(area);
 
     // padded the layout for the memory usage graph to have some space on the left and right
     let [_, padded_memory_block, _] = Layout::horizontal([
-        Constraint::Percentage(3),
-        Constraint::Percentage(94),
-        Constraint::Percentage(3),
+        Constraint::Length(2),
+        Constraint::Fill(1),
+        Constraint::Length(2),
     ])
     .areas(memory_block);
 
     // top label will be the label for total memory
     // bottom graph will be the statistics for memory usage like used, free, available memory, etc
     let [top_label, bottom_graphs] =
-        Layout::vertical([Constraint::Percentage(10), Constraint::Percentage(90)])
-            .areas(padded_memory_block);
+        Layout::vertical([Constraint::Length(2), Constraint::Fill(1)]).areas(padded_memory_block);
 
     let total_memory_label = Line::from("Total:")
         .style(app_color_info.app_title_color)
@@ -110,19 +94,19 @@ pub fn draw_memory_info(
     let mut swap_memory_layout = Rect::default();
     let [mut used_memory_layout, mut available_memory_layout, mut free_memory_layout] =
         Layout::vertical([
-            Constraint::Percentage(DEFAULT_SPLIT),
-            Constraint::Percentage(DEFAULT_SPLIT),
-            Constraint::Percentage(DEFAULT_SPLIT),
+            Constraint::Ratio(1, 3),
+            Constraint::Ratio(1, 3),
+            Constraint::Ratio(1, 3),
         ])
         .areas(bottom_graphs);
 
     if area.height >= MEDIUM_HEIGHT {
         let [new_used_memory_layout, new_available_memory_layout, new_free_memory_layout, new_swap_memory_layout] =
             Layout::vertical([
-                Constraint::Percentage(MEDIUM_HEIGHT_SPLIT),
-                Constraint::Percentage(MEDIUM_HEIGHT_SPLIT),
-                Constraint::Percentage(MEDIUM_HEIGHT_SPLIT),
-                Constraint::Percentage(MEDIUM_HEIGHT_SPLIT),
+                Constraint::Ratio(1, 4),
+                Constraint::Ratio(1, 4),
+                Constraint::Ratio(1, 4),
+                Constraint::Ratio(1, 4),
             ])
             .areas(bottom_graphs);
         used_memory_layout = new_used_memory_layout;
@@ -133,11 +117,11 @@ pub fn draw_memory_info(
     if area.height >= LARGE_HEIGHT {
         let [new_used_memory_layout, new_available_memory_layout, new_free_memory_layout, new_cached_memory_layout, new_swap_memory_layout] =
             Layout::vertical([
-                Constraint::Percentage(LARGE_HEIGHT_SPLIT),
-                Constraint::Percentage(LARGE_HEIGHT_SPLIT),
-                Constraint::Percentage(LARGE_HEIGHT_SPLIT),
-                Constraint::Percentage(LARGE_HEIGHT_SPLIT),
-                Constraint::Percentage(LARGE_HEIGHT_SPLIT),
+                Constraint::Ratio(1, 5),
+                Constraint::Ratio(1, 5),
+                Constraint::Ratio(1, 5),
+                Constraint::Ratio(1, 5),
+                Constraint::Ratio(1, 5),
             ])
             .areas(bottom_graphs);
         used_memory_layout = new_used_memory_layout;
@@ -158,11 +142,8 @@ pub fn draw_memory_info(
     //          FOR USED MEMORY LAYOUT
     //
     // ----------------------------------------
-    let [_, used_memory_graph] = Layout::vertical([
-        Constraint::Percentage(100 - MEMORY_GRAPH_HEIGHT_PRCENTAGE),
-        Constraint::Percentage(MEMORY_GRAPH_HEIGHT_PRCENTAGE),
-    ])
-    .areas(used_memory_layout);
+    let [_, used_memory_graph] =
+        Layout::vertical([Constraint::Length(1), Constraint::Fill(1)]).areas(used_memory_layout);
     let used_memory_label = if used_memory_layout.width < SMALL_WIDTH {
         Line::from("U").style(app_color_info.base_app_text_color)
     } else {
@@ -192,7 +173,7 @@ pub fn draw_memory_info(
         .enumerate()
         .map(|(i, &usage)| {
             let x = i as f64;
-            let y = (usage / memory.total_memory) * current_graph_percentage as f64;
+            let y = (usage / memory.total_memory) * GRAPH_PERCENTAGE as f64;
             (x, y)
         })
         .collect();
@@ -215,7 +196,7 @@ pub fn draw_memory_info(
 
     let x_axis = Axis::default().bounds([0.0, graph_show_range as f64]);
 
-    let y_axis = Axis::default().bounds([0.0, current_graph_percentage]);
+    let y_axis = Axis::default().bounds([0.0, GRAPH_PERCENTAGE]);
 
     let used_memory_chart = Chart::new(vec![dataset])
         .x_axis(x_axis)
@@ -233,11 +214,9 @@ pub fn draw_memory_info(
     //      FOR AVAILABLE MEMORY LAYOUT
     //
     // ----------------------------------------
-    let [_, available_memory_graph] = Layout::vertical([
-        Constraint::Percentage(100 - MEMORY_GRAPH_HEIGHT_PRCENTAGE),
-        Constraint::Percentage(MEMORY_GRAPH_HEIGHT_PRCENTAGE),
-    ])
-    .areas(available_memory_layout);
+    let [_, available_memory_graph] =
+        Layout::vertical([Constraint::Length(1), Constraint::Fill(1)])
+            .areas(available_memory_layout);
     let available_memory_label = if available_memory_layout.width < SMALL_WIDTH {
         Line::from("A").style(app_color_info.base_app_text_color)
     } else {
@@ -267,7 +246,7 @@ pub fn draw_memory_info(
         .enumerate()
         .map(|(i, &remain)| {
             let x = i as f64;
-            let y = (remain / memory.total_memory) * current_graph_percentage as f64;
+            let y = (remain / memory.total_memory) * GRAPH_PERCENTAGE as f64;
             (x, y)
         })
         .collect();
@@ -290,7 +269,7 @@ pub fn draw_memory_info(
 
     let x_axis = Axis::default().bounds([0.0, graph_show_range as f64]);
 
-    let y_axis = Axis::default().bounds([0.0, current_graph_percentage]);
+    let y_axis = Axis::default().bounds([0.0, GRAPH_PERCENTAGE]);
 
     let available_memory_chart = Chart::new(vec![dataset])
         .x_axis(x_axis)
@@ -308,11 +287,8 @@ pub fn draw_memory_info(
     //        FOR FREE MEMORY LAYOUT
     //
     // ----------------------------------------
-    let [_, free_memory_graph] = Layout::vertical([
-        Constraint::Percentage(100 - MEMORY_GRAPH_HEIGHT_PRCENTAGE),
-        Constraint::Percentage(MEMORY_GRAPH_HEIGHT_PRCENTAGE),
-    ])
-    .areas(free_memory_layout);
+    let [_, free_memory_graph] =
+        Layout::vertical([Constraint::Length(1), Constraint::Fill(1)]).areas(free_memory_layout);
     let free_memory_label = if free_memory_layout.width < SMALL_WIDTH {
         Line::from("F").style(app_color_info.base_app_text_color)
     } else {
@@ -342,7 +318,7 @@ pub fn draw_memory_info(
         .enumerate()
         .map(|(i, &free)| {
             let x = i as f64;
-            let y = (free / memory.total_memory) * current_graph_percentage as f64;
+            let y = (free / memory.total_memory) * GRAPH_PERCENTAGE as f64;
             (x, y)
         })
         .collect();
@@ -365,7 +341,7 @@ pub fn draw_memory_info(
 
     let x_axis = Axis::default().bounds([0.0, graph_show_range as f64]);
 
-    let y_axis = Axis::default().bounds([0.0, current_graph_percentage]);
+    let y_axis = Axis::default().bounds([0.0, GRAPH_PERCENTAGE]);
 
     let free_memory_chart = Chart::new(vec![dataset])
         .x_axis(x_axis)
@@ -384,11 +360,8 @@ pub fn draw_memory_info(
     //
     // ----------------------------------------
     if swap_memory_layout.height > 0 {
-        let [_, swap_memory_graph] = Layout::vertical([
-            Constraint::Percentage(100 - MEMORY_GRAPH_HEIGHT_PRCENTAGE),
-            Constraint::Percentage(MEMORY_GRAPH_HEIGHT_PRCENTAGE),
-        ])
-        .areas(swap_memory_layout);
+        let [_, swap_memory_graph] = Layout::vertical([Constraint::Length(1), Constraint::Fill(1)])
+            .areas(swap_memory_layout);
         let swap_memory_label = if swap_memory_layout.width < SMALL_WIDTH {
             Line::from("S").style(app_color_info.base_app_text_color)
         } else {
@@ -418,8 +391,8 @@ pub fn draw_memory_info(
             .enumerate()
             .map(|(i, &swap)| {
                 let x = i as f64;
-                let y = (swap.min(memory.total_memory) / memory.total_memory)
-                    * current_graph_percentage as f64;
+                let y =
+                    (swap.min(memory.total_memory) / memory.total_memory) * GRAPH_PERCENTAGE as f64;
                 (x, y)
             })
             .collect();
@@ -442,7 +415,7 @@ pub fn draw_memory_info(
 
         let x_axis = Axis::default().bounds([0.0, graph_show_range as f64]);
 
-        let y_axis = Axis::default().bounds([0.0, current_graph_percentage]);
+        let y_axis = Axis::default().bounds([0.0, GRAPH_PERCENTAGE]);
 
         let swap_memory_chart = Chart::new(vec![dataset])
             .x_axis(x_axis)
@@ -462,11 +435,9 @@ pub fn draw_memory_info(
     //
     // ----------------------------------------
     if cached_memory_layout.height > 0 {
-        let [_, cached_memory_graph] = Layout::vertical([
-            Constraint::Percentage(100 - MEMORY_GRAPH_HEIGHT_PRCENTAGE),
-            Constraint::Percentage(MEMORY_GRAPH_HEIGHT_PRCENTAGE),
-        ])
-        .areas(cached_memory_layout);
+        let [_, cached_memory_graph] =
+            Layout::vertical([Constraint::Length(1), Constraint::Fill(1)])
+                .areas(cached_memory_layout);
         let cached_memory_label = if cached_memory_layout.width < SMALL_WIDTH {
             Line::from("C").style(app_color_info.base_app_text_color)
         } else {
@@ -497,7 +468,7 @@ pub fn draw_memory_info(
             .map(|(i, &cached)| {
                 let x = i as f64;
                 let y = (cached.min(memory.total_memory) / memory.total_memory)
-                    * current_graph_percentage as f64;
+                    * GRAPH_PERCENTAGE as f64;
                 (x, y)
             })
             .collect();
@@ -520,7 +491,7 @@ pub fn draw_memory_info(
 
         let x_axis = Axis::default().bounds([0.0, graph_show_range as f64]);
 
-        let y_axis = Axis::default().bounds([0.0, current_graph_percentage]);
+        let y_axis = Axis::default().bounds([0.0, GRAPH_PERCENTAGE]);
 
         let cached_memory_chart = Chart::new(vec![dataset])
             .x_axis(x_axis)

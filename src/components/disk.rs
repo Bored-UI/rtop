@@ -11,11 +11,7 @@ use crate::{tui::AppColorInfo, types::DiskData, utils::get_tick_line_ui};
 
 // width smaller than this will be consider small width for the disk container
 const SMALL_WIDTH: u16 = 20;
-const DISK_GRAPH_HEIGHT_PRCENTAGE: u16 = 70;
-
-// this was to indicate that the disk graph y axis will be either shown as 25% or 100% (based on the widget size)
-const SMALL_WIDGET_PERCENTAGE: f64 = 50.0;
-const BIG_WIDGET_PERCENTAGE: f64 = 100.0;
+const GRAPH_PERCENTAGE: f64 = 100.0;
 
 pub fn draw_disk_info(
     tick: u64,
@@ -27,12 +23,6 @@ pub fn draw_disk_info(
     app_color_info: &AppColorInfo,
     is_full_screen: bool,
 ) {
-    let current_graph_percentage = if is_full_screen {
-        BIG_WIDGET_PERCENTAGE
-    } else {
-        SMALL_WIDGET_PERCENTAGE
-    };
-
     let mut disk_name = disk_data.name.clone();
     if area.width <= SMALL_WIDTH + 5 {
         let extension = if disk_name.len() > 8 { ".." } else { "" };
@@ -84,25 +74,24 @@ pub fn draw_disk_info(
 
     // bottom border will be the space where the statistics for used, available space, total bytes written and read etc... will be displayed
     let [_, disk_block, _] = Layout::vertical([
-        Constraint::Percentage(5),
-        Constraint::Percentage(90),
-        Constraint::Percentage(5),
+        Constraint::Length(1),
+        Constraint::Fill(1),
+        Constraint::Length(1),
     ])
     .areas(area);
 
     // padded the bottom border for some space on the left and right
     let [_, padded_disk_block, _] = Layout::horizontal([
-        Constraint::Percentage(3),
-        Constraint::Percentage(94),
-        Constraint::Percentage(3),
+        Constraint::Length(2),
+        Constraint::Fill(1),
+        Constraint::Length(2),
     ])
     .areas(disk_block);
 
     // top label will be the label for total disk space
     // bottom disk info blocks will be the statistics for used, available space, total bytes written and read etc...
     let [top_label, bottom_disk_info_blocks] =
-        Layout::vertical([Constraint::Percentage(10), Constraint::Percentage(90)])
-            .areas(padded_disk_block);
+        Layout::vertical([Constraint::Length(2), Constraint::Fill(1)]).areas(padded_disk_block);
 
     let total_disk_space_label = Line::from("Total:")
         .style(app_color_info.app_title_color)
@@ -130,13 +119,13 @@ pub fn draw_disk_info(
 
     let [used_space_layout, available_space_layout, file_system_layout, mount_point_layout, disk_kind_layout, current_bytes_written_layout, current_bytes_read_layout] =
         Layout::vertical([
-            Constraint::Percentage(6),
-            Constraint::Percentage(6),
-            Constraint::Percentage(6),
-            Constraint::Percentage(6),
-            Constraint::Percentage(6),
-            Constraint::Percentage(35),
-            Constraint::Percentage(35),
+            Constraint::Length(1),
+            Constraint::Length(1),
+            Constraint::Length(1),
+            Constraint::Length(1),
+            Constraint::Length(1),
+            Constraint::Fill(1),
+            Constraint::Fill(1),
         ])
         .areas(bottom_disk_info_blocks);
 
@@ -287,11 +276,8 @@ pub fn draw_disk_info(
     //          FOR BYTES WRITTEN LAYOUT
     //
     // ----------------------------------------
-    let [_, bytes_written_graph] = Layout::vertical([
-        Constraint::Percentage(100 - DISK_GRAPH_HEIGHT_PRCENTAGE),
-        Constraint::Percentage(DISK_GRAPH_HEIGHT_PRCENTAGE),
-    ])
-    .areas(current_bytes_written_layout);
+    let [_, bytes_written_graph] = Layout::vertical([Constraint::Length(2), Constraint::Fill(1)])
+        .areas(current_bytes_written_layout);
     let bytes_written_label = if current_bytes_written_layout.width < SMALL_WIDTH {
         Line::from("W").style(app_color_info.base_app_text_color)
     } else {
@@ -345,7 +331,7 @@ pub fn draw_disk_info(
         .map(|(i, &usage)| {
             let x = i as f64;
             let y = if usage > 0.0 {
-                (usage / current_max_written_bytes) * current_graph_percentage as f64
+                (usage / current_max_written_bytes) * GRAPH_PERCENTAGE as f64
             } else {
                 0.0
             };
@@ -371,7 +357,7 @@ pub fn draw_disk_info(
 
     let x_axis = Axis::default().bounds([0.0, graph_show_range as f64]);
 
-    let y_axis = Axis::default().bounds([0.0, current_graph_percentage]);
+    let y_axis = Axis::default().bounds([0.0, GRAPH_PERCENTAGE]);
 
     let bytes_written_chart = Chart::new(vec![dataset])
         .x_axis(x_axis)
@@ -389,11 +375,8 @@ pub fn draw_disk_info(
     //          FOR BYTES READ LAYOUT
     //
     // ----------------------------------------
-    let [_, bytes_read_graph] = Layout::vertical([
-        Constraint::Percentage(100 - DISK_GRAPH_HEIGHT_PRCENTAGE),
-        Constraint::Percentage(DISK_GRAPH_HEIGHT_PRCENTAGE),
-    ])
-    .areas(current_bytes_read_layout);
+    let [_, bytes_read_graph] = Layout::vertical([Constraint::Length(2), Constraint::Fill(1)])
+        .areas(current_bytes_read_layout);
     let bytes_read_label = if current_bytes_read_layout.width < SMALL_WIDTH {
         Line::from("R").style(app_color_info.base_app_text_color)
     } else {
@@ -447,7 +430,7 @@ pub fn draw_disk_info(
         .map(|(i, &usage)| {
             let x = i as f64;
             let y = if usage > 0.0 {
-                (usage / current_max_read_bytes) * current_graph_percentage
+                (usage / current_max_read_bytes) * GRAPH_PERCENTAGE
             } else {
                 0.0
             };
@@ -473,7 +456,7 @@ pub fn draw_disk_info(
 
     let x_axis = Axis::default().bounds([0.0, graph_show_range as f64]);
 
-    let y_axis = Axis::default().bounds([0.0, current_graph_percentage]);
+    let y_axis = Axis::default().bounds([0.0, GRAPH_PERCENTAGE]);
 
     let bytes_read_chart = Chart::new(vec![dataset])
         .x_axis(x_axis)
