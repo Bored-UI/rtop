@@ -47,13 +47,13 @@ pub fn draw_network_info(
     }
 
     let select_instruction = Line::from(vec![
-        Span::styled(" ", Style::default().fg(app_color_info.app_title_color)),
+        Span::styled(" ", Style::default().fg(app_color_info.app_title_color)).bold(),
         Span::styled("N", Style::default().fg(app_color_info.key_text_color))
             .bold()
             .underlined(),
         Span::styled(
             "etwork ",
-            Style::default().fg(app_color_info.app_title_color),
+            Style::default().fg(app_color_info.app_title_color).bold(),
         ),
     ]);
 
@@ -62,7 +62,7 @@ pub fn draw_network_info(
         Span::styled("<", Style::default().fg(app_color_info.key_text_color)).bold(),
         Span::styled(
             format!(" {} ", network_name),
-            Style::default().fg(app_color_info.app_title_color),
+            Style::default().fg(app_color_info.app_title_color).bold(),
         ),
         Span::styled(">", Style::default().fg(app_color_info.key_text_color)).bold(),
         Span::styled("  ", Style::default().fg(app_color_info.app_title_color)),
@@ -78,6 +78,7 @@ pub fn draw_network_info(
         main_block = main_block.title(
             Line::from(format!(" {} ", network_data.ip_network.as_ref().unwrap()))
                 .fg(app_color_info.network_text_color)
+                .bold()
                 .centered(),
         )
     }
@@ -148,7 +149,8 @@ pub fn draw_network_info(
         "Download: {} {} {}",
         "▼", actual_network_received_bytes, bytes_format
     ))
-    .style(app_color_info.network_text_color);
+    .style(app_color_info.network_text_color)
+    .bold();
 
     let mut total_network_received_bytes = network_data.total_received;
     let mut bytes_format = "KiB";
@@ -169,7 +171,8 @@ pub fn draw_network_info(
         "{} Total: {} {}",
         "▼", total_network_received_bytes, bytes_format
     ))
-    .style(app_color_info.network_text_color);
+    .style(app_color_info.network_text_color)
+    .bold();
 
     let [network_received_padded_info_layout, network_received_padded_graph_layout] =
         Layout::vertical([
@@ -272,7 +275,8 @@ pub fn draw_network_info(
         "Upload: {} {} {}",
         "▲", actual_network_transmitted_bytes, bytes_format
     ))
-    .style(app_color_info.network_text_color);
+    .style(app_color_info.network_text_color)
+    .bold();
 
     let mut total_network_transmitted_bytes = network_data.total_transmitted;
     let mut bytes_format = "KiB";

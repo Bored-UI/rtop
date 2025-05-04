@@ -23,9 +23,11 @@ pub fn draw_cpu_info(
     let local_time = Local::now();
 
     let title = Line::from(
-        format!(" {} ", local_time.format("%H:%M:%S"))
-            .bold()
-            .style(app_color_info.app_title_color),
+        Span::styled(
+            format!(" {} ", local_time.format("%H:%M:%S")),
+            Style::default().fg(app_color_info.app_title_color),
+        )
+        .bold(),
     );
     let refresh_tick = get_tick_line_ui(tick, app_color_info);
     let select_instruction = Line::from(vec![
@@ -33,7 +35,7 @@ pub fn draw_cpu_info(
         Span::styled("C", Style::default().fg(app_color_info.key_text_color))
             .bold()
             .underlined(),
-        Span::styled("pu ", Style::default().fg(app_color_info.app_title_color)),
+        Span::styled("pu ", Style::default().fg(app_color_info.app_title_color)).bold(),
     ]);
 
     // The main block for CPU info
@@ -138,8 +140,9 @@ pub fn draw_cpu_info(
     // --------------------------------------------------
 
     // Create the inner_right block [for cpu info]
-    let cpu_brand =
-        Line::from(format!(" {} ", cpus[0].brand)).style(app_color_info.app_title_color);
+    let cpu_brand = Line::from(format!(" {} ", cpus[0].brand))
+        .style(app_color_info.app_title_color)
+        .bold();
     let inner_right_block = Block::bordered()
         .title(cpu_brand.left_aligned())
         .style(app_color_info.cpu_info_block_color)
@@ -195,7 +198,11 @@ pub fn draw_cpu_info(
     let cpu_info_list = List::new(cpu_info_items)
         .block(inner_right_block)
         .style(Style::default().fg(app_color_info.cpu_selected_color))
-        .highlight_style(Style::default().fg(app_color_info.cpu_selected_color))
+        .highlight_style(
+            Style::default()
+                .fg(app_color_info.cpu_selected_color)
+                .bold(),
+        )
         .highlight_symbol(">> ");
 
     // Render the main cpu block container

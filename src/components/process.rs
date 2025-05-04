@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use ratatui::{
     layout::{Constraint, Layout, Rect},
-    style::{Style, Stylize},
+    style::{Modifier, Style, Stylize},
     symbols::border,
     text::{Line, Span},
     widgets::{Block, List, ListItem, ListState},
@@ -28,6 +28,7 @@ pub fn draw_process_info(
     process_sort_type: &ProcessSortType,
     process_sort_is_reversed: bool,
     process_filter: String,
+    process_show_detail: bool,
     is_filtering: bool, // to indicate if the app enter typing state for process filtering
     area: Rect,
     frame: &mut Frame,
@@ -43,7 +44,7 @@ pub fn draw_process_info(
             .underlined(),
         Span::styled(
             "rocess ",
-            Style::default().fg(app_color_info.app_title_color),
+            Style::default().fg(app_color_info.app_title_color).bold(),
         ),
     ]);
 
@@ -54,23 +55,26 @@ pub fn draw_process_info(
             .underlined(),
         Span::styled(
             "everse ",
-            Style::default().fg(app_color_info.app_title_color),
+            Style::default().fg(app_color_info.app_title_color).bold(),
         ),
     ]);
 
-    let process_sort_slect_instruction = Line::from(vec![
+    // for selecting based sorting type, example based on thread count, memory etc
+    let process_sort_select_instruction = Line::from(vec![
         Span::styled("　< ", Style::default().fg(app_color_info.key_text_color)).bold(),
         Span::styled(
             ProcessSortType::get_sort_string_name(process_sort_type),
-            Style::default().fg(app_color_info.app_title_color),
+            Style::default().fg(app_color_info.app_title_color).bold(),
         ),
         Span::styled(" >　", Style::default().fg(app_color_info.key_text_color)).bold(),
     ]);
+
     let mut process_filter_without_underscore_extension: String = process_filter
         .chars()
         .take(process_filter.len() - 1)
         .collect();
 
+    // for process filtering input width takeup space
     process_filter_without_underscore_extension =
         if area.width > MEDIUM_WIDTH && area.width <= LARGE_WIDTH {
             if process_filter_without_underscore_extension.len() > 20 {
@@ -127,7 +131,7 @@ pub fn draw_process_info(
                 .underlined(),
             Span::styled(
                 format!(" {}_ ", process_filter_without_underscore_extension),
-                Style::default().fg(app_color_info.app_title_color),
+                Style::default().fg(app_color_info.app_title_color).bold(),
             ),
             Span::styled("↵ ", Style::default().fg(app_color_info.key_text_color)).bold(),
         ])
@@ -140,7 +144,7 @@ pub fn draw_process_info(
                     .underlined(),
                 Span::styled(
                     "ilter ",
-                    Style::default().fg(app_color_info.app_title_color),
+                    Style::default().fg(app_color_info.app_title_color).bold(),
                 ),
             ])
         } else {
@@ -151,18 +155,91 @@ pub fn draw_process_info(
                     .underlined(),
                 Span::styled(
                     format!(" {} ", process_filter_without_underscore_extension),
-                    Style::default().fg(app_color_info.app_title_color),
+                    Style::default().fg(app_color_info.app_title_color).bold(),
                 ),
                 Span::styled("← ", Style::default().fg(app_color_info.key_text_color)).bold(),
             ])
         }
     };
 
+    // to indicate that user is currently navigating in the process list items or not
+    let is_process_selected = if let Some(_) = process_selected_state.selected() {
+        true
+    } else {
+        false
+    };
+
+    let is_selected_process_eol = if let Some(selected) = process_selected_state.selected() {
+        let is_eol = if selected + 1 == *process_selectable_entries {
+            true
+        } else {
+            false
+        };
+
+        is_eol
+    } else {
+        false
+    };
+
+    let navigating_up_arrow = if is_process_selected {
+        Span::styled("↑ ", Style::default().fg(app_color_info.key_text_color)).bold()
+    } else {
+        // dim out the up arrow key as user didn't select any process thus navigating up the list is impossible
+        Span::styled("↑ ", Style::default().fg(app_color_info.key_text_color))
+            .bold()
+            .add_modifier(Modifier::DIM)
+    };
+
+    let navigating_down_arrow = if is_selected_process_eol {
+        // dim out the down arrow key as user has reached the end of list thus navigating down the list is impossible
+        Span::styled(" ↓", Style::default().fg(app_color_info.key_text_color))
+            .bold()
+            .add_modifier(Modifier::DIM)
+    } else {
+        Span::styled(" ↓", Style::default().fg(app_color_info.key_text_color)).bold()
+    };
+
+    let process_list_selection_instruction = Line::from(vec![
+        navigating_up_arrow,
+        Span::styled(
+            "select",
+            Style::default().fg(app_color_info.app_title_color),
+        )
+        .bold(),
+        navigating_down_arrow,
+    ]);
+
+    let able_show_info = if is_process_selected {
+        Line::from(vec![
+            Span::styled(
+                " info ",
+                Style::default().fg(app_color_info.app_title_color),
+            )
+            .bold(),
+            Span::styled("↵ ", Style::default().fg(app_color_info.key_text_color)).bold(),
+        ])
+    } else {
+        // dim out the up info key as user didn't select any process thus showing detail info is not possible
+        Line::from(vec![
+            Span::styled(
+                " info ",
+                Style::default().fg(app_color_info.app_title_color),
+            )
+            .bold()
+            .add_modifier(Modifier::DIM),
+            Span::styled("↵ ", Style::default().fg(app_color_info.key_text_color))
+                .bold()
+                .add_modifier(Modifier::DIM),
+        ])
+    };
+
     let mut main_block = Block::bordered()
         .title(select_instruction.left_aligned())
-        .title_bottom(process_filter_instruction.left_aligned())
-        .title_bottom(process_sort_is_reversed_intruction.right_aligned())
-        .title_bottom(process_sort_slect_instruction.right_aligned())
+        .title(process_filter_instruction.left_aligned())
+        .title(process_sort_is_reversed_intruction.right_aligned())
+        .title(process_sort_select_instruction.right_aligned())
+        .title_bottom(process_list_selection_instruction.left_aligned())
+        .title_bottom(able_show_info.left_aligned())
         .style(app_color_info.process_main_block_color)
         .border_set(border::ROUNDED);
 
@@ -189,8 +266,8 @@ pub fn draw_process_info(
 
     let [_, process_block, _] = Layout::horizontal([
         Constraint::Percentage(2),
-        Constraint::Percentage(96),
-        Constraint::Percentage(2),
+        Constraint::Percentage(95),
+        Constraint::Percentage(3),
     ])
     .areas(padded_vertical_inner);
 
@@ -317,31 +394,45 @@ pub fn draw_process_info(
     let process_title = Line::from(vec![
         Span::styled(
             padded_pid_title,
-            Style::default().fg(app_color_info.process_title_color),
+            Style::default()
+                .fg(app_color_info.process_title_color)
+                .bold(),
         ),
         Span::styled(
             padded_program_title,
-            Style::default().fg(app_color_info.process_title_color),
+            Style::default()
+                .fg(app_color_info.process_title_color)
+                .bold(),
         ),
         Span::styled(
             padded_command_title,
-            Style::default().fg(app_color_info.process_title_color),
+            Style::default()
+                .fg(app_color_info.process_title_color)
+                .bold(),
         ),
         Span::styled(
             padded_thread_title,
-            Style::default().fg(app_color_info.process_title_color),
+            Style::default()
+                .fg(app_color_info.process_title_color)
+                .bold(),
         ),
         Span::styled(
             padded_user_title,
-            Style::default().fg(app_color_info.process_title_color),
+            Style::default()
+                .fg(app_color_info.process_title_color)
+                .bold(),
         ),
         Span::styled(
             padded_memory_title,
-            Style::default().fg(app_color_info.process_title_color),
+            Style::default()
+                .fg(app_color_info.process_title_color)
+                .bold(),
         ),
         Span::styled(
             padded_cpu_usage_title,
-            Style::default().fg(app_color_info.process_title_color),
+            Style::default()
+                .fg(app_color_info.process_title_color)
+                .bold(),
         ),
     ]);
 
@@ -492,17 +583,12 @@ pub fn draw_process_info(
 
     *process_selectable_entries = process_list.len() as usize;
 
-    if let Some(selected) = process_selected_state.selected() {
-        if selected > process_list.len() {
-            process_selected_state.select(Some(0));
-        }
-    }
-
     // Create the combined list
     let process_info_list = List::new(process_list).highlight_style(
         Style::default()
             .bg(app_color_info.process_selected_color_bg)
-            .fg(app_color_info.process_selected_color_fg),
+            .fg(app_color_info.process_selected_color_fg)
+            .bold(),
     );
     // Render the combined list with state
     frame.render_stateful_widget(

@@ -25,8 +25,8 @@ use crate::{
     get_sys_info::{spawn_process_info_collector, spawn_system_info_collector},
     memory::draw_memory_info,
     types::{
-        AppState, CProcessesInfo, CSysInfo, MemoryData, ProcessSortType, ProcessesInfo,
-        SelectedContainer, SysInfo,
+        AppState, CProcessesInfo, CSysInfo, MemoryData, ProcessData, ProcessSortType,
+        ProcessesInfo, SelectedContainer, SysInfo,
     },
     utils::{process_processes_info, process_sys_info},
 };
@@ -61,6 +61,8 @@ struct App {
     process_sort_type: ProcessSortType,
     process_sort_is_reversed: bool, // by default the sorting will be in descending order (true), by setting this to false, the sort will be in ascending order
     process_filter: String,
+    process_show_details: bool,
+    current_showing_process_detail: Option<HashMap<String, ProcessData>>,
     is_renderable: bool,
     is_init: bool,
     container_full_screen: bool,
@@ -162,6 +164,8 @@ pub fn tui() {
         process_sort_type: ProcessSortType::Thread,
         process_sort_is_reversed: true,
         process_filter: String::new(),
+        process_show_details: false,
+        current_showing_process_detail: None,
         is_renderable: true,
         is_init: false,
         container_full_screen: false,
@@ -433,6 +437,7 @@ impl App {
                         &self.process_sort_type,
                         self.process_sort_is_reversed,
                         self.process_filter.clone(),
+                        self.process_show_details,
                         self.state == AppState::Typing,
                         full_frame_view_rect,
                         frame,
@@ -515,6 +520,7 @@ impl App {
                     &self.process_sort_type,
                     self.process_sort_is_reversed,
                     self.process_filter.clone(),
+                    self.process_show_details,
                     self.state == AppState::Typing,
                     process_area,
                     frame,
@@ -599,6 +605,8 @@ impl App {
                         if let Some(selected) = self.process_selected_state.selected() {
                             if selected > 0 {
                                 self.process_selected_state.select(Some(selected - 1));
+                            } else {
+                                self.process_selected_state.select(None);
                             }
                         }
                     }

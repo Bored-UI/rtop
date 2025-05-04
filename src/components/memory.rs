@@ -47,7 +47,7 @@ pub fn draw_memory_info(
             .underlined(),
         Span::styled(
             "emory ",
-            Style::default().fg(app_color_info.app_title_color),
+            Style::default().fg(app_color_info.app_title_color).bold(),
         ),
     ]);
 
@@ -89,9 +89,12 @@ pub fn draw_memory_info(
         Layout::vertical([Constraint::Percentage(10), Constraint::Percentage(90)])
             .areas(padded_memory_block);
 
-    let total_memory_label = Line::from("Total:").style(app_color_info.app_title_color);
-    let total_memory =
-        Line::from(format!("{} GiB", memory.total_memory)).style(app_color_info.app_title_color);
+    let total_memory_label = Line::from("Total:")
+        .style(app_color_info.app_title_color)
+        .bold();
+    let total_memory = Line::from(format!("{} GiB", memory.total_memory))
+        .style(app_color_info.app_title_color)
+        .bold();
     let top_inner_block = Block::new()
         .title(total_memory_label.left_aligned())
         .title(total_memory.right_aligned())
@@ -170,7 +173,8 @@ pub fn draw_memory_info(
         "{} GiB",
         memory.used_memory_vec[memory.used_memory_vec.len() - 1]
     ))
-    .style(app_color_info.memory_text_color);
+    .style(app_color_info.memory_text_color)
+    .bold();
 
     let used_memory_block = Block::new()
         .title(used_memory_label.left_aligned())
@@ -244,7 +248,8 @@ pub fn draw_memory_info(
         "{} GiB",
         memory.available_memory_vec[memory.available_memory_vec.len() - 1]
     ))
-    .style(app_color_info.memory_text_color);
+    .style(app_color_info.memory_text_color)
+    .bold();
 
     let available_memory_block = Block::new()
         .title(available_memory_label.left_aligned())
@@ -318,7 +323,8 @@ pub fn draw_memory_info(
         "{} GiB",
         memory.free_memory_vec[memory.free_memory_vec.len() - 1]
     ))
-    .style(app_color_info.memory_text_color);
+    .style(app_color_info.memory_text_color)
+    .bold();
 
     let free_memory_block = Block::new()
         .title(free_memory_label.left_aligned())
@@ -393,7 +399,8 @@ pub fn draw_memory_info(
             "{} GiB",
             memory.used_swap_vec[memory.used_swap_vec.len() - 1]
         ))
-        .style(app_color_info.memory_text_color);
+        .style(app_color_info.memory_text_color)
+        .bold();
 
         let swap_memory_block = Block::new()
             .title(swap_memory_label.left_aligned())
@@ -470,7 +477,8 @@ pub fn draw_memory_info(
             "{} GiB",
             memory.cached_memory_vec[memory.cached_memory_vec.len() - 1]
         ))
-        .style(app_color_info.memory_text_color);
+        .style(app_color_info.memory_text_color)
+        .bold();
 
         let cached_memory_block = Block::new()
             .title(cached_memory_label.left_aligned())

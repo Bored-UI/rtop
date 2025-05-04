@@ -297,7 +297,7 @@ pub fn get_tick_line_ui(tick: u64, app_color_info: &AppColorInfo) -> Line {
         Span::styled("-", Style::default().fg(app_color_info.key_text_color)).bold(),
         Span::styled(
             format!(" {}ms ", tick),
-            Style::default().fg(app_color_info.app_title_color),
+            Style::default().fg(app_color_info.app_title_color).bold(),
         ),
         Span::styled("+", Style::default().fg(app_color_info.key_text_color)).bold(),
         Span::styled("  ", Style::default().fg(app_color_info.app_title_color)),
