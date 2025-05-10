@@ -254,6 +254,7 @@ pub fn spawn_process_info_collector(
                                 user = u.unwrap().name();
                             }
                         }
+                        let process_disk_usage = process.disk_usage();
                         let process_info = CProcessData {
                             pid: pid.as_u32(),
                             name: process.name().to_string_lossy().to_string(),
@@ -273,6 +274,15 @@ pub fn spawn_process_info_collector(
                             memory: ((process.memory() as f64 / TO_KB) * 1000.0).round() / 1000.0,
                             status: process.status().to_string(),
                             elapsed: process.run_time(),
+                            parent: if process.parent().is_some() {
+                                format!("{:?}", process.parent().unwrap())
+                            } else {
+                                "-".to_string()
+                            },
+                            current_read_disk_usage: process_disk_usage.read_bytes,
+                            total_read_disk_usage: process_disk_usage.total_read_bytes,
+                            current_write_disk_usage: process_disk_usage.written_bytes,
+                            total_write_disk_usage: process_disk_usage.total_written_bytes,
                         };
 
                         processes.push(process_info);

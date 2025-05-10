@@ -119,14 +119,10 @@ pub fn draw_cpu_info(
         .marker(Marker::Braille)
         .style(Style::default().fg(app_color_info.cpu_base_graph_color));
 
-    let x_axis = Axis::default()
-        .style(Style::default().fg(app_color_info.base_app_text_color))
-        .bounds([0.0, graph_show_range as f64]);
+    let x_axis = Axis::default().bounds([0.0, graph_show_range as f64]);
 
     // Define the x-axis (CPU Usage) and y-axis (Time)
-    let y_axis = Axis::default()
-        .style(Style::default().fg(app_color_info.base_app_text_color))
-        .bounds([0.0, 100.0]);
+    let y_axis = Axis::default().bounds([0.0, 100.0]);
 
     // Create the chart widget
     let chart = Chart::new(vec![dataset])

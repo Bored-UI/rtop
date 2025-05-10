@@ -3,9 +3,9 @@ use std::collections::HashMap;
 use ratatui::{
     layout::{Constraint, Layout, Rect},
     style::{Modifier, Style, Stylize},
-    symbols::border,
+    symbols::{border, Marker},
     text::{Line, Span},
-    widgets::{Block, List, ListItem, ListState},
+    widgets::{Axis, Block, Borders, Chart, Dataset, GraphType, List, ListItem, ListState},
     Frame,
 };
 
@@ -16,7 +16,7 @@ use crate::{
 };
 
 const MEDIUM_WIDTH: u16 = 60;
-const LARGE_WIDTH: u16 = 75;
+const LARGE_WIDTH: u16 = 80;
 const X_LARGE_WIDTH: u16 = 95;
 const XX_LARGE_WIDTH: u16 = 120;
 
@@ -34,12 +34,14 @@ const XX_LARGE_HEIGHT_FILL: u16 = 2;
 pub fn draw_process_info(
     tick: u64,
     process_data: &HashMap<String, ProcessData>,
+    process_current_list: &mut Vec<ProcessData>,
     process_selectable_entries: &mut usize,
     process_selected_state: &mut ListState,
     process_sort_type: &ProcessSortType,
     process_sort_is_reversed: bool,
     process_filter: String,
     process_show_detail: bool,
+    current_showing_process_detail: &Option<HashMap<String, ProcessData>>,
     is_filtering: bool, // to indicate if the app enter typing state for process filtering
     area: Rect,
     frame: &mut Frame,
@@ -180,6 +182,7 @@ pub fn draw_process_info(
         false
     };
 
+    // to check if user have already reached the end of the list
     let is_selected_process_eol = if let Some(selected) = process_selected_state.selected() {
         let is_eol = if selected + 1 == *process_selectable_entries {
             true
@@ -282,7 +285,6 @@ pub fn draw_process_info(
     ])
     .areas(padded_vertical_inner);
 
-    let mut process_detail_layout = Rect::default();
     let [mut title_layout, mut process_list_layout] =
         Layout::vertical([Constraint::Length(1), Constraint::Fill(1)]).areas(process_block);
 
@@ -300,7 +302,7 @@ pub fn draw_process_info(
                 XX_LARGE_HEIGHT_FILL
             };
 
-        let [new_process_detail_layout, new_title_layout, new_process_list_layout] =
+        let [process_detail_layout, new_title_layout, new_process_list_layout] =
             Layout::vertical([
                 Constraint::Fill(percentage_of_process_detail_container_space),
                 Constraint::Length(1),
@@ -309,8 +311,206 @@ pub fn draw_process_info(
             .areas(process_block);
 
         title_layout = new_title_layout;
-        process_detail_layout = new_process_detail_layout;
         process_list_layout = new_process_list_layout;
+
+        match current_showing_process_detail.as_ref() {
+            Some(hashmap) => {
+                if let Some((_, value)) = hashmap.iter().next() {
+                    let process_detail = value;
+
+                    let [process_detail_graph_layout, process_detail_info_layout] =
+                        Layout::horizontal([Constraint::Fill(1), Constraint::Fill(2)])
+                            .areas(process_detail_layout);
+
+                    // ------------------------------------------------
+                    // block for the cpu usage graph for the process
+                    // ------------------------------------------------
+
+                    // pid of the process detail
+                    let pid = Line::from(vec![Span::styled(
+                        process_detail.pid.to_string(),
+                        Style::default().fg(app_color_info.app_title_color),
+                    )
+                    .bold()]);
+
+                    // name of the process detail
+                    let name = Line::from(vec![Span::styled(
+                        process_detail.name.to_string(),
+                        Style::default().fg(app_color_info.app_title_color),
+                    )
+                    .bold()]);
+                    let process_detail_graph_block = Block::bordered()
+                        .borders(Borders::RIGHT)
+                        .title(pid.left_aligned())
+                        .title(name.left_aligned())
+                        .style(app_color_info.process_main_block_color);
+
+                    // ------------------------------------------------
+                    // block for process detail info
+                    // ------------------------------------------------
+                    let termination_instruction = Line::from(vec![
+                        Span::styled(
+                            "T".to_string(),
+                            Style::default().fg(app_color_info.key_text_color),
+                        )
+                        .bold()
+                        .underlined(),
+                        Span::styled(
+                            "erminate".to_string(),
+                            Style::default().fg(app_color_info.app_title_color),
+                        )
+                        .bold(),
+                    ]);
+                    let kill_instruction = Line::from(vec![
+                        Span::styled(
+                            "K".to_string(),
+                            Style::default().fg(app_color_info.key_text_color),
+                        )
+                        .bold()
+                        .underlined(),
+                        Span::styled(
+                            "ill".to_string(),
+                            Style::default().fg(app_color_info.app_title_color),
+                        )
+                        .bold(),
+                    ]);
+                    let signal_instruction = Line::from(vec![
+                        Span::styled(
+                            "S".to_string(),
+                            Style::default().fg(app_color_info.key_text_color),
+                        )
+                        .bold()
+                        .underlined(),
+                        Span::styled(
+                            "ignal".to_string(),
+                            Style::default().fg(app_color_info.app_title_color),
+                        )
+                        .bold(),
+                    ]);
+                    let hide_instruction = Line::from(vec![
+                        Span::styled(
+                            "Hide ".to_string(),
+                            Style::default().fg(app_color_info.app_title_color),
+                        )
+                        .bold(),
+                        Span::styled("↵", Style::default().fg(app_color_info.key_text_color))
+                            .bold(),
+                    ]);
+                    let process_detail_info_block = if area.width < MEDIUM_WIDTH {
+                        Block::bordered()
+                            .borders(Borders::NONE)
+                            .title(termination_instruction.left_aligned())
+                            .title(signal_instruction.left_aligned())
+                            .title(hide_instruction.right_aligned())
+                    } else {
+                        Block::bordered()
+                            .borders(Borders::NONE)
+                            .title(termination_instruction.left_aligned())
+                            .title(kill_instruction.left_aligned())
+                            .title(signal_instruction.left_aligned())
+                            .title(hide_instruction.right_aligned())
+                    };
+
+                    // render both block
+                    frame.render_widget(process_detail_graph_block, process_detail_graph_layout);
+                    frame.render_widget(process_detail_info_block, process_detail_info_layout);
+
+                    let [_, padded_detail_graph_horizontal, _] = Layout::horizontal([
+                        Constraint::Length(1),
+                        Constraint::Fill(1),
+                        Constraint::Length(1),
+                    ])
+                    .areas(process_detail_graph_layout);
+
+                    let [_, padded_detail_graph_layout, detail_graph_naming_layout] =
+                        Layout::vertical([
+                            Constraint::Length(1),
+                            Constraint::Fill(1),
+                            Constraint::Length(1),
+                        ])
+                        .areas(padded_detail_graph_horizontal);
+
+                    let [_, padded_detail_graph_naming_layout, _] = Layout::horizontal([
+                        Constraint::Fill(1),
+                        Constraint::Fill(1),
+                        Constraint::Fill(1),
+                    ])
+                    .areas(detail_graph_naming_layout);
+
+                    // ------------------------------------------------------------
+                    // Rendering for process CPU usage history graph on the left
+                    // ------------------------------------------------------------
+
+                    // first get the process cpu usage history
+                    let process_cpu_usage_history = process_detail.cpu_usage.clone();
+
+                    // Determine the number of points to display based on zoom level
+                    let num_points_to_display =
+                        graph_show_range.min(process_cpu_usage_history.len());
+                    let start_idx = process_cpu_usage_history
+                        .len()
+                        .saturating_sub(num_points_to_display);
+                    let mut data_points: Vec<(f64, f64)> = process_cpu_usage_history[start_idx..]
+                        .iter()
+                        .enumerate()
+                        .map(|(i, &usage)| {
+                            // X-axis: Usage (0.0 to 100.0)
+                            // Y-axis: Time (most recent at the bottom)
+                            // Map the index to a y-value from 0.0 (oldest) to num_points_to_display (newest)
+                            let x = i as f64;
+                            let y = usage as f64;
+                            (x, y)
+                        })
+                        .collect();
+
+                    data_points = data_points
+                        .iter()
+                        .map(|(x, y)| {
+                            (graph_show_range as f64 - (data_points.len() as f64 - x), *y)
+                        })
+                        .collect();
+
+                    // Create the dataset for the chart
+                    let dataset = Dataset::default()
+                        .name("")
+                        .data(&data_points)
+                        .graph_type(GraphType::Bar)
+                        .marker(Marker::Braille)
+                        .style(Style::default().fg(app_color_info.cpu_base_graph_color));
+
+                    let x_axis = Axis::default().bounds([0.0, graph_show_range as f64]);
+
+                    // Define the x-axis (CPU Usage) and y-axis (Time)
+                    let y_axis = Axis::default().bounds([0.0, 100.0]);
+
+                    // Create the chart widget
+                    let chart = Chart::new(vec![dataset])
+                        .x_axis(x_axis)
+                        .y_axis(y_axis)
+                        .bg(app_color_info.background_color);
+
+                    // --------------------------------------------------------------------------------
+                    // Rendering for process CPU usage history graph naming at the bottom of the graph
+                    // --------------------------------------------------------------------------------
+                    let process_cpu_usage_graph_naming = Line::from(vec![Span::styled(
+                        "CPU".to_string(),
+                        Style::default().fg(app_color_info.app_title_color),
+                    )
+                    .bold()]);
+
+                    frame.render_widget(chart, padded_detail_graph_layout);
+                    frame.render_widget(
+                        process_cpu_usage_graph_naming,
+                        padded_detail_graph_naming_layout,
+                    );
+                } else {
+                    return;
+                }
+            }
+            None => {
+                return;
+            }
+        };
     }
 
     // for each column of different info of process
@@ -486,6 +686,8 @@ pub fn draw_process_info(
         process_data,
     );
 
+    *process_current_list = sorted_process.clone();
+
     let process_list: Vec<ListItem> = sorted_process
         .iter()
         .map(|value| {
@@ -521,7 +723,10 @@ pub fn draw_process_info(
 
             let user = value.user.clone();
             let memory = processed_memory;
-            let cpu_usage = format!("{:.2}%", round_to_2_decimal(value.cpu_usage));
+            let cpu_usage = format!(
+                "{:.2}%",
+                round_to_2_decimal(value.cpu_usage[value.cpu_usage.len() - 1])
+            );
 
             let padded_pid = if pid.len() < pid_width {
                 format!("{:width$}", pid, width = pid_width)

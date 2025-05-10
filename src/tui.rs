@@ -35,37 +35,38 @@ use crate::{
 const MAX_GRAPH_SHOWN_RANGE: usize = 500;
 
 struct App {
-    is_quit: bool,
-    tick: u32,
-    tx: Sender<CSysInfo>,
-    rx: Receiver<CSysInfo>,
-    process_tx: Sender<CProcessesInfo>,
-    process_rx: Receiver<CProcessesInfo>,
-    tick_tx: Sender<u32>,
-    process_tick_tx: Sender<u32>,
-    sys_info: SysInfo,
-    process_info: ProcessesInfo,
-    selected_container: SelectedContainer,
-    state: AppState,
-    cpu_graph_shown_range: usize,
-    memory_graph_shown_range: usize,
-    disk_graph_shown_range: usize,
-    network_graph_shown_range: usize,
-    process_graph_shown_range: usize,
-    cpu_selected_state: ListState,
-    disk_selected_entry: usize,
-    network_selected_entry: usize,
-    process_selectable_entries: usize,
-    process_selected_state: ListState,
-    process_sort_selected_state: u8,
-    process_sort_type: ProcessSortType,
+    is_quit: bool,                          // to indicate is user wanted to quit the app
+    tick: u32, // refresh rate for the metrics ( default is 1000ms, customizable by user )
+    tx: Sender<CSysInfo>, // this will be pass to another thread that will be spawn for collecting metrics to send the data collected back
+    rx: Receiver<CSysInfo>, // this will be in the main app to receive the data info send back
+    process_tx: Sender<CProcessesInfo>, // this will be pass to another thread that will be spawn for collecting process metrics to send the data collected back
+    process_rx: Receiver<CProcessesInfo>, // this will be in the main app to receive the process data info send back
+    tick_tx: Sender<u32>, // this will be for sending the updated tick to the thread spawn to update the frequency of collecting data
+    process_tick_tx: Sender<u32>, // this will be for sending the updated tick to the thread spawn to update the frequency of collecting process data
+    sys_info: SysInfo,            // the system info collected
+    process_info: ProcessesInfo,  // the system process info collected
+    selected_container: SelectedContainer, // current selected container in the UI
+    state: AppState,              // current state of the app
+    cpu_graph_shown_range: usize, // range of graph shown for CPU
+    memory_graph_shown_range: usize, // range of graph shown for MEMORY
+    disk_graph_shown_range: usize, // range of graph shown for DISK
+    network_graph_shown_range: usize, // range of graph shown for NETWORK
+    process_graph_shown_range: usize, // range of graph shown for PROCESS [ this will the the graph shown in the process detail layout ]
+    cpu_selected_state: ListState,    // current selected individual cpu
+    disk_selected_entry: usize,       // current selected individual disk
+    network_selected_entry: usize,    // current selected individual network
+    process_current_list: Vec<ProcessData>, // current process list after filtering/sorting
+    process_selectable_entries: usize, // current selectable entries in the process list
+    process_selected_state: ListState, // current selected individual process
+    process_sort_selected_state: u8,  // current selected sorting
+    process_sort_type: ProcessSortType, // current sorting type
     process_sort_is_reversed: bool, // by default the sorting will be in descending order (true), by setting this to false, the sort will be in ascending order
-    process_filter: String,
-    process_show_details: bool,
-    current_showing_process_detail: Option<HashMap<String, ProcessData>>,
-    is_renderable: bool,
-    is_init: bool,
-    container_full_screen: bool,
+    process_filter: String,         // current user input for filtering
+    process_show_details: bool,     // indicate if user wanted to show process details
+    current_showing_process_detail: Option<HashMap<String, ProcessData>>, // the current showing process detail
+    is_renderable: bool,         // to indicate if this app UI is renderable
+    is_init: bool,               // to indicate is this app has done initialization
+    container_full_screen: bool, // to indicate is user choose to full screen the current selected container
 }
 
 pub struct AppColorInfo {
@@ -158,6 +159,7 @@ pub fn tui() {
         cpu_selected_state: ListState::default(),
         disk_selected_entry: 0,
         network_selected_entry: 0,
+        process_current_list: vec![],
         process_selectable_entries: 0,
         process_selected_state: ListState::default(),
         process_sort_selected_state: 0,
@@ -255,7 +257,11 @@ impl App {
                     process_sys_info(&mut self.sys_info, c_sys_info);
                     match self.process_rx.try_recv() {
                         Ok(c_processes_info) => {
-                            process_processes_info(&mut self.process_info, c_processes_info);
+                            process_processes_info(
+                                &mut self.process_info,
+                                c_processes_info,
+                                &mut self.current_showing_process_detail,
+                            );
                             self.is_init = true;
                         }
                         Err(_) => {
@@ -283,7 +289,11 @@ impl App {
 
             let c_process_info = self.process_rx.try_recv();
             if c_process_info.is_ok() {
-                process_processes_info(&mut self.process_info, c_process_info.unwrap());
+                process_processes_info(
+                    &mut self.process_info,
+                    c_process_info.unwrap(),
+                    &mut self.current_showing_process_detail,
+                );
             }
             let _ = terminal.draw(|frame| self.draw(frame, &app_color_info));
 
@@ -312,6 +322,7 @@ impl App {
         //   |     & bottom (35%)      |                                |
         //   ------------------------------------------------------------
 
+        // split and init the layout space for each container
         let top_and_bottom = Layout::vertical([Constraint::Fill(30), Constraint::Fill(70)]);
         let [cpu_area, bottom] = top_and_bottom.areas(frame.area());
         let [bottom_left, process_area] =
@@ -429,12 +440,14 @@ impl App {
                     draw_process_info(
                         self.tick as u64,
                         &self.process_info.processes,
+                        &mut self.process_current_list,
                         &mut self.process_selectable_entries,
                         &mut self.process_selected_state,
                         &self.process_sort_type,
                         self.process_sort_is_reversed,
                         self.process_filter.clone(),
                         self.process_show_details,
+                        &self.current_showing_process_detail,
                         self.state == AppState::Typing,
                         full_frame_view_rect,
                         frame,
@@ -512,12 +525,14 @@ impl App {
                 draw_process_info(
                     self.tick as u64,
                     &self.process_info.processes,
+                    &mut self.process_current_list,
                     &mut self.process_selectable_entries,
                     &mut self.process_selected_state,
                     &self.process_sort_type,
                     self.process_sort_is_reversed,
                     self.process_filter.clone(),
                     self.process_show_details,
+                    &self.current_showing_process_detail,
                     self.state == AppState::Typing,
                     process_area,
                     frame,
@@ -967,13 +982,17 @@ impl App {
             KeyCode::Enter => {
                 if self.state == AppState::View {
                     if self.selected_container == SelectedContainer::Process {
-                        if self.process_show_details {
-                            self.process_show_details = false;
-                            self.current_showing_process_detail = None;
-                        } else {
-                            if let Some(_) = self.process_selected_state.selected() {
-                                self.process_show_details = true;
-                            }
+                        if let Some(selected) = self.process_selected_state.selected() {
+                            self.process_show_details = true;
+                            let mut selected_process = HashMap::new();
+                            selected_process.insert(
+                                self.process_current_list[selected].pid.to_string(),
+                                self.process_current_list[selected].clone(),
+                            );
+                            self.current_showing_process_detail = Some(selected_process);
+
+                            // unselect current selected process item list to enter the process detail container
+                            self.process_selected_state.select(None);
                         }
                     }
                 }

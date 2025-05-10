@@ -9,13 +9,12 @@ pub struct SysInfo {
 }
 
 pub struct ProcessesInfo {
-    pub processes: HashMap<String, ProcessData>,
+    pub processes: HashMap<String, ProcessData>, // as a hashmap to easily update existing data by retrieving it based on PID which is the key
 }
 
 const MAXIMUM_DATA_COLLECTION: usize = 500;
 
 pub struct CpuData {
-    pub info_type: String,
     pub id: String,
     pub brand: String,
     pub usage: f32,
@@ -61,11 +60,16 @@ pub struct ProcessData {
     pub exe_path: Option<String>,
     pub cmd: Vec<String>,
     pub user: String,
-    pub cpu_usage: f32,
+    pub cpu_usage: Vec<f32>,
     pub thread_count: u32,
     pub memory: Vec<f64>,
     pub status: String,
     pub elapsed: u64,
+    pub parent: String,
+    pub current_read_disk_usage: u64,
+    pub total_read_disk_usage: u64,
+    pub current_write_disk_usage: u64,
+    pub total_write_disk_usage: u64,
     pub is_updated: bool,
 }
 
@@ -77,7 +81,6 @@ impl CpuData {
             format!("CPU{}", id)
         };
         CpuData {
-            info_type: "CPU".to_string(),
             id,
             brand,
             usage,
@@ -280,6 +283,11 @@ impl ProcessData {
         memory: f64,
         status: String,
         elapsed: u64,
+        parent: String,
+        current_read_disk_usage: u64,
+        total_read_disk_usage: u64,
+        current_write_disk_usage: u64,
+        total_write_disk_usage: u64,
     ) -> ProcessData {
         return ProcessData {
             pid,
@@ -287,12 +295,17 @@ impl ProcessData {
             exe_path,
             cmd,
             user,
-            cpu_usage,
+            cpu_usage: vec![cpu_usage],
             thread_count,
             memory: vec![memory],
             status,
             elapsed,
+            parent,
             is_updated: true,
+            current_read_disk_usage,
+            total_read_disk_usage,
+            current_write_disk_usage,
+            total_write_disk_usage,
         };
     }
 
@@ -308,17 +321,31 @@ impl ProcessData {
         memory: f64,
         status: String,
         elapsed: u64,
+        parent: String,
+        current_read_disk_usage: u64,
+        total_read_disk_usage: u64,
+        current_write_disk_usage: u64,
+        total_write_disk_usage: u64,
     ) {
         if self.pid == pid {
             self.name = name;
             self.exe_path = exe_path;
             self.cmd = cmd;
             self.user = user;
-            self.cpu_usage = cpu_usage;
+            self.cpu_usage.push(cpu_usage);
             self.thread_count = thread_count;
             self.memory.push(memory);
             self.status = status;
             self.elapsed = elapsed;
+            self.parent = parent;
+            self.current_read_disk_usage = current_read_disk_usage;
+            self.total_read_disk_usage = total_read_disk_usage;
+            self.current_write_disk_usage = current_write_disk_usage;
+            self.total_write_disk_usage = total_write_disk_usage;
+
+            if self.cpu_usage.len() > MAXIMUM_DATA_COLLECTION {
+                self.cpu_usage.remove(0);
+            }
 
             if self.memory.len() > MAXIMUM_DATA_COLLECTION {
                 self.memory.remove(0);
@@ -388,6 +415,11 @@ pub struct CProcessData {
     pub memory: f64,
     pub status: String,
     pub elapsed: u64,
+    pub parent: String,
+    pub current_read_disk_usage: u64,
+    pub total_read_disk_usage: u64,
+    pub current_write_disk_usage: u64,
+    pub total_write_disk_usage: u64,
 }
 
 #[derive(PartialEq)]

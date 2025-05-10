@@ -215,6 +215,7 @@ pub fn process_sys_info(current_sys_info: &mut SysInfo, collected_sys_info: CSys
 pub fn process_processes_info(
     current_process_info: &mut ProcessesInfo,
     collected_process_info: CProcessesInfo,
+    process_detail_info: &mut Option<HashMap<String, ProcessData>>,
 ) {
     if current_process_info.processes.len() == 0 {
         for process in collected_process_info.processes.iter() {
@@ -229,11 +230,16 @@ pub fn process_processes_info(
                 process.memory,
                 process.status.clone(),
                 process.elapsed,
+                process.parent.clone(),
+                process.current_read_disk_usage,
+                process.total_read_disk_usage,
+                process.current_write_disk_usage,
+                process.total_write_disk_usage,
             );
             let pid_string = format!("{}", process.pid);
             current_process_info
                 .processes
-                .insert(pid_string, process_data);
+                .insert(pid_string, process_data.clone());
         }
     } else {
         for process in current_process_info.processes.values_mut() {
@@ -245,18 +251,33 @@ pub fn process_processes_info(
                 .processes
                 .get_mut(&process.pid.to_string());
             match current_process {
-                Some(p) => p.update(
-                    process.pid,
-                    process.name.clone(),
-                    process.exe_path.clone(),
-                    process.cmd.clone(),
-                    process.user.clone(),
-                    process.cpu_usage,
-                    process.thread_count,
-                    process.memory,
-                    process.status.clone(),
-                    process.elapsed,
-                ),
+                Some(p) => {
+                    p.update(
+                        process.pid,
+                        process.name.clone(),
+                        process.exe_path.clone(),
+                        process.cmd.clone(),
+                        process.user.clone(),
+                        process.cpu_usage,
+                        process.thread_count,
+                        process.memory,
+                        process.status.clone(),
+                        process.elapsed,
+                        process.parent.clone(),
+                        process.current_read_disk_usage,
+                        process.total_read_disk_usage,
+                        process.current_write_disk_usage,
+                        process.total_write_disk_usage,
+                    );
+
+                    // if there process detail info showing, update the process detail info
+                    if let Some(hashmap) = process_detail_info.as_mut() {
+                        let key = process.pid.to_string();
+                        if hashmap.contains_key(&key) {
+                            hashmap.entry(key).and_modify(|value| *value = p.to_owned());
+                        }
+                    }
+                }
                 None => {
                     let p = ProcessData::new(
                         process.pid,
@@ -269,6 +290,11 @@ pub fn process_processes_info(
                         process.memory,
                         process.status.clone(),
                         process.elapsed,
+                        process.parent.clone(),
+                        process.current_read_disk_usage,
+                        process.total_read_disk_usage,
+                        process.current_write_disk_usage,
+                        process.total_write_disk_usage,
                     );
                     let pid_string = format!("{}", process.pid);
                     current_process_info.processes.insert(pid_string, p);
@@ -291,6 +317,7 @@ pub fn process_processes_info(
     drop(collected_process_info);
 }
 
+// the line to show the current tick
 pub fn get_tick_line_ui(tick: u64, app_color_info: &AppColorInfo) -> Line {
     let refresh_tick = Line::from(vec![
         Span::styled("  ", Style::default().fg(app_color_info.app_title_color)),
@@ -310,17 +337,21 @@ pub fn round_to_2_decimal(value: f32) -> f32 {
     (value * 100.0).round() / 100.0
 }
 
+// function to sort and filter the process list based on user selected sort type, sorting order and filtering input
 pub fn sort_process(
     sort_type: ProcessSortType,
     is_reversed: bool,
     filter: String,
     process_data: &HashMap<String, ProcessData>,
 ) -> Vec<ProcessData> {
+    // we first map the hashmap into a vec for easy processing
     let mut processes: Vec<ProcessData> = process_data
         .iter()
         .map(|(_, value)| value)
         .cloned()
         .collect();
+
+    // if user input for filter is not empty, we will retrieve those that name/cmd/user is matching the user inpu
     if !filter.is_empty() {
         processes.retain(|process| {
             process.name.to_lowercase().contains(&filter.to_lowercase())
