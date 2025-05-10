@@ -348,54 +348,137 @@ pub fn draw_process_info(
                     // ------------------------------------------------
                     // block for process detail info
                     // ------------------------------------------------
-                    let termination_instruction = Line::from(vec![
-                        Span::styled(
-                            "T".to_string(),
-                            Style::default().fg(app_color_info.key_text_color),
-                        )
-                        .bold()
-                        .underlined(),
-                        Span::styled(
-                            "erminate".to_string(),
-                            Style::default().fg(app_color_info.app_title_color),
-                        )
-                        .bold(),
-                    ]);
-                    let kill_instruction = Line::from(vec![
-                        Span::styled(
-                            "K".to_string(),
-                            Style::default().fg(app_color_info.key_text_color),
-                        )
-                        .bold()
-                        .underlined(),
-                        Span::styled(
-                            "ill".to_string(),
-                            Style::default().fg(app_color_info.app_title_color),
-                        )
-                        .bold(),
-                    ]);
-                    let signal_instruction = Line::from(vec![
-                        Span::styled(
-                            "S".to_string(),
-                            Style::default().fg(app_color_info.key_text_color),
-                        )
-                        .bold()
-                        .underlined(),
-                        Span::styled(
-                            "ignal".to_string(),
-                            Style::default().fg(app_color_info.app_title_color),
-                        )
-                        .bold(),
-                    ]);
-                    let hide_instruction = Line::from(vec![
-                        Span::styled(
-                            "Hide ".to_string(),
-                            Style::default().fg(app_color_info.app_title_color),
-                        )
-                        .bold(),
-                        Span::styled("↵", Style::default().fg(app_color_info.key_text_color))
+                    let is_user_navigating_process_list =
+                        if let Some(_) = process_selected_state.selected() {
+                            true
+                        } else {
+                            false
+                        };
+
+                    // if user is currently navigating in the process list, dim the termination trigger for process detail container to act as like it was disabled
+                    let termination_instruction = if is_user_navigating_process_list {
+                        Line::from(vec![
+                            Span::styled(
+                                "T".to_string(),
+                                Style::default().fg(app_color_info.key_text_color),
+                            )
+                            .bold()
+                            .underlined()
+                            .add_modifier(Modifier::DIM),
+                            Span::styled(
+                                "erminate".to_string(),
+                                Style::default().fg(app_color_info.app_title_color),
+                            )
+                            .bold()
+                            .add_modifier(Modifier::DIM),
+                        ])
+                    } else {
+                        Line::from(vec![
+                            Span::styled(
+                                "T".to_string(),
+                                Style::default().fg(app_color_info.key_text_color),
+                            )
+                            .bold()
+                            .underlined(),
+                            Span::styled(
+                                "erminate".to_string(),
+                                Style::default().fg(app_color_info.app_title_color),
+                            )
                             .bold(),
-                    ]);
+                        ])
+                    };
+
+                    // if user is currently navigating in the process list, dim the kill trigger for process detail container to act as like it was disabled
+                    let kill_instruction = if is_user_navigating_process_list {
+                        Line::from(vec![
+                            Span::styled(
+                                "K".to_string(),
+                                Style::default().fg(app_color_info.key_text_color),
+                            )
+                            .bold()
+                            .underlined()
+                            .add_modifier(Modifier::DIM),
+                            Span::styled(
+                                "ill".to_string(),
+                                Style::default().fg(app_color_info.app_title_color),
+                            )
+                            .bold()
+                            .add_modifier(Modifier::DIM),
+                        ])
+                    } else {
+                        Line::from(vec![
+                            Span::styled(
+                                "K".to_string(),
+                                Style::default().fg(app_color_info.key_text_color),
+                            )
+                            .bold()
+                            .underlined(),
+                            Span::styled(
+                                "ill".to_string(),
+                                Style::default().fg(app_color_info.app_title_color),
+                            )
+                            .bold(),
+                        ])
+                    };
+
+                    // if user is currently navigating in the process list, dim the signal trigger for process detail container to act as like it was disabled
+                    let signal_instruction = if is_user_navigating_process_list {
+                        Line::from(vec![
+                            Span::styled(
+                                "S".to_string(),
+                                Style::default().fg(app_color_info.key_text_color),
+                            )
+                            .bold()
+                            .underlined()
+                            .add_modifier(Modifier::DIM),
+                            Span::styled(
+                                "ignal".to_string(),
+                                Style::default().fg(app_color_info.app_title_color),
+                            )
+                            .bold()
+                            .add_modifier(Modifier::DIM),
+                        ])
+                    } else {
+                        Line::from(vec![
+                            Span::styled(
+                                "S".to_string(),
+                                Style::default().fg(app_color_info.key_text_color),
+                            )
+                            .bold()
+                            .underlined(),
+                            Span::styled(
+                                "ignal".to_string(),
+                                Style::default().fg(app_color_info.app_title_color),
+                            )
+                            .bold(),
+                        ])
+                    };
+
+                    // if user is currently navigating in the process list, dim the hide trigger for process detail container to act as like it was disabled
+                    let hide_instruction = if is_user_navigating_process_list {
+                        Line::from(vec![
+                            Span::styled(
+                                "Hide ".to_string(),
+                                Style::default().fg(app_color_info.app_title_color),
+                            )
+                            .bold()
+                            .add_modifier(Modifier::DIM),
+                            Span::styled("↵", Style::default().fg(app_color_info.key_text_color))
+                                .bold()
+                                .add_modifier(Modifier::DIM),
+                        ])
+                    } else {
+                        Line::from(vec![
+                            Span::styled(
+                                "Hide ".to_string(),
+                                Style::default().fg(app_color_info.app_title_color),
+                            )
+                            .bold(),
+                            Span::styled("↵", Style::default().fg(app_color_info.key_text_color))
+                                .bold(),
+                        ])
+                    };
+
                     let process_detail_info_block = if area.width < MEDIUM_WIDTH {
                         Block::bordered()
                             .borders(Borders::NONE)

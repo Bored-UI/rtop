@@ -993,6 +993,9 @@ impl App {
 
                             // unselect current selected process item list to enter the process detail container
                             self.process_selected_state.select(None);
+                        } else {
+                            self.process_show_details = false;
+                            self.current_showing_process_detail = None;
                         }
                     }
                 }
