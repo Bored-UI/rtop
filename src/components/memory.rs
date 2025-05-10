@@ -7,7 +7,7 @@ use ratatui::{
     Frame,
 };
 
-use crate::{tui::AppColorInfo, types::MemoryData, utils::get_tick_line_ui};
+use crate::{app::AppColorInfo, types::MemoryData, utils::get_tick_line_ui};
 
 // width smaller than this will be consider small width for the memory container
 const SMALL_WIDTH: u16 = 20;

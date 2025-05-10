@@ -10,7 +10,7 @@ use ratatui::{
 };
 
 use crate::{
-    tui::AppColorInfo,
+    app::AppColorInfo,
     types::{ProcessData, ProcessSortType},
     utils::{get_tick_line_ui, round_to_2_decimal, sort_process},
 };

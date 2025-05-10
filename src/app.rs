@@ -123,7 +123,7 @@ pub struct AppColorInfo {
 const MIN_HEIGHT: u16 = 25;
 const MIN_WIDTH: u16 = 90;
 
-pub fn tui() {
+pub fn app() {
     enable_raw_mode().unwrap();
     let mut terminal = init();
     let (tx, rx) = mpsc::channel();

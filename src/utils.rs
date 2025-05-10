@@ -6,7 +6,7 @@ use ratatui::{
 };
 
 use crate::{
-    tui::AppColorInfo,
+    app::AppColorInfo,
     types::{
         CProcessesInfo, CSysInfo, CpuData, DiskData, MemoryData, NetworkData, ProcessData,
         ProcessSortType, ProcessesInfo, SysInfo,
