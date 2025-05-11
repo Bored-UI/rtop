@@ -254,7 +254,7 @@ pub fn spawn_process_info_collector(
                             status: process.status().to_string(),
                             elapsed: process.run_time(),
                             parent: if process.parent().is_some() {
-                                format!("{:?}", process.parent().unwrap())
+                                format!("{:?}", process.parent().unwrap().as_u32())
                             } else {
                                 "-".to_string()
                             },

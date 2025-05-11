@@ -359,6 +359,18 @@ pub fn process_to_kib_mib_gib(value: f64) -> String {
     return format!("{:.2} {}", ((value * 1000.0).round() / 1000.0), unit);
 }
 
+pub fn format_seconds(value: u64) -> String {
+    let days = value / (24 * 60 * 60);
+    let hours = value % (24 * 60 * 60) / (60 * 60);
+    let minutes = value % (60 * 60) / 60;
+    let seconds = value % 60;
+    if days > 0 {
+        return format!("{}:{}:{}:{}", days, hours, minutes, seconds);
+    } else {
+        return format!("{}:{}:{}", hours, minutes, seconds);
+    }
+}
+
 // function to sort and filter the process list based on user selected sort type, sorting order and filtering input
 pub fn sort_process(
     sort_type: ProcessSortType,

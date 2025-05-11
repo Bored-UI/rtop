@@ -12,7 +12,9 @@ use ratatui::{
 use crate::{
     app::AppColorInfo,
     types::{ProcessData, ProcessSortType},
-    utils::{get_tick_line_ui, process_to_kib_mib_gib, round_to_2_decimal, sort_process},
+    utils::{
+        format_seconds, get_tick_line_ui, process_to_kib_mib_gib, round_to_2_decimal, sort_process,
+    },
 };
 
 const MEDIUM_WIDTH: u16 = 60;
@@ -29,7 +31,7 @@ const XX_LARGE_HEIGHT: u16 = 40;
 const MEDIUM_HEIGHT_FILL: u16 = 5;
 const LARGE_HEIGHT_FILL: u16 = 4;
 const X_LARGE_HEIGHT_FILL: u16 = 3;
-const XX_LARGE_HEIGHT_FILL: u16 = 2;
+const XX_LARGE_HEIGHT_FILL: u16 = 3;
 
 pub fn draw_process_info(
     tick: u64,
@@ -319,9 +321,8 @@ pub fn draw_process_info(
                     let process_detail = value;
 
                     let [process_detail_graph_layout, process_detail_info_layout] =
-                        Layout::horizontal([Constraint::Fill(1), Constraint::Fill(2)])
+                        Layout::horizontal([Constraint::Fill(3), Constraint::Fill(7)])
                             .areas(process_detail_layout);
-
                     // ------------------------------------------------
                     // block for the cpu usage graph for the process
                     // ------------------------------------------------
@@ -498,6 +499,9 @@ pub fn draw_process_info(
                     frame.render_widget(process_detail_graph_block, process_detail_graph_layout);
                     frame.render_widget(process_detail_info_block, process_detail_info_layout);
 
+                    // ------------------------------------------------------------
+                    // Render process CPU usage history graph on the left
+                    // ------------------------------------------------------------
                     let [_, padded_detail_graph_horizontal, _] = Layout::horizontal([
                         Constraint::Length(1),
                         Constraint::Fill(1),
@@ -515,14 +519,10 @@ pub fn draw_process_info(
 
                     let [_, padded_detail_graph_naming_layout, _] = Layout::horizontal([
                         Constraint::Fill(1),
-                        Constraint::Fill(1),
+                        Constraint::Length(3),
                         Constraint::Fill(1),
                     ])
                     .areas(detail_graph_naming_layout);
-
-                    // ------------------------------------------------------------
-                    // Render process CPU usage history graph on the left
-                    // ------------------------------------------------------------
 
                     // first get the process cpu usage history
                     let process_cpu_usage_history = process_detail.cpu_usage.clone();
@@ -605,9 +605,13 @@ pub fn draw_process_info(
                         ])
                         .areas(padded_detail_info_layout);
 
-                    let [process_info_title_layout, process_info_detail_layout] =
-                        Layout::vertical(vec![Constraint::Length(1), Constraint::Length(1)])
-                            .areas(process_info_layout);
+                    let [process_info_title_layout, process_info_detail_layout, extra_detail_layout] =
+                        Layout::vertical(vec![
+                            Constraint::Length(1),
+                            Constraint::Length(1),
+                            Constraint::Length(1),
+                        ])
+                        .areas(process_info_layout);
 
                     let mut status_width = 0;
                     let mut elapsed_width = 0;
@@ -630,10 +634,10 @@ pub fn draw_process_info(
                     } else if area.width > MEDIUM_WIDTH && area.width <= LARGE_WIDTH {
                         let [new_status, new_elapsed, new_io_read, new_thread] =
                             Layout::horizontal(vec![
-                                Constraint::Fill(1),
-                                Constraint::Fill(1),
                                 Constraint::Fill(2),
-                                Constraint::Fill(1),
+                                Constraint::Fill(2),
+                                Constraint::Fill(3),
+                                Constraint::Fill(2),
                             ])
                             .areas(process_info_title_layout);
                         status_width = new_status.width as usize;
@@ -643,11 +647,11 @@ pub fn draw_process_info(
                     } else if area.width > LARGE_WIDTH && area.width <= X_LARGE_WIDTH {
                         let [new_status, new_elapsed, new_io_read, new_io_write, new_thread] =
                             Layout::horizontal(vec![
-                                Constraint::Fill(1),
-                                Constraint::Fill(1),
                                 Constraint::Fill(2),
                                 Constraint::Fill(2),
-                                Constraint::Fill(1),
+                                Constraint::Fill(3),
+                                Constraint::Fill(3),
+                                Constraint::Fill(2),
                             ])
                             .areas(process_info_title_layout);
                         status_width = new_status.width as usize;
@@ -658,12 +662,12 @@ pub fn draw_process_info(
                     } else if area.width > X_LARGE_WIDTH && area.width <= XX_LARGE_WIDTH {
                         let [new_status, new_elapsed, new_io_read, new_io_write, new_parent, new_thread] =
                             Layout::horizontal(vec![
-                                Constraint::Fill(1),
-                                Constraint::Fill(1),
                                 Constraint::Fill(2),
                                 Constraint::Fill(2),
-                                Constraint::Fill(1),
-                                Constraint::Fill(1),
+                                Constraint::Fill(3),
+                                Constraint::Fill(3),
+                                Constraint::Fill(2),
+                                Constraint::Fill(2),
                             ])
                             .areas(process_info_title_layout);
                         status_width = new_status.width as usize;
@@ -675,15 +679,16 @@ pub fn draw_process_info(
                     } else if area.width > XX_LARGE_WIDTH {
                         let [new_status, new_elapsed, new_io_read, new_io_write, new_parent, new_user, new_thread] =
                             Layout::horizontal(vec![
-                                Constraint::Fill(1),
-                                Constraint::Fill(1),
                                 Constraint::Fill(2),
                                 Constraint::Fill(2),
-                                Constraint::Fill(1),
-                                Constraint::Fill(1),
-                                Constraint::Fill(1),
+                                Constraint::Fill(3),
+                                Constraint::Fill(3),
+                                Constraint::Fill(2),
+                                Constraint::Fill(2),
+                                Constraint::Fill(2),
                             ])
                             .areas(process_info_title_layout);
+
                         status_width = new_status.width as usize;
                         elapsed_width = new_elapsed.width as usize;
                         io_read_width = new_io_read.width as usize;
@@ -693,13 +698,13 @@ pub fn draw_process_info(
                         thread_width = new_thread.width as usize;
                     }
 
-                    let status_title = String::from("Status: ");
-                    let elapsed_title = String::from("Elapsed: ");
-                    let io_read_title = String::from("I/O R (C/T): ");
-                    let io_write_title = String::from("I/O W (C/T): ");
-                    let user_title = String::from("User: ");
-                    let parent_title = String::from("Parent: ");
-                    let thread_title = String::from("Threads: ");
+                    let status_title = String::from("Status:");
+                    let elapsed_title = String::from("Elapsed:");
+                    let io_read_title = String::from("IO/R (C/T):");
+                    let io_write_title = String::from("IO/W (C/T):");
+                    let user_title = String::from("User:");
+                    let parent_title = String::from("Parent:");
+                    let thread_title = String::from("Threads:");
 
                     let padded_status_title = if status_title.len() < status_width {
                         format!("{:^width$}", status_title, width = status_width)
@@ -735,7 +740,7 @@ pub fn draw_process_info(
                     };
 
                     let padded_user_title = if user_title.len() < user_width {
-                        format!("{:^width$}", user_title, width = user_width / 2)
+                        format!("{:^width$}", user_title, width = user_width)
                     } else {
                         user_title.chars().take(user_width).collect::<String>()
                     };
@@ -798,6 +803,173 @@ pub fn draw_process_info(
                     ]);
 
                     frame.render_widget(process_info_title, process_info_title_layout);
+
+                    let status_detail = value.status.clone();
+                    let elapsed_detail = format_seconds(value.elapsed);
+                    let current_io_read_detail = format!(
+                        "{} /",
+                        process_to_kib_mib_gib(value.current_read_disk_usage as f64)
+                    );
+                    let total_io_read_detail = format!(
+                        "{}",
+                        process_to_kib_mib_gib(value.total_read_disk_usage as f64)
+                    ); // this will be render at the extra detail row
+                    let current_io_write_detail = format!(
+                        "{} /",
+                        process_to_kib_mib_gib(value.current_write_disk_usage as f64)
+                    );
+                    let total_io_write_detail = format!(
+                        "{}",
+                        process_to_kib_mib_gib(value.total_write_disk_usage as f64)
+                    ); // this will be render at the extra detail row
+                    let user_detail = value.user.clone();
+                    let parent_detail = match process_data.get(&value.parent) {
+                        Some(p_d) => p_d.name.clone(),
+                        None => "-".to_string(),
+                    };
+                    let thread_detail = value.thread_count.to_string();
+
+                    let padded_status_detail = if status_detail.len() < status_width {
+                        format!("{:^width$}", status_detail, width = status_width)
+                    } else {
+                        status_detail.chars().take(status_width).collect::<String>()
+                    };
+
+                    let padded_elapsed_detail = if elapsed_detail.len() < elapsed_width {
+                        format!("{:^width$}", elapsed_detail, width = elapsed_width)
+                    } else {
+                        elapsed_detail
+                            .chars()
+                            .take(elapsed_width)
+                            .collect::<String>()
+                    };
+
+                    let padded_current_io_read_detail =
+                        if current_io_read_detail.len() < io_read_width {
+                            format!("{:^width$}", current_io_read_detail, width = io_read_width)
+                        } else {
+                            current_io_read_detail
+                                .chars()
+                                .take(io_read_width)
+                                .collect::<String>()
+                        };
+
+                    let padded_current_io_write_detail =
+                        if current_io_write_detail.len() < io_write_width {
+                            format!(
+                                "{:^width$}",
+                                current_io_write_detail,
+                                width = io_write_width
+                            )
+                        } else {
+                            current_io_write_detail
+                                .chars()
+                                .take(io_write_width)
+                                .collect::<String>()
+                        };
+
+                    let padded_total_io_read_detail = if total_io_read_detail.len() < io_read_width
+                    {
+                        format!("{:^width$}", total_io_read_detail, width = io_read_width)
+                    } else {
+                        total_io_read_detail
+                            .chars()
+                            .take(io_read_width)
+                            .collect::<String>()
+                    };
+
+                    let padded_total_io_write_detail =
+                        if total_io_write_detail.len() < io_write_width {
+                            format!("{:^width$}", total_io_write_detail, width = io_write_width)
+                        } else {
+                            total_io_write_detail
+                                .chars()
+                                .take(io_write_width)
+                                .collect::<String>()
+                        };
+
+                    let padded_user_detail = if user_detail.len() < user_width {
+                        format!("{:^width$}", user_detail, width = user_width)
+                    } else {
+                        user_detail.chars().take(user_width).collect::<String>()
+                    };
+
+                    let padded_parent_detail = if parent_detail.len() < parent_width {
+                        format!("{:^width$}", parent_detail, width = parent_width)
+                    } else {
+                        parent_detail.chars().take(parent_width).collect::<String>()
+                    };
+
+                    let padded_thread_detail = if thread_detail.len() < thread_width {
+                        format!("{:^width$}", thread_detail, width = thread_width)
+                    } else {
+                        thread_detail.chars().take(thread_width).collect::<String>()
+                    };
+
+                    let process_info_detail = Line::from(vec![
+                        Span::styled(
+                            padded_status_detail,
+                            Style::default().fg(app_color_info.process_text_color),
+                        ),
+                        Span::styled(
+                            padded_elapsed_detail,
+                            Style::default().fg(app_color_info.base_app_text_color),
+                        ),
+                        Span::styled(
+                            padded_current_io_read_detail,
+                            Style::default().fg(app_color_info.base_app_text_color),
+                        ),
+                        Span::styled(
+                            padded_current_io_write_detail,
+                            Style::default().fg(app_color_info.base_app_text_color),
+                        ),
+                        Span::styled(
+                            padded_user_detail,
+                            Style::default().fg(app_color_info.base_app_text_color),
+                        ),
+                        Span::styled(
+                            padded_parent_detail,
+                            Style::default().fg(app_color_info.base_app_text_color),
+                        ),
+                        Span::styled(
+                            padded_thread_detail,
+                            Style::default().fg(app_color_info.base_app_text_color),
+                        ),
+                    ]);
+
+                    let process_info_detail_extra = Line::from(vec![
+                        Span::styled(
+                            format!("{:^width$}", "", width = status_width),
+                            Style::default().fg(app_color_info.process_text_color),
+                        ),
+                        Span::styled(
+                            format!("{:^width$}", "", width = elapsed_width),
+                            Style::default().fg(app_color_info.base_app_text_color),
+                        ),
+                        Span::styled(
+                            padded_total_io_read_detail,
+                            Style::default().fg(app_color_info.base_app_text_color),
+                        ),
+                        Span::styled(
+                            padded_total_io_write_detail,
+                            Style::default().fg(app_color_info.base_app_text_color),
+                        ),
+                        Span::styled(
+                            format!("{:^width$}", "", width = user_width),
+                            Style::default().fg(app_color_info.base_app_text_color),
+                        ),
+                        Span::styled(
+                            format!("{:^width$}", "", width = parent_width),
+                            Style::default().fg(app_color_info.base_app_text_color),
+                        ),
+                        Span::styled(
+                            format!("{:^width$}", "", width = thread_width),
+                            Style::default().fg(app_color_info.base_app_text_color),
+                        ),
+                    ]);
+
+                    frame.render_widget(process_info_detail, process_info_detail_layout);
+                    frame.render_widget(process_info_detail_extra, extra_detail_layout);
                 } else {
                     return;
                 }
