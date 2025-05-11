@@ -10,9 +10,6 @@ use crate::types::{
 };
 use sysinfo::{Disks, Networks, Process, ProcessesToUpdate, System, Users};
 
-const TO_GB: f64 = 1_073_741_824.0;
-const TO_KB: f64 = 1024.0;
-
 pub fn spawn_system_info_collector(
     tick_receiver: Receiver<u32>,
     tx: Sender<CSysInfo>,
@@ -80,13 +77,11 @@ pub fn spawn_system_info_collector(
                     // -------------------------------------------
 
                     sys.refresh_memory();
-                    let total_memory =
-                        ((sys.total_memory() as f64 / TO_GB) * 100.0).round() / 100.0;
-                    let available_memory =
-                        ((sys.available_memory() as f64 / TO_GB) * 100.0).round() / 100.0;
-                    let used_memory = ((sys.used_memory() as f64 / TO_GB) * 100.0).round() / 100.0;
-                    let used_swap = ((sys.used_swap() as f64 / TO_GB) * 100.0).round() / 100.0;
-                    let free_memory = ((sys.free_memory() as f64 / TO_GB) * 100.0).round() / 100.0;
+                    let total_memory = sys.total_memory() as f64;
+                    let available_memory = sys.available_memory() as f64;
+                    let used_memory = sys.used_memory() as f64;
+                    let used_swap = sys.used_swap() as f64;
+                    let free_memory = sys.free_memory() as f64;
                     let cached_memory = get_cached_memory();
 
                     let memory_data = CMemoryData {
@@ -106,20 +101,15 @@ pub fn spawn_system_info_collector(
                     disks.refresh(true);
                     let mut disk_data = Vec::new();
                     for disk in &disks {
-                        let total_space =
-                            ((disk.total_space() as f64 / TO_GB) * 100.0).round() / 100.0;
-                        let available_space =
-                            ((disk.available_space() as f64 / TO_GB) * 100.0).round() / 100.0;
+                        let total_space = disk.total_space() as f64;
+                        let available_space = disk.available_space() as f64;
                         let data = CDiskData {
                             name: disk.name().to_string_lossy().to_string(),
                             total_space,
                             available_space,
-                            used_space: ((total_space - available_space) * 100.0).round() / 100.0,
-                            bytes_written: ((disk.usage().written_bytes as f64 / TO_KB) * 1000.0)
-                                .round()
-                                / 1000.0,
-                            bytes_read: ((disk.usage().read_bytes as f64 / TO_KB) * 1000.0).round()
-                                / 1000.0,
+                            used_space: total_space - available_space,
+                            bytes_written: disk.usage().written_bytes as f64,
+                            bytes_read: disk.usage().read_bytes as f64,
                             file_system: disk.file_system().to_string_lossy().to_string(),
                             mount_point: disk.mount_point().to_string_lossy().to_string(),
                             kind: disk.kind().to_string(),
@@ -153,21 +143,10 @@ pub fn spawn_system_info_collector(
                             } else {
                                 None
                             },
-                            current_received: ((network_data.received() as f64 / TO_KB) * 1000.0)
-                                .round()
-                                / 1000.0,
-                            current_transmitted: ((network_data.transmitted() as f64 / TO_KB)
-                                * 1000.0)
-                                .round()
-                                / 1000.0,
-                            total_received: ((network_data.total_received() as f64 / TO_KB)
-                                * 1000.0)
-                                .round()
-                                / 1000.0,
-                            total_transmitted: ((network_data.total_transmitted() as f64 / TO_KB)
-                                * 1000.0)
-                                .round()
-                                / 1000.0,
+                            current_received: network_data.received() as f64,
+                            current_transmitted: network_data.transmitted() as f64,
+                            total_received: network_data.total_received() as f64,
+                            total_transmitted: network_data.total_transmitted() as f64,
                         };
                         networks_data.push(data);
                     }
@@ -271,7 +250,7 @@ pub fn spawn_process_info_collector(
                             user: user.to_string(),
                             cpu_usage: process.cpu_usage(),
                             thread_count,
-                            memory: ((process.memory() as f64 / TO_KB) * 1000.0).round() / 1000.0,
+                            memory: process.memory() as f64,
                             status: process.status().to_string(),
                             elapsed: process.run_time(),
                             parent: if process.parent().is_some() {
@@ -356,7 +335,7 @@ fn get_cached_memory() -> f64 {
     {
         let macos_cache = get_macos_cache_memory();
         if let Some(cache) = macos_cache {
-            cached_memory = ((cache as f64 / TO_GB) * 100.0).round() / 100.0;
+            cached_memory = cache as f64;
         }
     }
 
@@ -364,7 +343,7 @@ fn get_cached_memory() -> f64 {
     {
         let linux_cache = get_linux_cached_memory();
         if let Some(cache) = linux_cache {
-            cached_memory = ((cache as f64 / TO_GB) * 100.0).round() / 100.0;
+            cached_memory = cache as f64;
         }
     }
 
@@ -372,7 +351,7 @@ fn get_cached_memory() -> f64 {
     {
         let windows_cache = get_window_cached_memory();
         if let Some(cache) = windows_cache {
-            cached_memory = ((cache as f64 / TO_GB) * 100.0).round() / 100.0;
+            cached_memory = cache as f64;
         }
     }
 

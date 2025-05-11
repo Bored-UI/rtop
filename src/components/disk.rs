@@ -7,7 +7,11 @@ use ratatui::{
     Frame,
 };
 
-use crate::{app::AppColorInfo, types::DiskData, utils::get_tick_line_ui};
+use crate::{
+    app::AppColorInfo,
+    types::DiskData,
+    utils::{get_tick_line_ui, process_to_kib_mib_gib},
+};
 
 // width smaller than this will be consider small width for the disk container
 const SMALL_WIDTH: u16 = 20;
@@ -96,7 +100,7 @@ pub fn draw_disk_info(
     let total_disk_space_label = Line::from("Total:")
         .style(app_color_info.app_title_color)
         .bold();
-    let total_disk_space = Line::from(format!("{} GiB", disk_data.total_space))
+    let total_disk_space = Line::from(process_to_kib_mib_gib(disk_data.total_space))
         .style(app_color_info.app_title_color)
         .bold();
     let top_inner_block = Block::new()
@@ -146,7 +150,7 @@ pub fn draw_disk_info(
         Line::from("Used:").style(app_color_info.base_app_text_color)
     };
 
-    let used_space_usage = Line::from(format!("{} GiB", disk_data.used_space))
+    let used_space_usage = Line::from(process_to_kib_mib_gib(disk_data.used_space))
         .style(app_color_info.disk_text_color)
         .bold();
     let used_space_block = Block::bordered()
@@ -168,7 +172,7 @@ pub fn draw_disk_info(
         Line::from("Available:").style(app_color_info.base_app_text_color)
     };
 
-    let available_space_usage = Line::from(format!("{} GiB", disk_data.available_space))
+    let available_space_usage = Line::from(process_to_kib_mib_gib(disk_data.available_space))
         .style(app_color_info.disk_text_color)
         .bold();
     let available_space_block = Block::bordered()
@@ -284,26 +288,12 @@ pub fn draw_disk_info(
         Line::from("WRITE:").style(app_color_info.base_app_text_color)
     };
 
-    let mut actual_bytes = disk_data.bytes_written_vec[disk_data.bytes_written_vec.len() - 1];
-    let mut bytes_format = "KiB";
-
-    if actual_bytes > 1024.0 {
-        actual_bytes /= 1024.0;
-        actual_bytes = (actual_bytes * 1000.0).round() / 1000.0;
-        bytes_format = "MiB";
-
-        if actual_bytes > 1024.0 {
-            actual_bytes /= 1024.0;
-            actual_bytes = (actual_bytes * 1000.0).round() / 1000.0;
-            bytes_format = "GiB";
-        }
-    }
+    let actual_bytes = disk_data.bytes_written_vec[disk_data.bytes_written_vec.len() - 1];
 
     let bytes_written_usage = Line::from(format!(
-        "{} {} {}",
+        "{} {}",
         if actual_bytes > 0.0 { "▲" } else { "" },
-        actual_bytes,
-        bytes_format
+        process_to_kib_mib_gib(actual_bytes),
     ))
     .style(app_color_info.memory_text_color)
     .bold();
@@ -383,26 +373,12 @@ pub fn draw_disk_info(
         Line::from("READ:").style(app_color_info.base_app_text_color)
     };
 
-    let mut actual_bytes = disk_data.bytes_read_vec[disk_data.bytes_read_vec.len() - 1];
-    let mut bytes_format = "KiB";
-
-    if actual_bytes > 1024.0 {
-        actual_bytes /= 1024.0;
-        actual_bytes = (actual_bytes * 1000.0).round() / 1000.0;
-        bytes_format = "MiB";
-
-        if actual_bytes > 1024.0 {
-            actual_bytes /= 1024.0;
-            actual_bytes = (actual_bytes * 1000.0).round() / 1000.0;
-            bytes_format = "GiB";
-        }
-    }
+    let actual_bytes = disk_data.bytes_read_vec[disk_data.bytes_read_vec.len() - 1];
 
     let bytes_read_usage = Line::from(format!(
-        "{} {} {}",
+        "{} {}",
         if actual_bytes > 0.0 { "▲" } else { "" },
-        actual_bytes,
-        bytes_format
+        process_to_kib_mib_gib(actual_bytes)
     ))
     .style(app_color_info.memory_text_color)
     .bold();

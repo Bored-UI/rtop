@@ -7,7 +7,11 @@ use ratatui::{
     Frame,
 };
 
-use crate::{app::AppColorInfo, types::MemoryData, utils::get_tick_line_ui};
+use crate::{
+    app::AppColorInfo,
+    types::MemoryData,
+    utils::{get_tick_line_ui, process_to_kib_mib_gib},
+};
 
 // width smaller than this will be consider small width for the memory container
 const SMALL_WIDTH: u16 = 20;
@@ -76,7 +80,7 @@ pub fn draw_memory_info(
     let total_memory_label = Line::from("Total:")
         .style(app_color_info.app_title_color)
         .bold();
-    let total_memory = Line::from(format!("{} GiB", memory.total_memory))
+    let total_memory = Line::from(process_to_kib_mib_gib(memory.total_memory))
         .style(app_color_info.app_title_color)
         .bold();
     let top_inner_block = Block::new()
@@ -150,9 +154,8 @@ pub fn draw_memory_info(
         Line::from("Used:").style(app_color_info.base_app_text_color)
     };
 
-    let used_memory_usage = Line::from(format!(
-        "{} GiB",
-        memory.used_memory_vec[memory.used_memory_vec.len() - 1]
+    let used_memory_usage = Line::from(process_to_kib_mib_gib(
+        memory.used_memory_vec[memory.used_memory_vec.len() - 1],
     ))
     .style(app_color_info.memory_text_color)
     .bold();
@@ -223,9 +226,8 @@ pub fn draw_memory_info(
         Line::from("Available:").style(app_color_info.base_app_text_color)
     };
 
-    let available_memory_usage = Line::from(format!(
-        "{} GiB",
-        memory.available_memory_vec[memory.available_memory_vec.len() - 1]
+    let available_memory_usage = Line::from(process_to_kib_mib_gib(
+        memory.available_memory_vec[memory.available_memory_vec.len() - 1],
     ))
     .style(app_color_info.memory_text_color)
     .bold();
@@ -295,9 +297,8 @@ pub fn draw_memory_info(
         Line::from("Free:").style(app_color_info.base_app_text_color)
     };
 
-    let free_memory_usage = Line::from(format!(
-        "{} GiB",
-        memory.free_memory_vec[memory.free_memory_vec.len() - 1]
+    let free_memory_usage = Line::from(process_to_kib_mib_gib(
+        memory.free_memory_vec[memory.free_memory_vec.len() - 1],
     ))
     .style(app_color_info.memory_text_color)
     .bold();
@@ -368,9 +369,8 @@ pub fn draw_memory_info(
             Line::from("Swap:").style(app_color_info.base_app_text_color)
         };
 
-        let swap_memory_usage = Line::from(format!(
-            "{} GiB",
-            memory.used_swap_vec[memory.used_swap_vec.len() - 1]
+        let swap_memory_usage = Line::from(process_to_kib_mib_gib(
+            memory.used_swap_vec[memory.used_swap_vec.len() - 1],
         ))
         .style(app_color_info.memory_text_color)
         .bold();
@@ -444,9 +444,8 @@ pub fn draw_memory_info(
             Line::from("Cached:").style(app_color_info.base_app_text_color)
         };
 
-        let cached_memory_usage = Line::from(format!(
-            "{} GiB",
-            memory.cached_memory_vec[memory.cached_memory_vec.len() - 1]
+        let cached_memory_usage = Line::from(process_to_kib_mib_gib(
+            memory.cached_memory_vec[memory.cached_memory_vec.len() - 1],
         ))
         .style(app_color_info.memory_text_color)
         .bold();

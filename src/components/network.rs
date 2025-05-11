@@ -7,7 +7,11 @@ use ratatui::{
     Frame,
 };
 
-use crate::{app::AppColorInfo, types::NetworkData, utils::get_tick_line_ui};
+use crate::{
+    app::AppColorInfo,
+    types::NetworkData,
+    utils::{get_tick_line_ui, process_to_kib_mib_gib},
+};
 
 // width smaller than this will be consider small width for the network container
 const SMALL_WIDTH: u16 = 40;
@@ -113,48 +117,20 @@ pub fn draw_network_info(
     //
     // ----------------------------------------
 
-    let mut actual_network_received_bytes =
-        network_data.current_received_vec[network_data.current_received_vec.len() - 1];
-    let mut bytes_format = "KiB";
-
-    if actual_network_received_bytes > 1024.0 {
-        actual_network_received_bytes /= 1024.0;
-        actual_network_received_bytes = (actual_network_received_bytes * 1000.0).round() / 1000.0;
-        bytes_format = "MiB";
-
-        if actual_network_received_bytes > 1024.0 {
-            actual_network_received_bytes /= 1024.0;
-            actual_network_received_bytes =
-                (actual_network_received_bytes * 1000.0).round() / 1000.0;
-            bytes_format = "GiB";
-        }
-    }
-
     let current_network_received_bytes_info = Line::from(format!(
-        "Download: {} {} {}",
-        "▼", actual_network_received_bytes, bytes_format
+        "Download: {} {}",
+        "▼",
+        process_to_kib_mib_gib(
+            network_data.current_received_vec[network_data.current_received_vec.len() - 1]
+        )
     ))
     .style(app_color_info.network_text_color)
     .bold();
 
-    let mut total_network_received_bytes = network_data.total_received;
-    let mut bytes_format = "KiB";
-
-    if total_network_received_bytes > 1024.0 {
-        total_network_received_bytes /= 1024.0;
-        total_network_received_bytes = (total_network_received_bytes * 1000.0).round() / 1000.0;
-        bytes_format = "MiB";
-
-        if total_network_received_bytes > 1024.0 {
-            total_network_received_bytes /= 1024.0;
-            total_network_received_bytes = (total_network_received_bytes * 1000.0).round() / 1000.0;
-            bytes_format = "GiB";
-        }
-    }
-
     let total_network_received_bytes_info = Line::from(format!(
-        "{} Total: {} {}",
-        "▼", total_network_received_bytes, bytes_format
+        "{} Total: {} ",
+        "▼",
+        process_to_kib_mib_gib(network_data.total_received)
     ))
     .style(app_color_info.network_text_color)
     .bold();
@@ -235,53 +211,23 @@ pub fn draw_network_info(
     //
     // ----------------------------------------
 
-    let mut actual_network_transmitted_bytes =
-        network_data.current_transmitted_vec[network_data.current_transmitted_vec.len() - 1];
-    let mut bytes_format = "KiB";
-
-    if actual_network_transmitted_bytes > 1024.0 {
-        actual_network_transmitted_bytes /= 1024.0;
-        actual_network_transmitted_bytes =
-            (actual_network_transmitted_bytes * 1000.0).round() / 1000.0;
-        bytes_format = "MiB";
-
-        if actual_network_transmitted_bytes > 1024.0 {
-            actual_network_transmitted_bytes /= 1024.0;
-            actual_network_transmitted_bytes =
-                (actual_network_transmitted_bytes * 1000.0).round() / 1000.0;
-            bytes_format = "GiB";
-        }
-    }
-
     let current_network_transmitted_bytes_info = Line::from(format!(
-        "Upload: {} {} {}",
-        "▲", actual_network_transmitted_bytes, bytes_format
+        "Upload: {} {}",
+        "▲",
+        process_to_kib_mib_gib(
+            network_data.current_transmitted_vec[network_data.current_transmitted_vec.len() - 1]
+        )
     ))
     .style(app_color_info.network_text_color)
     .bold();
 
-    let mut total_network_transmitted_bytes = network_data.total_transmitted;
-    let mut bytes_format = "KiB";
-
-    if total_network_transmitted_bytes > 1024.0 {
-        total_network_transmitted_bytes /= 1024.0;
-        total_network_transmitted_bytes =
-            (total_network_transmitted_bytes * 1000.0).round() / 1000.0;
-        bytes_format = "MiB";
-
-        if total_network_transmitted_bytes > 1024.0 {
-            total_network_transmitted_bytes /= 1024.0;
-            total_network_transmitted_bytes =
-                (total_network_transmitted_bytes * 1000.0).round() / 1000.0;
-            bytes_format = "GiB";
-        }
-    }
-
     let total_network_transmitted_bytes_info = Line::from(format!(
-        "{} Total: {} {}",
-        "▲", total_network_transmitted_bytes, bytes_format
+        "{} Total: {}",
+        "▲",
+        process_to_kib_mib_gib(network_data.total_transmitted)
     ))
-    .style(app_color_info.network_text_color);
+    .style(app_color_info.network_text_color)
+    .bold();
 
     let [network_transmitted_padded_info_layout, network_transmitted_padded_graph_layout] =
         Layout::vertical([Constraint::Length(1), Constraint::Fill(1)])

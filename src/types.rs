@@ -35,8 +35,8 @@ pub struct DiskData {
     pub total_space: f64,
     pub available_space: f64,
     pub used_space: f64,
-    pub bytes_written_vec: Vec<f64>, // Number of written bytes since the last refresh. in KiB
-    pub bytes_read_vec: Vec<f64>,    // Number of read bytes since the last refresh. in KiB
+    pub bytes_written_vec: Vec<f64>, // Number of written bytes since the last refresh. in B
+    pub bytes_read_vec: Vec<f64>,    // Number of read bytes since the last refresh. in B
     pub file_system: String, // file system used on this disk (so for example: EXT4, NTFS, etc…).
     pub mount_point: String, // mount point of the disk (/ for example). And mount point will also served as the unique identifier for the disk
     pub disk_kind: String,   // kind of disk.( SSD for example )

@@ -12,12 +12,12 @@ use ratatui::{
 use crate::{
     app::AppColorInfo,
     types::{ProcessData, ProcessSortType},
-    utils::{get_tick_line_ui, round_to_2_decimal, sort_process},
+    utils::{get_tick_line_ui, process_to_kib_mib_gib, round_to_2_decimal, sort_process},
 };
 
 const MEDIUM_WIDTH: u16 = 60;
 const LARGE_WIDTH: u16 = 80;
-const X_LARGE_WIDTH: u16 = 95;
+const X_LARGE_WIDTH: u16 = 100;
 const XX_LARGE_WIDTH: u16 = 120;
 
 // following is the process detail container required space percentage in different window height and also the height definetion
@@ -521,7 +521,7 @@ pub fn draw_process_info(
                     .areas(detail_graph_naming_layout);
 
                     // ------------------------------------------------------------
-                    // Rendering for process CPU usage history graph on the left
+                    // Render process CPU usage history graph on the left
                     // ------------------------------------------------------------
 
                     // first get the process cpu usage history
@@ -573,7 +573,7 @@ pub fn draw_process_info(
                         .bg(app_color_info.background_color);
 
                     // --------------------------------------------------------------------------------
-                    // Rendering for process CPU usage history graph naming at the bottom of the graph
+                    // Render process CPU usage history graph naming at the bottom of the graph
                     // --------------------------------------------------------------------------------
                     let process_cpu_usage_graph_naming = Line::from(vec![Span::styled(
                         "CPU".to_string(),
@@ -586,6 +586,218 @@ pub fn draw_process_info(
                         process_cpu_usage_graph_naming,
                         padded_detail_graph_naming_layout,
                     );
+
+                    // ------------------------------------------------------------
+                    // Render process detail info on the right
+                    // ------------------------------------------------------------
+                    let [_, padded_detail_info_layout, _] = Layout::vertical([
+                        Constraint::Length(1),
+                        Constraint::Fill(1),
+                        Constraint::Length(1),
+                    ])
+                    .areas(process_detail_info_layout);
+
+                    let [process_info_layout, process_memory_usage_layout, process_cmd_layout] =
+                        Layout::vertical(vec![
+                            Constraint::Length(3),
+                            Constraint::Fill(2),
+                            Constraint::Fill(1),
+                        ])
+                        .areas(padded_detail_info_layout);
+
+                    let [process_info_title_layout, process_info_detail_layout] =
+                        Layout::vertical(vec![Constraint::Length(1), Constraint::Length(1)])
+                            .areas(process_info_layout);
+
+                    let mut status_width = 0;
+                    let mut elapsed_width = 0;
+                    let mut io_read_width = 0;
+                    let mut io_write_width = 0;
+                    let mut parent_width = 0;
+                    let mut user_width = 0;
+                    let mut thread_width = 0;
+
+                    if area.width <= MEDIUM_WIDTH {
+                        let [new_status, new_elapsed, new_thread] = Layout::horizontal(vec![
+                            Constraint::Fill(1),
+                            Constraint::Fill(1),
+                            Constraint::Fill(1),
+                        ])
+                        .areas(process_info_title_layout);
+                        status_width = new_status.width as usize;
+                        elapsed_width = new_elapsed.width as usize;
+                        thread_width = new_thread.width as usize;
+                    } else if area.width > MEDIUM_WIDTH && area.width <= LARGE_WIDTH {
+                        let [new_status, new_elapsed, new_io_read, new_thread] =
+                            Layout::horizontal(vec![
+                                Constraint::Fill(1),
+                                Constraint::Fill(1),
+                                Constraint::Fill(2),
+                                Constraint::Fill(1),
+                            ])
+                            .areas(process_info_title_layout);
+                        status_width = new_status.width as usize;
+                        elapsed_width = new_elapsed.width as usize;
+                        io_read_width = new_io_read.width as usize;
+                        thread_width = new_thread.width as usize;
+                    } else if area.width > LARGE_WIDTH && area.width <= X_LARGE_WIDTH {
+                        let [new_status, new_elapsed, new_io_read, new_io_write, new_thread] =
+                            Layout::horizontal(vec![
+                                Constraint::Fill(1),
+                                Constraint::Fill(1),
+                                Constraint::Fill(2),
+                                Constraint::Fill(2),
+                                Constraint::Fill(1),
+                            ])
+                            .areas(process_info_title_layout);
+                        status_width = new_status.width as usize;
+                        elapsed_width = new_elapsed.width as usize;
+                        io_read_width = new_io_read.width as usize;
+                        io_write_width = new_io_write.width as usize;
+                        thread_width = new_thread.width as usize;
+                    } else if area.width > X_LARGE_WIDTH && area.width <= XX_LARGE_WIDTH {
+                        let [new_status, new_elapsed, new_io_read, new_io_write, new_parent, new_thread] =
+                            Layout::horizontal(vec![
+                                Constraint::Fill(1),
+                                Constraint::Fill(1),
+                                Constraint::Fill(2),
+                                Constraint::Fill(2),
+                                Constraint::Fill(1),
+                                Constraint::Fill(1),
+                            ])
+                            .areas(process_info_title_layout);
+                        status_width = new_status.width as usize;
+                        elapsed_width = new_elapsed.width as usize;
+                        io_read_width = new_io_read.width as usize;
+                        io_write_width = new_io_write.width as usize;
+                        parent_width = new_parent.width as usize;
+                        thread_width = new_thread.width as usize;
+                    } else if area.width > XX_LARGE_WIDTH {
+                        let [new_status, new_elapsed, new_io_read, new_io_write, new_parent, new_user, new_thread] =
+                            Layout::horizontal(vec![
+                                Constraint::Fill(1),
+                                Constraint::Fill(1),
+                                Constraint::Fill(2),
+                                Constraint::Fill(2),
+                                Constraint::Fill(1),
+                                Constraint::Fill(1),
+                                Constraint::Fill(1),
+                            ])
+                            .areas(process_info_title_layout);
+                        status_width = new_status.width as usize;
+                        elapsed_width = new_elapsed.width as usize;
+                        io_read_width = new_io_read.width as usize;
+                        io_write_width = new_io_write.width as usize;
+                        parent_width = new_parent.width as usize;
+                        user_width = new_user.width as usize;
+                        thread_width = new_thread.width as usize;
+                    }
+
+                    let status_title = String::from("Status: ");
+                    let elapsed_title = String::from("Elapsed: ");
+                    let io_read_title = String::from("I/O R (C/T): ");
+                    let io_write_title = String::from("I/O W (C/T): ");
+                    let user_title = String::from("User: ");
+                    let parent_title = String::from("Parent: ");
+                    let thread_title = String::from("Threads: ");
+
+                    let padded_status_title = if status_title.len() < status_width {
+                        format!("{:^width$}", status_title, width = status_width)
+                    } else {
+                        status_title.chars().take(status_width).collect::<String>()
+                    };
+
+                    let padded_elapsed_title = if elapsed_title.len() < elapsed_width {
+                        format!("{:^width$}", elapsed_title, width = elapsed_width)
+                    } else {
+                        elapsed_title
+                            .chars()
+                            .take(elapsed_width)
+                            .collect::<String>()
+                    };
+
+                    let padded_io_read_title = if io_read_title.len() < io_read_width {
+                        format!("{:^width$}", io_read_title, width = io_read_width)
+                    } else {
+                        io_read_title
+                            .chars()
+                            .take(io_read_width)
+                            .collect::<String>()
+                    };
+
+                    let padded_io_write_title = if io_write_title.len() < io_write_width {
+                        format!("{:^width$}", io_write_title, width = io_write_width)
+                    } else {
+                        io_write_title
+                            .chars()
+                            .take(io_write_width)
+                            .collect::<String>()
+                    };
+
+                    let padded_user_title = if user_title.len() < user_width {
+                        format!("{:^width$}", user_title, width = user_width / 2)
+                    } else {
+                        user_title.chars().take(user_width).collect::<String>()
+                    };
+
+                    let padded_parent_title = if parent_title.len() < parent_width {
+                        format!("{:^width$}", parent_title, width = parent_width)
+                    } else {
+                        parent_title.chars().take(parent_width).collect::<String>()
+                    };
+
+                    let padded_thread_title = if thread_title.len() < thread_width {
+                        format!("{:^width$}", thread_title, width = thread_width)
+                    } else {
+                        thread_title.chars().take(thread_width).collect::<String>()
+                    };
+
+                    let process_info_title = Line::from(vec![
+                        Span::styled(
+                            padded_status_title,
+                            Style::default()
+                                .fg(app_color_info.process_title_color)
+                                .bold(),
+                        ),
+                        Span::styled(
+                            padded_elapsed_title,
+                            Style::default()
+                                .fg(app_color_info.process_title_color)
+                                .bold(),
+                        ),
+                        Span::styled(
+                            padded_io_read_title,
+                            Style::default()
+                                .fg(app_color_info.process_title_color)
+                                .bold(),
+                        ),
+                        Span::styled(
+                            padded_io_write_title,
+                            Style::default()
+                                .fg(app_color_info.process_title_color)
+                                .bold(),
+                        ),
+                        Span::styled(
+                            padded_user_title,
+                            Style::default()
+                                .fg(app_color_info.process_title_color)
+                                .bold(),
+                        ),
+                        Span::styled(
+                            padded_parent_title,
+                            Style::default()
+                                .fg(app_color_info.process_title_color)
+                                .bold(),
+                        ),
+                        Span::styled(
+                            padded_thread_title,
+                            Style::default()
+                                .fg(app_color_info.process_title_color)
+                                .bold(),
+                        ),
+                    ]);
+
+                    frame.render_widget(process_info_title, process_info_title_layout);
                 } else {
                     return;
                 }
@@ -623,7 +835,7 @@ pub fn draw_process_info(
         let [pid, program, command, user, memory, cpu_usage] = Layout::horizontal([
             Constraint::Fill(1),
             Constraint::Fill(2),
-            Constraint::Fill(4),
+            Constraint::Fill(3),
             Constraint::Fill(1),
             Constraint::Fill(1),
             Constraint::Fill(1),
@@ -774,21 +986,6 @@ pub fn draw_process_info(
     let process_list: Vec<ListItem> = sorted_process
         .iter()
         .map(|value| {
-            let processed_memory = if value.memory[value.memory.len() - 1] > 1024.0 {
-                let new_memory =
-                    ((value.memory[value.memory.len() - 1] / 1024.0) * 1000.0).round() / 1000.0;
-                if new_memory > 1024.0 {
-                    format!(
-                        "{:.1} GiB",
-                        (((new_memory / 1024.0) * 1000.0).round() / 1000.0) as f32
-                    )
-                } else {
-                    format!("{} MiB", new_memory as usize)
-                }
-            } else {
-                format!("{} KiB", value.memory[value.memory.len() - 1] as usize)
-            };
-
             // Pad the string to take up respective width
             let pid = format!("{}", value.pid);
             let program = value.name.clone();
@@ -805,7 +1002,7 @@ pub fn draw_process_info(
             let thread = value.thread_count.to_string();
 
             let user = value.user.clone();
-            let memory = processed_memory;
+            let memory = process_to_kib_mib_gib(value.memory[value.memory.len() - 1]);
             let cpu_usage = format!(
                 "{:.2}%",
                 round_to_2_decimal(value.cpu_usage[value.cpu_usage.len() - 1])

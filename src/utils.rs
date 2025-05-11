@@ -337,6 +337,28 @@ pub fn round_to_2_decimal(value: f32) -> f32 {
     (value * 100.0).round() / 100.0
 }
 
+pub fn process_to_kib_mib_gib(value: f64) -> String {
+    let mut value = value;
+    let mut unit = "B";
+
+    if value >= 1024.0 {
+        value /= 1024.0;
+        unit = "KiB";
+    }
+
+    if value >= 1024.0 {
+        value /= 1024.0;
+        unit = "MiB";
+    }
+
+    if value >= 1024.0 {
+        value /= 1024.0;
+        unit = "GiB";
+    }
+
+    return format!("{:.2} {}", ((value * 1000.0).round() / 1000.0), unit);
+}
+
 // function to sort and filter the process list based on user selected sort type, sorting order and filtering input
 pub fn sort_process(
     sort_type: ProcessSortType,
