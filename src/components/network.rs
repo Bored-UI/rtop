@@ -15,7 +15,7 @@ use crate::{
 
 // width smaller than this will be consider small width for the network container
 const SMALL_WIDTH: u16 = 40;
-const GRPAH_PERCENTAGE: f64 = 100.0;
+const GRAPH_PERCENTAGE: f64 = 100.0;
 
 pub fn draw_network_info(
     tick: u64,
@@ -165,7 +165,7 @@ pub fn draw_network_info(
         .map(|(i, &usage)| {
             let x = i as f64;
             let y = if usage > 0.0 {
-                (usage / current_max_network_received) * GRPAH_PERCENTAGE as f64
+                (usage / current_max_network_received) * GRAPH_PERCENTAGE as f64
             } else {
                 0.0
             };
@@ -191,7 +191,7 @@ pub fn draw_network_info(
 
     let x_axis = Axis::default().bounds([0.0, graph_show_range as f64]);
 
-    let y_axis = Axis::default().bounds([0.0, GRPAH_PERCENTAGE]);
+    let y_axis = Axis::default().bounds([0.0, GRAPH_PERCENTAGE]);
 
     let network_received_chart = Chart::new(vec![dataset])
         .x_axis(x_axis)
@@ -259,7 +259,7 @@ pub fn draw_network_info(
         .map(|(i, &usage)| {
             let x = i as f64;
             let y = if usage > 0.0 {
-                (usage / current_max_network_transmitted) * GRPAH_PERCENTAGE as f64
+                (usage / current_max_network_transmitted) * GRAPH_PERCENTAGE as f64
             } else {
                 0.0
             };
@@ -285,7 +285,7 @@ pub fn draw_network_info(
 
     let x_axis = Axis::default().bounds([0.0, graph_show_range as f64]);
 
-    let y_axis = Axis::default().bounds([0.0, GRPAH_PERCENTAGE]);
+    let y_axis = Axis::default().bounds([0.0, GRAPH_PERCENTAGE]);
 
     let network_transmitted_chart = Chart::new(vec![dataset])
         .x_axis(x_axis)

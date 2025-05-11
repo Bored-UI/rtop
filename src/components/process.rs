@@ -17,6 +17,8 @@ use crate::{
     },
 };
 
+const GRAPH_PERCENTAGE: f64 = 100.0;
+
 const MEDIUM_WIDTH: u16 = 60;
 const LARGE_WIDTH: u16 = 80;
 const X_LARGE_WIDTH: u16 = 100;
@@ -44,6 +46,7 @@ pub fn draw_process_info(
     process_filter: String,
     process_show_detail: bool,
     current_showing_process_detail: &Option<HashMap<String, ProcessData>>,
+    total_memory: f64,
     is_filtering: bool, // to indicate if the app enter typing state for process filtering
     area: Rect,
     frame: &mut Frame,
@@ -524,7 +527,7 @@ pub fn draw_process_info(
                     ])
                     .areas(detail_graph_naming_layout);
 
-                    // first get the process cpu usage history
+                    // get the process cpu usage history
                     let process_cpu_usage_history = process_detail.cpu_usage.clone();
 
                     // Determine the number of points to display based on zoom level
@@ -533,7 +536,8 @@ pub fn draw_process_info(
                     let start_idx = process_cpu_usage_history
                         .len()
                         .saturating_sub(num_points_to_display);
-                    let mut data_points: Vec<(f64, f64)> = process_cpu_usage_history[start_idx..]
+                    let mut process_cpu_usage_points: Vec<(f64, f64)> = process_cpu_usage_history
+                        [start_idx..]
                         .iter()
                         .enumerate()
                         .map(|(i, &usage)| {
@@ -546,17 +550,21 @@ pub fn draw_process_info(
                         })
                         .collect();
 
-                    data_points = data_points
+                    process_cpu_usage_points = process_cpu_usage_points
                         .iter()
                         .map(|(x, y)| {
-                            (graph_show_range as f64 - (data_points.len() as f64 - x), *y)
+                            (
+                                graph_show_range as f64
+                                    - (process_cpu_usage_points.len() as f64 - x),
+                                *y,
+                            )
                         })
                         .collect();
 
                     // Create the dataset for the chart
                     let dataset = Dataset::default()
                         .name("")
-                        .data(&data_points)
+                        .data(&process_cpu_usage_points)
                         .graph_type(GraphType::Bar)
                         .marker(Marker::Braille)
                         .style(Style::default().fg(app_color_info.cpu_base_graph_color));
@@ -567,7 +575,7 @@ pub fn draw_process_info(
                     let y_axis = Axis::default().bounds([0.0, 100.0]);
 
                     // Create the chart widget
-                    let chart = Chart::new(vec![dataset])
+                    let process_cpu_usage_chart = Chart::new(vec![dataset])
                         .x_axis(x_axis)
                         .y_axis(y_axis)
                         .bg(app_color_info.background_color);
@@ -581,7 +589,7 @@ pub fn draw_process_info(
                     )
                     .bold()]);
 
-                    frame.render_widget(chart, padded_detail_graph_layout);
+                    frame.render_widget(process_cpu_usage_chart, padded_detail_graph_layout);
                     frame.render_widget(
                         process_cpu_usage_graph_naming,
                         padded_detail_graph_naming_layout,
@@ -590,21 +598,21 @@ pub fn draw_process_info(
                     // ------------------------------------------------------------
                     // Render process detail info on the right
                     // ------------------------------------------------------------
-                    let [_, padded_detail_info_layout, _] = Layout::vertical([
-                        Constraint::Length(1),
-                        Constraint::Fill(1),
-                        Constraint::Length(1),
-                    ])
-                    .areas(process_detail_info_layout);
+                    let [_, padded_detail_info_layout] =
+                        Layout::vertical([Constraint::Length(1), Constraint::Fill(1)])
+                            .areas(process_detail_info_layout);
 
                     let [process_info_layout, process_memory_usage_layout, process_cmd_layout] =
                         Layout::vertical(vec![
                             Constraint::Length(3),
-                            Constraint::Fill(2),
                             Constraint::Fill(1),
+                            Constraint::Length(3),
                         ])
                         .areas(padded_detail_info_layout);
 
+                    // ------------------------------------------------------------
+                    // Various process metrics on the top
+                    // ------------------------------------------------------------
                     let [process_info_title_layout, process_info_detail_layout, extra_detail_layout] =
                         Layout::vertical(vec![
                             Constraint::Length(1),
@@ -970,6 +978,75 @@ pub fn draw_process_info(
 
                     frame.render_widget(process_info_detail, process_info_detail_layout);
                     frame.render_widget(process_info_detail_extra, extra_detail_layout);
+
+                    // ------------------------------------------------------------
+                    // Memory Usage Metrics and graph on the middle
+                    // ------------------------------------------------------------
+
+                    let [_, padded_process_memory_usage_layout, _] = Layout::horizontal(vec![
+                        Constraint::Fill(1),
+                        Constraint::Fill(8),
+                        Constraint::Fill(1),
+                    ])
+                    .areas(process_memory_usage_layout);
+
+                    let [process_memory_usage_percentage_layout, process_memory_usage_graph_layout, process_memory_usage_bytes_layout] =
+                        Layout::horizontal(vec![
+                            Constraint::Fill(1),
+                            Constraint::Fill(8),
+                            Constraint::Fill(1),
+                        ])
+                        .areas(padded_process_memory_usage_layout);
+
+                    // get the process memory history
+                    let process_memory = process_detail.memory.clone();
+                    let num_points_to_display = graph_show_range.min(process_memory.len());
+                    let start_idx = process_memory.len().saturating_sub(num_points_to_display);
+
+                    let mut process_memory_points: Vec<(f64, f64)> = process_memory[start_idx..]
+                        .iter()
+                        .enumerate()
+                        .map(|(i, &usage)| {
+                            let x = i as f64;
+                            let y = if usage > 0.0 {
+                                (usage / total_memory) * GRAPH_PERCENTAGE as f64
+                            } else {
+                                0.0
+                            };
+                            (x, y)
+                        })
+                        .collect();
+
+                    process_memory_points = process_memory_points
+                        .iter()
+                        .map(|(x, y)| {
+                            (
+                                graph_show_range as f64 - (process_memory_points.len() as f64 - x),
+                                *y,
+                            )
+                        })
+                        .collect();
+
+                    let dataset = Dataset::default()
+                        .data(&process_memory_points)
+                        .graph_type(GraphType::Bar)
+                        .marker(Marker::Braille)
+                        .style(Style::default().fg(app_color_info.used_memory_base_graph_color));
+
+                    let x_axis = Axis::default().bounds([0.0, graph_show_range as f64]);
+
+                    let y_axis = Axis::default().bounds([0.0, GRAPH_PERCENTAGE]);
+
+                    let process_memory_chart = Chart::new(vec![dataset])
+                        .x_axis(x_axis)
+                        .y_axis(y_axis)
+                        .bg(app_color_info.background_color);
+
+                    frame.render_widget(process_memory_chart, process_memory_usage_graph_layout);
+
+                    // ------------------------------------------------------------
+                    // CMD command on the bottom
+                    // ------------------------------------------------------------
                 } else {
                     return;
                 }
