@@ -13,7 +13,8 @@ use crate::{
     app::AppColorInfo,
     types::{ProcessData, ProcessSortType},
     utils::{
-        format_seconds, get_tick_line_ui, process_to_kib_mib_gib, round_to_2_decimal, sort_process,
+        break_line_into_vectors_of_string, format_seconds, get_tick_line_ui,
+        process_to_kib_mib_gib, round_to_2_decimal, sort_process,
     },
 };
 
@@ -983,20 +984,47 @@ pub fn draw_process_info(
                     // Memory Usage Metrics and graph on the middle
                     // ------------------------------------------------------------
 
-                    let [_, padded_process_memory_usage_layout, _] = Layout::horizontal(vec![
-                        Constraint::Fill(1),
-                        Constraint::Fill(8),
-                        Constraint::Fill(1),
-                    ])
-                    .areas(process_memory_usage_layout);
-
                     let [process_memory_usage_percentage_layout, process_memory_usage_graph_layout, process_memory_usage_bytes_layout] =
                         Layout::horizontal(vec![
-                            Constraint::Fill(1),
-                            Constraint::Fill(8),
-                            Constraint::Fill(1),
+                            Constraint::Fill(3),
+                            Constraint::Fill(4),
+                            Constraint::Fill(3),
                         ])
-                        .areas(padded_process_memory_usage_layout);
+                        .areas(process_memory_usage_layout);
+
+                    // ------------------------------------------------------------
+                    // Memory Usage Percentage on the right side of the memory usage graph
+                    // ------------------------------------------------------------
+
+                    let process_memory_usage_percentage: f64 =
+                        ((process_detail.memory[process_detail.memory.len() - 1]) / total_memory)
+                            * 100.0;
+                    let process_memory_usage_percentage_formatting = if area.width < LARGE_WIDTH {
+                        format!("M: {:.2}%", process_memory_usage_percentage)
+                    } else {
+                        format!("MEMORY: {:.2}%", process_memory_usage_percentage)
+                    };
+
+                    let [_, process_memory_usage_percentage_layout, _] = Layout::horizontal(vec![
+                        Constraint::Fill(1),
+                        Constraint::Length(process_memory_usage_percentage_formatting.len() as u16),
+                        Constraint::Fill(1),
+                    ])
+                    .areas(process_memory_usage_percentage_layout);
+                    let [_, padded_process_memory_usage_percentage_layout] =
+                        Layout::vertical(vec![Constraint::Fill(1), Constraint::Length(1)])
+                            .areas(process_memory_usage_percentage_layout);
+
+                    let process_memory_usage_percentage_line = Line::from(vec![Span::styled(
+                        process_memory_usage_percentage_formatting,
+                        Style::default().fg(app_color_info.process_title_color),
+                    )
+                    .bold()]);
+
+                    frame.render_widget(
+                        process_memory_usage_percentage_line,
+                        padded_process_memory_usage_percentage_layout,
+                    );
 
                     // get the process memory history
                     let process_memory = process_detail.memory.clone();
@@ -1045,8 +1073,139 @@ pub fn draw_process_info(
                     frame.render_widget(process_memory_chart, process_memory_usage_graph_layout);
 
                     // ------------------------------------------------------------
+                    // Memory Usage Bytes on the left side of the memory usage graph
+                    // ------------------------------------------------------------
+                    let process_memory_usage_bytes_formatting = process_to_kib_mib_gib(
+                        process_detail.memory[process_detail.memory.len() - 1],
+                    );
+
+                    let [_, process_memory_usage_bytes_layout, _] = Layout::horizontal(vec![
+                        Constraint::Fill(1),
+                        Constraint::Length(process_memory_usage_bytes_formatting.len() as u16),
+                        Constraint::Fill(1),
+                    ])
+                    .areas(process_memory_usage_bytes_layout);
+
+                    let [_, padded_process_memory_usage_bytes_layout] =
+                        Layout::vertical(vec![Constraint::Fill(1), Constraint::Length(1)])
+                            .areas(process_memory_usage_bytes_layout);
+                    let process_memory_usage_bytes_line = Line::from(vec![Span::styled(
+                        process_memory_usage_bytes_formatting,
+                        Style::default().fg(app_color_info.process_title_color),
+                    )
+                    .bold()]);
+
+                    frame.render_widget(
+                        process_memory_usage_bytes_line,
+                        padded_process_memory_usage_bytes_layout,
+                    );
+
+                    // ------------------------------------------------------------
                     // CMD command on the bottom
                     // ------------------------------------------------------------
+                    let [process_cmd_title_layout, process_cmd_info_layout] =
+                        Layout::horizontal(vec![Constraint::Fill(2), Constraint::Fill(8)])
+                            .areas(process_cmd_layout);
+
+                    let [_, process_cmd_title_layout, _] = Layout::vertical(vec![
+                        Constraint::Length(1),
+                        Constraint::Length(1),
+                        Constraint::Length(1),
+                    ])
+                    .areas(process_cmd_title_layout);
+                    let [upper_process_cmd_layout, mid_process_cmd_layout, bottom_process_cmd_layout] =
+                        Layout::vertical(vec![
+                            Constraint::Length(1),
+                            Constraint::Length(1),
+                            Constraint::Length(1),
+                        ])
+                        .areas(process_cmd_info_layout);
+
+                    let process_cmd_title_line = Line::from(vec![Span::styled(
+                        format!(
+                            "{:^width$}",
+                            "CMD:",
+                            width = process_cmd_title_layout.width as usize
+                        ),
+                        Style::default().fg(app_color_info.process_title_color),
+                    )
+                    .bold()]);
+
+                    let seperated_cmd_line_vec = break_line_into_vectors_of_string(
+                        process_detail.cmd.join(""),
+                        upper_process_cmd_layout.width as usize,
+                        3,
+                    );
+                    if seperated_cmd_line_vec.len() == 1 {
+                        let first_line = Line::from(vec![Span::styled(
+                            format!(
+                                "{:^width$}",
+                                seperated_cmd_line_vec[0],
+                                width = mid_process_cmd_layout.width as usize
+                            ),
+                            Style::default().fg(app_color_info.base_app_text_color),
+                        )
+                        .bold()]);
+
+                        frame.render_widget(first_line, mid_process_cmd_layout);
+                    } else if seperated_cmd_line_vec.len() == 2 {
+                        let first_line = Line::from(vec![Span::styled(
+                            format!(
+                                "{:^width$}",
+                                seperated_cmd_line_vec[0],
+                                width = upper_process_cmd_layout.width as usize
+                            ),
+                            Style::default().fg(app_color_info.base_app_text_color),
+                        )
+                        .bold()]);
+                        let second_line = Line::from(vec![Span::styled(
+                            format!(
+                                "{:^width$}",
+                                seperated_cmd_line_vec[1],
+                                width = mid_process_cmd_layout.width as usize
+                            ),
+                            Style::default().fg(app_color_info.base_app_text_color),
+                        )
+                        .bold()]);
+
+                        frame.render_widget(first_line, upper_process_cmd_layout);
+                        frame.render_widget(second_line, mid_process_cmd_layout);
+                    }
+                    if seperated_cmd_line_vec.len() == 3 {
+                        let first_line = Line::from(vec![Span::styled(
+                            format!(
+                                "{:^width$}",
+                                seperated_cmd_line_vec[0],
+                                width = upper_process_cmd_layout.width as usize
+                            ),
+                            Style::default().fg(app_color_info.base_app_text_color),
+                        )
+                        .bold()]);
+                        let second_line = Line::from(vec![Span::styled(
+                            format!(
+                                "{:^width$}",
+                                seperated_cmd_line_vec[1],
+                                width = mid_process_cmd_layout.width as usize
+                            ),
+                            Style::default().fg(app_color_info.base_app_text_color),
+                        )
+                        .bold()]);
+                        let third_line = Line::from(vec![Span::styled(
+                            format!(
+                                "{:^width$}",
+                                seperated_cmd_line_vec[2],
+                                width = bottom_process_cmd_layout.width as usize
+                            ),
+                            Style::default().fg(app_color_info.base_app_text_color),
+                        )
+                        .bold()]);
+
+                        frame.render_widget(first_line, upper_process_cmd_layout);
+                        frame.render_widget(second_line, mid_process_cmd_layout);
+                        frame.render_widget(third_line, bottom_process_cmd_layout);
+                    }
+
+                    frame.render_widget(process_cmd_title_line, process_cmd_title_layout);
                 } else {
                     return;
                 }
@@ -1244,7 +1403,8 @@ pub fn draw_process_info(
                 value.name.clone()
             };
             #[cfg(target_os = "windows")]
-            // due to unoptimized way of getting thread count on window platform which hurt performence, will not support this till a solution is found
+            // due to unoptimized way of getting thread count on window platform which hurt performence,
+            // will not support this till a solution is found
             let thread = "?".to_string();
 
             #[cfg(any(target_os = "macos", target_os = "linux"))]

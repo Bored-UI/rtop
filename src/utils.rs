@@ -333,6 +333,36 @@ pub fn get_tick_line_ui(tick: u64, app_color_info: &AppColorInfo) -> Line {
     return refresh_tick;
 }
 
+// break line into multiple line into a vector based on desire len of string (String -> Vec<String>)
+pub fn break_line_into_vectors_of_string(
+    line: String,
+    max_length_per_string: usize,
+    vector_size: usize,
+) -> Vec<String> {
+    if vector_size < 1 {
+        return vec![];
+    }
+    if line.len() <= max_length_per_string {
+        return vec![line];
+    } else {
+        let chars_vec: Vec<char> = line.chars().collect();
+        let mut line_vec = vec![];
+        for i in 0..vector_size {
+            let start = i * max_length_per_string;
+            let end = (i + 1) * max_length_per_string;
+
+            if end >= line.len() {
+                line_vec.push(chars_vec[start..line.len()].iter().collect());
+                break;
+            }
+
+            line_vec.push(chars_vec[start..end].iter().collect());
+        }
+
+        return line_vec;
+    }
+}
+
 pub fn round_to_2_decimal(value: f32) -> f32 {
     (value * 100.0).round() / 100.0
 }
