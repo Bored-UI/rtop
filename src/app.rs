@@ -25,10 +25,10 @@ use crate::{
     get_sys_info::{spawn_process_info_collector, spawn_system_info_collector},
     memory::draw_memory_info,
     types::{
-        AppState, CProcessesInfo, CSysInfo, MemoryData, ProcessData, ProcessSortType,
+        AppPopUpType, AppState, CProcessesInfo, CSysInfo, MemoryData, ProcessData, ProcessSortType,
         ProcessesInfo, SelectedContainer, SysInfo,
     },
-    utils::{process_processes_info, process_sys_info},
+    utils::{process_processes_info, process_sys_info, render_pop_up_menu},
 };
 
 // this need to be the same as MAXIMUM_DATA_COLLECTION in types.rs
@@ -47,6 +47,7 @@ struct App {
     process_info: ProcessesInfo,  // the system process info collected
     selected_container: SelectedContainer, // current selected container in the UI
     state: AppState,              // current state of the app
+    pop_up_type: AppPopUpType,    // current pop up type
     cpu_graph_shown_range: usize, // range of graph shown for CPU
     memory_graph_shown_range: usize, // range of graph shown for MEMORY
     disk_graph_shown_range: usize, // range of graph shown for DISK
@@ -75,6 +76,7 @@ pub struct AppColorInfo {
     // key text was the key that triggers certain functionality, like c for selecting cpu container -/+ to chnage the refresh tick
     pub key_text_color: Color,
     pub app_title_color: Color, // this will be used for those text in the title of each main block
+    pub pop_up_color: Color,
 
     // for cpu
     pub cpu_container_selected_color: Color,
@@ -151,6 +153,7 @@ pub fn app() {
         },
         selected_container: SelectedContainer::None,
         state: AppState::View,
+        pop_up_type: AppPopUpType::None,
         cpu_graph_shown_range: 100,
         memory_graph_shown_range: 100,
         disk_graph_shown_range: 100,
@@ -181,6 +184,7 @@ pub fn app() {
         // Key text color: Nord10 for key text (e.g., "C" in "Cpu")
         key_text_color: Color::Rgb(94, 129, 172),   // Nord10
         app_title_color: Color::Rgb(143, 188, 187), // Frost
+        pop_up_color: Color::Rgb(76, 86, 106),
 
         cpu_container_selected_color: Color::Rgb(94, 129, 172),
         // CPU main block: A slightly lighter grayish-blue to contrast with the background
@@ -548,6 +552,20 @@ impl App {
                     false,
                 )
             }
+
+            // render pop up after all the main components are rendered
+            // for the pop up size, it will be decide at the function according to the pop up type
+            if self.state == AppState::Popup && self.pop_up_type != AppPopUpType::None {
+                render_pop_up_menu(
+                    full_frame_view_rect,
+                    frame,
+                    &mut self.state,
+                    &mut self.pop_up_type,
+                    &self.process_show_details,
+                    &self.current_showing_process_detail,
+                    app_color_info,
+                );
+            }
         }
     }
 
@@ -561,6 +579,8 @@ impl App {
                         self.handle_key_event(key_event);
                     } else if self.state == AppState::Typing {
                         self.handle_typing_key_event(key_event);
+                    } else if self.state == AppState::Popup {
+                        self.handle_pop_up_event(key_event);
                     }
                 }
                 _ => {}
@@ -903,6 +923,76 @@ impl App {
                 }
             }
 
+            KeyCode::Char('K') => {
+                if self.state == AppState::View {
+                    if self.selected_container == SelectedContainer::Process
+                        && self.process_show_details
+                        && self.current_showing_process_detail.is_some()
+                    {
+                        self.state = AppState::Popup;
+                        self.pop_up_type = AppPopUpType::KillConfirmation;
+                    }
+                }
+            }
+
+            KeyCode::Char('k') => {
+                if self.state == AppState::View {
+                    if self.selected_container == SelectedContainer::Process
+                        && self.process_show_details
+                        && self.current_showing_process_detail.is_some()
+                    {
+                        self.state = AppState::Popup;
+                        self.pop_up_type = AppPopUpType::KillConfirmation;
+                    }
+                }
+            }
+
+            KeyCode::Char('T') => {
+                if self.state == AppState::View {
+                    if self.selected_container == SelectedContainer::Process
+                        && self.process_show_details
+                        && self.current_showing_process_detail.is_some()
+                    {
+                        self.state = AppState::Popup;
+                        self.pop_up_type = AppPopUpType::TerminateConfirmation;
+                    }
+                }
+            }
+
+            KeyCode::Char('t') => {
+                if self.state == AppState::View {
+                    if self.selected_container == SelectedContainer::Process
+                        && self.process_show_details
+                        && self.current_showing_process_detail.is_some()
+                    {
+                        self.state = AppState::Popup;
+                        self.pop_up_type = AppPopUpType::TerminateConfirmation;
+                    }
+                }
+            }
+
+            KeyCode::Char('S') => {
+                if self.state == AppState::View {
+                    if self.selected_container == SelectedContainer::Process
+                        && self.process_show_details
+                        && self.current_showing_process_detail.is_some()
+                    {
+                        todo!()
+                    }
+                }
+            }
+
+            KeyCode::Char('s') => {
+                if self.state == AppState::View {
+                    if self.selected_container == SelectedContainer::Process
+                        && self.process_show_details
+                        && self.current_showing_process_detail.is_some()
+                    {
+                        todo!()
+                    }
+                }
+            }
+
             KeyCode::Left => {
                 if self.state == AppState::View {
                     if self.selected_container == SelectedContainer::Disk {
@@ -1033,6 +1123,16 @@ impl App {
                 self.process_selected_state.select(None);
             }
 
+            _ => {}
+        }
+    }
+
+    fn handle_pop_up_event(&mut self, key_event: KeyEvent) {
+        match key_event.code {
+            KeyCode::Esc => {
+                self.state = AppState::View;
+                self.pop_up_type = AppPopUpType::None;
+            }
             _ => {}
         }
     }

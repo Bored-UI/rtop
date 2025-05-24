@@ -1,15 +1,19 @@
 use std::{cmp::Ordering, collections::HashMap};
 
 use ratatui::{
+    layout::{Constraint, Layout, Rect},
     style::{Style, Stylize},
+    symbols::border,
     text::{Line, Span},
+    widgets::Block,
+    Frame,
 };
 
 use crate::{
     app::AppColorInfo,
     types::{
-        CProcessesInfo, CSysInfo, CpuData, DiskData, MemoryData, NetworkData, ProcessData,
-        ProcessSortType, ProcessesInfo, SysInfo,
+        AppPopUpType, AppState, CProcessesInfo, CSysInfo, CpuData, DiskData, MemoryData,
+        NetworkData, ProcessData, ProcessSortType, ProcessesInfo, SysInfo,
     },
 };
 
@@ -512,4 +516,123 @@ pub fn sort_process(
         })
     }
     return processes;
+}
+
+pub fn render_pop_up_menu(
+    area: Rect,
+    frame: &mut Frame,
+    state: &mut AppState,
+    pop_up_type: &mut AppPopUpType,
+    process_show_details: &bool, // indicate if user wanted to show process details
+    current_showing_process_detail: &Option<HashMap<String, ProcessData>>, // the current showing process detail
+    app_color_info: &AppColorInfo,
+) {
+    // the current pop up is only use for process for sending signal to process, and pop up will only be functional if user has selected a process to show detail
+    // because this is the way we want the user to access the kill, termination or sending signal trigger by default
+    if !process_show_details || current_showing_process_detail.is_none() {
+        *pop_up_type = AppPopUpType::None;
+        *state = AppState::View;
+    }
+
+    let pop_up_dimension: (u16, u16) = if *pop_up_type == AppPopUpType::KillConfirmation
+        || *pop_up_type == AppPopUpType::TerminateConfirmation
+    {
+        (50, 10)
+    } else {
+        (75.min(area.width), 25.min(area.height))
+    };
+
+    let [_, pop_up_width, _] = Layout::horizontal(vec![
+        Constraint::Fill(1),
+        Constraint::Length(pop_up_dimension.0),
+        Constraint::Fill(1),
+    ])
+    .areas(area);
+
+    let [_, pop_up, _] = Layout::vertical(vec![
+        Constraint::Fill(1),
+        Constraint::Length(pop_up_dimension.1),
+        Constraint::Fill(1),
+    ])
+    .areas(pop_up_width);
+
+    let info = Line::from(vec![Span::styled(
+        pop_up_type.get_string_name(),
+        Style::default().fg(app_color_info.app_title_color).bold(),
+    )]);
+
+    let pop_up_block = Block::bordered()
+        .title(info.left_aligned())
+        .style(app_color_info.background_color)
+        .border_style(app_color_info.pop_up_color)
+        .border_set(border::ROUNDED);
+
+    // Render the pop-up block second (centered)
+    frame.render_widget(pop_up_block, pop_up);
+
+    if *pop_up_type == AppPopUpType::KillConfirmation
+        || *pop_up_type == AppPopUpType::TerminateConfirmation
+    {
+        let [_, padded_pop_up, _] = Layout::horizontal(vec![
+            Constraint::Fill(1),
+            Constraint::Fill(8),
+            Constraint::Fill(1),
+        ])
+        .areas(pop_up);
+        let [_, info_layout, _, button_layout, _] = Layout::vertical(vec![
+            Constraint::Fill(1),
+            Constraint::Length(2),
+            Constraint::Length(1),
+            Constraint::Length(2),
+            Constraint::Fill(1),
+        ])
+        .areas(padded_pop_up);
+
+        let [signal_info, pid_info] =
+            Layout::vertical(vec![Constraint::Length(1), Constraint::Length(1)]).areas(info_layout);
+        let [yes_button_layout, no_button_layout] =
+            Layout::horizontal(vec![Constraint::Fill(1), Constraint::Fill(1)]).areas(button_layout);
+
+        let signal_type = if *pop_up_type == AppPopUpType::KillConfirmation {
+            Span::styled("KILL", Style::default().fg(app_color_info.key_text_color))
+        } else {
+            Span::styled("TERM", Style::default().fg(app_color_info.key_text_color))
+        };
+
+        let (key, value) = current_showing_process_detail
+            .as_ref()
+            .unwrap()
+            .iter()
+            .next()
+            .unwrap();
+        let program_pib = key;
+        let program_name = value.name.clone();
+
+        let signal_info_line = Line::from(vec![
+            Span::styled(
+                "SEND SIGNAL: ",
+                Style::default().fg(app_color_info.base_app_text_color),
+            )
+            .bold(),
+            signal_type,
+        ]);
+        let pid_info_line = Line::from(vec![
+            Span::styled(
+                "TO PID: ",
+                Style::default().fg(app_color_info.base_app_text_color),
+            )
+            .bold(),
+            Span::styled(
+                format!("{} ", program_pib),
+                Style::default().fg(app_color_info.key_text_color),
+            ),
+            Span::styled(
+                format!("({})", program_name),
+                Style::default().fg(app_color_info.base_app_text_color),
+            ),
+        ]);
+
+        frame.render_widget(signal_info_line, signal_info);
+        frame.render_widget(pid_info_line, pid_info);
+    }
 }

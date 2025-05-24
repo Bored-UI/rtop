@@ -438,6 +438,15 @@ pub enum AppState {
     View,
     Typing, // mainly to indicated that user is typing ( will be used for process filtering )
     Menu,
+    Popup,
+}
+
+#[derive(PartialEq)]
+pub enum AppPopUpType {
+    None,
+    KillConfirmation,
+    TerminateConfirmation,
+    SignalMenu,
 }
 
 #[derive(PartialEq, Clone)]
@@ -479,5 +488,16 @@ impl ProcessSortType {
 
     pub fn total_selection_count() -> u8 {
         7
+    }
+}
+
+impl AppPopUpType {
+    pub fn get_string_name(&self) -> String {
+        match self {
+            AppPopUpType::KillConfirmation => " KILL ".to_string(),
+            AppPopUpType::TerminateConfirmation => " TERMINATION ".to_string(),
+            AppPopUpType::SignalMenu => " SIGNAL ".to_string(),
+            _ => "".to_string(),
+        }
     }
 }
