@@ -17,6 +17,7 @@ use ratatui::{
     widgets::{Block, ListState, Paragraph},
     DefaultTerminal, Frame,
 };
+use sysinfo::Signal;
 
 use crate::{
     components::{network::draw_network_info, process::draw_process_info},
@@ -25,8 +26,8 @@ use crate::{
     get_sys_info::{spawn_process_info_collector, spawn_system_info_collector},
     memory::draw_memory_info,
     types::{
-        AppPopUpType, AppState, CProcessesInfo, CSysInfo, MemoryData, ProcessData, ProcessSortType,
-        ProcessesInfo, SelectedContainer, SysInfo,
+        AppPopUpType, AppState, CProcessesInfo, CSysInfo, CurrentProcessSignalStateData,
+        MemoryData, ProcessData, ProcessSortType, ProcessesInfo, SelectedContainer, SysInfo,
     },
     utils::{process_processes_info, process_sys_info, render_pop_up_menu},
 };
@@ -68,6 +69,7 @@ struct App {
     is_renderable: bool,         // to indicate if this app UI is renderable
     is_init: bool,               // to indicate is this app has done initialization
     container_full_screen: bool, // to indicate is user choose to full screen the current selected container
+    current_process_signal_state_data: Option<CurrentProcessSignalStateData>, // this was used to temporary save the data when user trigger the process signal related pop-up
 }
 
 pub struct AppColorInfo {
@@ -174,6 +176,7 @@ pub fn app() {
         is_renderable: true,
         is_init: false,
         container_full_screen: false,
+        current_process_signal_state_data: None,
     };
 
     let app_color_info = AppColorInfo {
@@ -559,10 +562,8 @@ impl App {
                 render_pop_up_menu(
                     full_frame_view_rect,
                     frame,
-                    &mut self.state,
                     &mut self.pop_up_type,
-                    &self.process_show_details,
-                    &self.current_showing_process_detail,
+                    self.current_process_signal_state_data.as_ref().unwrap(),
                     app_color_info,
                 );
             }
@@ -929,6 +930,23 @@ impl App {
                         && self.process_show_details
                         && self.current_showing_process_detail.is_some()
                     {
+                        let (key, value) = self
+                            .current_showing_process_detail
+                            .as_ref()
+                            .unwrap()
+                            .iter()
+                            .next()
+                            .unwrap();
+                        let program_pib = key.clone();
+                        let program_name = value.name.clone();
+                        self.current_process_signal_state_data =
+                            Some(CurrentProcessSignalStateData {
+                                pid: program_pib,
+                                name: program_name,
+                                signal: Some(Signal::Kill),
+                                yes_confirmation: true,
+                                no_confirmation: false,
+                            });
                         self.state = AppState::Popup;
                         self.pop_up_type = AppPopUpType::KillConfirmation;
                     }
@@ -941,6 +959,23 @@ impl App {
                         && self.process_show_details
                         && self.current_showing_process_detail.is_some()
                     {
+                        let (key, value) = self
+                            .current_showing_process_detail
+                            .as_ref()
+                            .unwrap()
+                            .iter()
+                            .next()
+                            .unwrap();
+                        let program_pib = key.clone();
+                        let program_name = value.name.clone();
+                        self.current_process_signal_state_data =
+                            Some(CurrentProcessSignalStateData {
+                                pid: program_pib,
+                                name: program_name,
+                                signal: Some(Signal::Kill),
+                                yes_confirmation: true,
+                                no_confirmation: false,
+                            });
                         self.state = AppState::Popup;
                         self.pop_up_type = AppPopUpType::KillConfirmation;
                     }
@@ -953,6 +988,23 @@ impl App {
                         && self.process_show_details
                         && self.current_showing_process_detail.is_some()
                     {
+                        let (key, value) = self
+                            .current_showing_process_detail
+                            .as_ref()
+                            .unwrap()
+                            .iter()
+                            .next()
+                            .unwrap();
+                        let program_pib = key.clone();
+                        let program_name = value.name.clone();
+                        self.current_process_signal_state_data =
+                            Some(CurrentProcessSignalStateData {
+                                pid: program_pib,
+                                name: program_name,
+                                signal: Some(Signal::Term),
+                                yes_confirmation: true,
+                                no_confirmation: false,
+                            });
                         self.state = AppState::Popup;
                         self.pop_up_type = AppPopUpType::TerminateConfirmation;
                     }
@@ -965,6 +1017,23 @@ impl App {
                         && self.process_show_details
                         && self.current_showing_process_detail.is_some()
                     {
+                        let (key, value) = self
+                            .current_showing_process_detail
+                            .as_ref()
+                            .unwrap()
+                            .iter()
+                            .next()
+                            .unwrap();
+                        let program_pib = key.clone();
+                        let program_name = value.name.clone();
+                        self.current_process_signal_state_data =
+                            Some(CurrentProcessSignalStateData {
+                                pid: program_pib,
+                                name: program_name,
+                                signal: Some(Signal::Term),
+                                yes_confirmation: true,
+                                no_confirmation: false,
+                            });
                         self.state = AppState::Popup;
                         self.pop_up_type = AppPopUpType::TerminateConfirmation;
                     }
@@ -977,6 +1046,15 @@ impl App {
                         && self.process_show_details
                         && self.current_showing_process_detail.is_some()
                     {
+                        let (key, value) = self
+                            .current_showing_process_detail
+                            .as_ref()
+                            .unwrap()
+                            .iter()
+                            .next()
+                            .unwrap();
+                        let program_pib = key;
+                        let program_name = value.name.clone();
                         todo!()
                     }
                 }
@@ -988,6 +1066,15 @@ impl App {
                         && self.process_show_details
                         && self.current_showing_process_detail.is_some()
                     {
+                        let (key, value) = self
+                            .current_showing_process_detail
+                            .as_ref()
+                            .unwrap()
+                            .iter()
+                            .next()
+                            .unwrap();
+                        let program_pib = key;
+                        let program_name = value.name.clone();
                         todo!()
                     }
                 }
@@ -1132,6 +1219,43 @@ impl App {
             KeyCode::Esc => {
                 self.state = AppState::View;
                 self.pop_up_type = AppPopUpType::None;
+                self.current_process_signal_state_data = None;
+            }
+            KeyCode::Char('y') => {
+                todo!()
+            }
+            KeyCode::Char('Y') => {
+                todo!()
+            }
+            KeyCode::Char('n') => {
+                self.state = AppState::View;
+                self.pop_up_type = AppPopUpType::None;
+                self.current_process_signal_state_data = None;
+            }
+            KeyCode::Char('N') => {
+                self.state = AppState::View;
+                self.pop_up_type = AppPopUpType::None;
+                self.current_process_signal_state_data = None;
+            }
+            KeyCode::Left => {
+                self.current_process_signal_state_data
+                    .as_mut()
+                    .unwrap()
+                    .yes_confirmation = true;
+                self.current_process_signal_state_data
+                    .as_mut()
+                    .unwrap()
+                    .no_confirmation = false;
+            }
+            KeyCode::Right => {
+                self.current_process_signal_state_data
+                    .as_mut()
+                    .unwrap()
+                    .yes_confirmation = false;
+                self.current_process_signal_state_data
+                    .as_mut()
+                    .unwrap()
+                    .no_confirmation = true;
             }
             _ => {}
         }

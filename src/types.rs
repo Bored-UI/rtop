@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use sysinfo::Signal;
 
 // the main type structture for the application
 pub struct SysInfo {
@@ -71,6 +72,14 @@ pub struct ProcessData {
     pub current_write_disk_usage: u64,
     pub total_write_disk_usage: u64,
     pub is_updated: bool,
+}
+
+pub struct CurrentProcessSignalStateData {
+    pub pid: String,
+    pub signal: Option<Signal>,
+    pub name: String,
+    pub yes_confirmation: bool,
+    pub no_confirmation: bool,
 }
 
 impl CpuData {

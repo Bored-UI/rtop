@@ -12,8 +12,8 @@ use ratatui::{
 use crate::{
     app::AppColorInfo,
     types::{
-        AppPopUpType, AppState, CProcessesInfo, CSysInfo, CpuData, DiskData, MemoryData,
-        NetworkData, ProcessData, ProcessSortType, ProcessesInfo, SysInfo,
+        AppPopUpType, CProcessesInfo, CSysInfo, CpuData, CurrentProcessSignalStateData, DiskData,
+        MemoryData, NetworkData, ProcessData, ProcessSortType, ProcessesInfo, SysInfo,
     },
 };
 
@@ -521,19 +521,10 @@ pub fn sort_process(
 pub fn render_pop_up_menu(
     area: Rect,
     frame: &mut Frame,
-    state: &mut AppState,
     pop_up_type: &mut AppPopUpType,
-    process_show_details: &bool, // indicate if user wanted to show process details
-    current_showing_process_detail: &Option<HashMap<String, ProcessData>>, // the current showing process detail
+    current_process_signal_state_data: &CurrentProcessSignalStateData,
     app_color_info: &AppColorInfo,
 ) {
-    // the current pop up is only use for process for sending signal to process, and pop up will only be functional if user has selected a process to show detail
-    // because this is the way we want the user to access the kill, termination or sending signal trigger by default
-    if !process_show_details || current_showing_process_detail.is_none() {
-        *pop_up_type = AppPopUpType::None;
-        *state = AppState::View;
-    }
-
     let pop_up_dimension: (u16, u16) = if *pop_up_type == AppPopUpType::KillConfirmation
         || *pop_up_type == AppPopUpType::TerminateConfirmation
     {
@@ -570,6 +561,7 @@ pub fn render_pop_up_menu(
     // Render the pop-up block second (centered)
     frame.render_widget(pop_up_block, pop_up);
 
+    // for kill or termination signal pop up
     if *pop_up_type == AppPopUpType::KillConfirmation
         || *pop_up_type == AppPopUpType::TerminateConfirmation
     {
@@ -583,7 +575,7 @@ pub fn render_pop_up_menu(
             Constraint::Fill(1),
             Constraint::Length(2),
             Constraint::Length(1),
-            Constraint::Length(2),
+            Constraint::Length(3),
             Constraint::Fill(1),
         ])
         .areas(padded_pop_up);
@@ -599,15 +591,7 @@ pub fn render_pop_up_menu(
             Span::styled("TERM", Style::default().fg(app_color_info.key_text_color))
         };
 
-        let (key, value) = current_showing_process_detail
-            .as_ref()
-            .unwrap()
-            .iter()
-            .next()
-            .unwrap();
-        let program_pib = key;
-        let program_name = value.name.clone();
-
+        // which signal information
         let signal_info_line = Line::from(vec![
             Span::styled(
                 "SEND SIGNAL: ",
@@ -616,6 +600,7 @@ pub fn render_pop_up_menu(
             .bold(),
             signal_type,
         ]);
+        // which PID information
         let pid_info_line = Line::from(vec![
             Span::styled(
                 "TO PID: ",
@@ -623,16 +608,98 @@ pub fn render_pop_up_menu(
             )
             .bold(),
             Span::styled(
-                format!("{} ", program_pib),
+                format!("{} ", current_process_signal_state_data.pid),
                 Style::default().fg(app_color_info.key_text_color),
             ),
             Span::styled(
-                format!("({})", program_name),
+                format!("({})", current_process_signal_state_data.name),
                 Style::default().fg(app_color_info.base_app_text_color),
             ),
         ]);
 
         frame.render_widget(signal_info_line, signal_info);
         frame.render_widget(pid_info_line, pid_info);
+
+        // yes button confimation
+        let [_, padded_yes_button_layout, _] = Layout::horizontal(vec![
+            Constraint::Fill(1),
+            Constraint::Length(15),
+            Constraint::Fill(1),
+        ])
+        .areas(yes_button_layout);
+        let [_, ppadded_yes_button_layout, _] = Layout::horizontal(vec![
+            Constraint::Length(1),
+            Constraint::Length(13),
+            Constraint::Length(1),
+        ])
+        .areas(padded_yes_button_layout);
+        let [_, yes_button_line_text_layout, _] = Layout::vertical(vec![
+            Constraint::Length(1),
+            Constraint::Length(1),
+            Constraint::Length(1),
+        ])
+        .areas(ppadded_yes_button_layout);
+
+        let mut yes_button_block = Block::bordered()
+            .style(app_color_info.background_color)
+            .border_style(app_color_info.pop_up_color)
+            .border_set(border::ROUNDED);
+
+        if current_process_signal_state_data.yes_confirmation {
+            yes_button_block = yes_button_block.border_style(app_color_info.key_text_color);
+        }
+
+        let yes_button_line = Line::from(Span::styled(
+            format!(
+                "{:^width$}",
+                "Yes (Y/y)".to_string(),
+                width = yes_button_line_text_layout.width as usize
+            ),
+            Style::default().fg(app_color_info.base_app_text_color),
+        ));
+
+        // no button confirmation
+        let [_, padded_no_button_layout, _] = Layout::horizontal(vec![
+            Constraint::Fill(1),
+            Constraint::Length(15),
+            Constraint::Fill(1),
+        ])
+        .areas(no_button_layout);
+        let [_, ppadded_no_button_layout, _] = Layout::horizontal(vec![
+            Constraint::Length(1),
+            Constraint::Length(13),
+            Constraint::Length(1),
+        ])
+        .areas(padded_no_button_layout);
+        let [_, no_button_line_text_layout, _] = Layout::vertical(vec![
+            Constraint::Length(1),
+            Constraint::Length(1),
+            Constraint::Length(1),
+        ])
+        .areas(ppadded_no_button_layout);
+
+        let mut no_button_block = Block::bordered()
+            .style(app_color_info.background_color)
+            .border_style(app_color_info.pop_up_color)
+            .border_set(border::ROUNDED);
+
+        if current_process_signal_state_data.no_confirmation {
+            no_button_block = no_button_block.border_style(app_color_info.key_text_color);
+        }
+
+        let no_button_line = Line::from(Span::styled(
+            format!(
+                "{:^width$}",
+                "No (N/n)".to_string(),
+                width = no_button_line_text_layout.width as usize
+            ),
+            Style::default().fg(app_color_info.base_app_text_color),
+        ));
+
+        frame.render_widget(yes_button_block, padded_yes_button_layout);
+        frame.render_widget(yes_button_line, yes_button_line_text_layout);
+
+        frame.render_widget(no_button_block, padded_no_button_layout);
+        frame.render_widget(no_button_line, no_button_line_text_layout);
     }
 }
