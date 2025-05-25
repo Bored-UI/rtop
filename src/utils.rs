@@ -1,4 +1,4 @@
-use std::{cmp::Ordering, collections::HashMap};
+use std::{cmp::Ordering, collections::HashMap, thread};
 
 use ratatui::{
     layout::{Constraint, Layout, Rect},
@@ -8,6 +8,7 @@ use ratatui::{
     widgets::Block,
     Frame,
 };
+use sysinfo::{Pid, Signal, System};
 
 use crate::{
     app::AppColorInfo,
@@ -702,4 +703,13 @@ pub fn render_pop_up_menu(
         frame.render_widget(no_button_block, padded_no_button_layout);
         frame.render_widget(no_button_line, no_button_line_text_layout);
     }
+}
+
+pub fn send_signal(pid: usize, signal: Signal) {
+    thread::spawn(move || {
+        let s = System::new_all();
+        if let Some(process) = s.process(Pid::from(pid)) {
+            process.kill_with(signal);
+        }
+    });
 }

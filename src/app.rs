@@ -29,7 +29,7 @@ use crate::{
         AppPopUpType, AppState, CProcessesInfo, CSysInfo, CurrentProcessSignalStateData,
         MemoryData, ProcessData, ProcessSortType, ProcessesInfo, SelectedContainer, SysInfo,
     },
-    utils::{process_processes_info, process_sys_info, render_pop_up_menu},
+    utils::{process_processes_info, process_sys_info, render_pop_up_menu, send_signal},
 };
 
 // this need to be the same as MAXIMUM_DATA_COLLECTION in types.rs
@@ -1222,10 +1222,58 @@ impl App {
                 self.current_process_signal_state_data = None;
             }
             KeyCode::Char('y') => {
-                todo!()
+                if self
+                    .current_process_signal_state_data
+                    .as_ref()
+                    .unwrap()
+                    .signal
+                    .is_some()
+                {
+                    let pid = self
+                        .current_process_signal_state_data
+                        .as_ref()
+                        .unwrap()
+                        .pid
+                        .parse::<usize>()
+                        .unwrap();
+                    let signal = self
+                        .current_process_signal_state_data
+                        .as_ref()
+                        .unwrap()
+                        .signal
+                        .unwrap();
+                    send_signal(pid, signal);
+                }
+                self.state = AppState::View;
+                self.pop_up_type = AppPopUpType::None;
+                self.current_process_signal_state_data = None;
             }
             KeyCode::Char('Y') => {
-                todo!()
+                if self
+                    .current_process_signal_state_data
+                    .as_ref()
+                    .unwrap()
+                    .signal
+                    .is_some()
+                {
+                    let pid = self
+                        .current_process_signal_state_data
+                        .as_ref()
+                        .unwrap()
+                        .pid
+                        .parse::<usize>()
+                        .unwrap();
+                    let signal = self
+                        .current_process_signal_state_data
+                        .as_ref()
+                        .unwrap()
+                        .signal
+                        .unwrap();
+                    send_signal(pid, signal);
+                }
+                self.state = AppState::View;
+                self.pop_up_type = AppPopUpType::None;
+                self.current_process_signal_state_data = None;
             }
             KeyCode::Char('n') => {
                 self.state = AppState::View;
