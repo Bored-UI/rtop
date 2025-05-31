@@ -14,7 +14,7 @@ use crate::{
     app::AppColorInfo,
     types::{
         AppPopUpType, CProcessesInfo, CSysInfo, CpuData, CurrentProcessSignalStateData, DiskData,
-        MemoryData, NetworkData, ProcessData, ProcessSortType, ProcessesInfo, SysInfo,
+        MemoryData, NetworkData, ProcessData, ProcessSortType, ProcessesInfo, SignalExt, SysInfo,
     },
 };
 
@@ -531,7 +531,7 @@ pub fn render_pop_up_menu(
     {
         (50, 10)
     } else {
-        (75.min(area.width), 25.min(area.height))
+        (80.min(area.width), 27.min(area.height))
     };
 
     let [_, pop_up_width, _] = Layout::horizontal(vec![
@@ -553,13 +553,20 @@ pub fn render_pop_up_menu(
         Style::default().fg(app_color_info.app_title_color).bold(),
     )]);
 
+    let pop_up_blur_block = Block::new().style(Style::default().bg(app_color_info.pop_up_blur_bg));
+
     let pop_up_block = Block::bordered()
         .title(info.left_aligned())
-        .style(app_color_info.background_color)
+        .style(
+            Style::reset()
+                .bg(app_color_info.background_color)
+                .fg(app_color_info.background_color),
+        )
         .border_style(app_color_info.pop_up_color)
         .border_set(border::ROUNDED);
 
     // Render the pop-up block second (centered)
+    frame.render_widget(pop_up_blur_block, frame.area());
     frame.render_widget(pop_up_block, pop_up);
 
     // for kill or termination signal pop up
@@ -702,6 +709,387 @@ pub fn render_pop_up_menu(
 
         frame.render_widget(no_button_block, padded_no_button_layout);
         frame.render_widget(no_button_line, no_button_line_text_layout);
+    } else if *pop_up_type == AppPopUpType::SignalMenu {
+        let [_, padded_pop_up, _] = Layout::horizontal(vec![
+            Constraint::Length(5),
+            Constraint::Fill(1),
+            Constraint::Length(5),
+        ])
+        .areas(pop_up);
+        let [_, info_layout, _, signal_menu_layout, _, instruction_layout, _] =
+            Layout::vertical(vec![
+                Constraint::Length(2),
+                Constraint::Length(4),
+                Constraint::Length(1),
+                Constraint::Length(6),
+                Constraint::Length(1),
+                Constraint::Length(4),
+                Constraint::Fill(1),
+            ])
+            .areas(padded_pop_up);
+
+        let [pid_layout, signal_layout] =
+            Layout::vertical(vec![Constraint::Length(2), Constraint::Length(2)]).areas(info_layout);
+
+        // which PID information
+        let pid_info_line = Line::from(vec![
+            Span::styled(
+                "Send Singal To PID ",
+                Style::default().fg(app_color_info.app_title_color),
+            )
+            .bold(),
+            Span::styled(
+                format!("{} ", current_process_signal_state_data.pid),
+                Style::default().fg(app_color_info.key_text_color),
+            )
+            .bold(),
+            Span::styled(
+                format!("({})", current_process_signal_state_data.name),
+                Style::default().fg(app_color_info.app_title_color),
+            )
+            .bold(),
+        ]);
+
+        // which signal information
+        let signal_info_line = Line::from(vec![Span::styled(
+            "Enter Signal ID: ",
+            Style::default().fg(app_color_info.base_app_text_color),
+        )]);
+
+        frame.render_widget(pid_info_line, pid_layout);
+        frame.render_widget(signal_info_line, signal_layout);
+
+        // seperate the signal menu into 6 part in vertical
+        let [signal_menu_1, signal_menu_2, signal_menu_3, signal_menu_4, signal_menu_5, signal_menu_6] =
+            Layout::vertical(vec![
+                Constraint::Length(2),
+                Constraint::Length(2),
+                Constraint::Length(2),
+                Constraint::Length(2),
+                Constraint::Length(2),
+                Constraint::Length(2),
+            ])
+            .areas(signal_menu_layout);
+
+        // each signal vertical line will be split into 5 parts ( so will be a total of 30 (6*5) )
+        //
+        // Signal Menu FIRST PART
+        let [signal_menu_1_1_layout, signal_menu_1_2_layout, signal_menu_1_3_layout, signal_menu_1_4_layout, signal_menu_1_5_layout] =
+            Layout::horizontal(vec![
+                Constraint::Fill(1),
+                Constraint::Fill(1),
+                Constraint::Fill(1),
+                Constraint::Fill(1),
+                Constraint::Fill(1),
+            ])
+            .areas(signal_menu_1);
+
+        let signal_menu_1_1_choice = Line::from(vec![
+            Span::styled("1  ", Style::default().fg(app_color_info.key_text_color)),
+            Span::styled(
+                format!("({})", get_signal_from_int(1).get_display_name()),
+                Style::default().fg(app_color_info.base_app_text_color),
+            ),
+        ]);
+        let signal_menu_1_2_choice = Line::from(vec![
+            Span::styled("2  ", Style::default().fg(app_color_info.key_text_color)),
+            Span::styled(
+                format!("({})", get_signal_from_int(2).get_display_name()),
+                Style::default().fg(app_color_info.base_app_text_color),
+            ),
+        ]);
+        let signal_menu_1_3_choice = Line::from(vec![
+            Span::styled("3  ", Style::default().fg(app_color_info.key_text_color)),
+            Span::styled(
+                format!("({})", get_signal_from_int(3).get_display_name()),
+                Style::default().fg(app_color_info.base_app_text_color),
+            ),
+        ]);
+        let signal_menu_1_4_choice = Line::from(vec![
+            Span::styled("4  ", Style::default().fg(app_color_info.key_text_color)),
+            Span::styled(
+                format!("({})", get_signal_from_int(4).get_display_name()),
+                Style::default().fg(app_color_info.base_app_text_color),
+            ),
+        ]);
+        let signal_menu_1_5_choice = Line::from(vec![
+            Span::styled("5  ", Style::default().fg(app_color_info.key_text_color)),
+            Span::styled(
+                format!("({})", get_signal_from_int(5).get_display_name()),
+                Style::default().fg(app_color_info.base_app_text_color),
+            ),
+        ]);
+
+        frame.render_widget(signal_menu_1_1_choice, signal_menu_1_1_layout);
+        frame.render_widget(signal_menu_1_2_choice, signal_menu_1_2_layout);
+        frame.render_widget(signal_menu_1_3_choice, signal_menu_1_3_layout);
+        frame.render_widget(signal_menu_1_4_choice, signal_menu_1_4_layout);
+        frame.render_widget(signal_menu_1_5_choice, signal_menu_1_5_layout);
+
+        // Signal Menu SECOND PART
+        let [signal_menu_2_1_layout, signal_menu_2_2_layout, signal_menu_2_3_layout, signal_menu_2_4_layout, signal_menu_2_5_layout] =
+            Layout::horizontal(vec![
+                Constraint::Fill(1),
+                Constraint::Fill(1),
+                Constraint::Fill(1),
+                Constraint::Fill(1),
+                Constraint::Fill(1),
+            ])
+            .areas(signal_menu_2);
+
+        let signal_menu_2_1_choice = Line::from(vec![
+            Span::styled("6  ", Style::default().fg(app_color_info.key_text_color)),
+            Span::styled(
+                format!("({})", get_signal_from_int(6).get_display_name()),
+                Style::default().fg(app_color_info.base_app_text_color),
+            ),
+        ]);
+        let signal_menu_2_2_choice = Line::from(vec![
+            Span::styled("7  ", Style::default().fg(app_color_info.key_text_color)),
+            Span::styled(
+                format!("({})", get_signal_from_int(7).get_display_name()),
+                Style::default().fg(app_color_info.base_app_text_color),
+            ),
+        ]);
+        let signal_menu_2_3_choice = Line::from(vec![
+            Span::styled("8  ", Style::default().fg(app_color_info.key_text_color)),
+            Span::styled(
+                format!("({})", get_signal_from_int(8).get_display_name()),
+                Style::default().fg(app_color_info.base_app_text_color),
+            ),
+        ]);
+        let signal_menu_2_4_choice = Line::from(vec![
+            Span::styled("9  ", Style::default().fg(app_color_info.key_text_color)),
+            Span::styled(
+                format!("({})", get_signal_from_int(9).get_display_name()),
+                Style::default().fg(app_color_info.base_app_text_color),
+            ),
+        ]);
+        let signal_menu_2_5_choice = Line::from(vec![
+            Span::styled("10 ", Style::default().fg(app_color_info.key_text_color)),
+            Span::styled(
+                format!("({})", get_signal_from_int(10).get_display_name()),
+                Style::default().fg(app_color_info.base_app_text_color),
+            ),
+        ]);
+
+        frame.render_widget(signal_menu_2_1_choice, signal_menu_2_1_layout);
+        frame.render_widget(signal_menu_2_2_choice, signal_menu_2_2_layout);
+        frame.render_widget(signal_menu_2_3_choice, signal_menu_2_3_layout);
+        frame.render_widget(signal_menu_2_4_choice, signal_menu_2_4_layout);
+        frame.render_widget(signal_menu_2_5_choice, signal_menu_2_5_layout);
+
+        // Signal Menu THIRD PART
+        let [signal_menu_3_1_layout, signal_menu_3_2_layout, signal_menu_3_3_layout, signal_menu_3_4_layout, signal_menu_3_5_layout] =
+            Layout::horizontal(vec![
+                Constraint::Fill(1),
+                Constraint::Fill(1),
+                Constraint::Fill(1),
+                Constraint::Fill(1),
+                Constraint::Fill(1),
+            ])
+            .areas(signal_menu_3);
+
+        let signal_menu_3_1_choice = Line::from(vec![
+            Span::styled("11 ", Style::default().fg(app_color_info.key_text_color)),
+            Span::styled(
+                format!("({})", get_signal_from_int(11).get_display_name()),
+                Style::default().fg(app_color_info.base_app_text_color),
+            ),
+        ]);
+        let signal_menu_3_2_choice = Line::from(vec![
+            Span::styled("12 ", Style::default().fg(app_color_info.key_text_color)),
+            Span::styled(
+                format!("({})", get_signal_from_int(12).get_display_name()),
+                Style::default().fg(app_color_info.base_app_text_color),
+            ),
+        ]);
+        let signal_menu_3_3_choice = Line::from(vec![
+            Span::styled("13 ", Style::default().fg(app_color_info.key_text_color)),
+            Span::styled(
+                format!("({})", get_signal_from_int(13).get_display_name()),
+                Style::default().fg(app_color_info.base_app_text_color),
+            ),
+        ]);
+        let signal_menu_3_4_choice = Line::from(vec![
+            Span::styled("14 ", Style::default().fg(app_color_info.key_text_color)),
+            Span::styled(
+                format!("({})", get_signal_from_int(14).get_display_name()),
+                Style::default().fg(app_color_info.base_app_text_color),
+            ),
+        ]);
+        let signal_menu_3_5_choice = Line::from(vec![
+            Span::styled("15 ", Style::default().fg(app_color_info.key_text_color)),
+            Span::styled(
+                format!("({})", get_signal_from_int(15).get_display_name()),
+                Style::default().fg(app_color_info.base_app_text_color),
+            ),
+        ]);
+
+        frame.render_widget(signal_menu_3_1_choice, signal_menu_3_1_layout);
+        frame.render_widget(signal_menu_3_2_choice, signal_menu_3_2_layout);
+        frame.render_widget(signal_menu_3_3_choice, signal_menu_3_3_layout);
+        frame.render_widget(signal_menu_3_4_choice, signal_menu_3_4_layout);
+        frame.render_widget(signal_menu_3_5_choice, signal_menu_3_5_layout);
+
+        // Signal Menu FORTH PART
+        let [signal_menu_4_1_layout, signal_menu_4_2_layout, signal_menu_4_3_layout, signal_menu_4_4_layout, signal_menu_4_5_layout] =
+            Layout::horizontal(vec![
+                Constraint::Fill(1),
+                Constraint::Fill(1),
+                Constraint::Fill(1),
+                Constraint::Fill(1),
+                Constraint::Fill(1),
+            ])
+            .areas(signal_menu_4);
+
+        let signal_menu_4_1_choice = Line::from(vec![
+            Span::styled("16 ", Style::default().fg(app_color_info.key_text_color)),
+            Span::styled(
+                format!("({})", get_signal_from_int(16).get_display_name()),
+                Style::default().fg(app_color_info.base_app_text_color),
+            ),
+        ]);
+        let signal_menu_4_2_choice = Line::from(vec![
+            Span::styled("17 ", Style::default().fg(app_color_info.key_text_color)),
+            Span::styled(
+                format!("({})", get_signal_from_int(17).get_display_name()),
+                Style::default().fg(app_color_info.base_app_text_color),
+            ),
+        ]);
+        let signal_menu_4_3_choice = Line::from(vec![
+            Span::styled("18 ", Style::default().fg(app_color_info.key_text_color)),
+            Span::styled(
+                format!("({})", get_signal_from_int(18).get_display_name()),
+                Style::default().fg(app_color_info.base_app_text_color),
+            ),
+        ]);
+        let signal_menu_4_4_choice = Line::from(vec![
+            Span::styled("19 ", Style::default().fg(app_color_info.key_text_color)),
+            Span::styled(
+                format!("({})", get_signal_from_int(19).get_display_name()),
+                Style::default().fg(app_color_info.base_app_text_color),
+            ),
+        ]);
+        let signal_menu_4_5_choice = Line::from(vec![
+            Span::styled("20 ", Style::default().fg(app_color_info.key_text_color)),
+            Span::styled(
+                format!("({})", get_signal_from_int(20).get_display_name()),
+                Style::default().fg(app_color_info.base_app_text_color),
+            ),
+        ]);
+
+        frame.render_widget(signal_menu_4_1_choice, signal_menu_4_1_layout);
+        frame.render_widget(signal_menu_4_2_choice, signal_menu_4_2_layout);
+        frame.render_widget(signal_menu_4_3_choice, signal_menu_4_3_layout);
+        frame.render_widget(signal_menu_4_4_choice, signal_menu_4_4_layout);
+        frame.render_widget(signal_menu_4_5_choice, signal_menu_4_5_layout);
+
+        // Signal Menu FIFTH PART
+        let [signal_menu_5_1_layout, signal_menu_5_2_layout, signal_menu_5_3_layout, signal_menu_5_4_layout, signal_menu_5_5_layout] =
+            Layout::horizontal(vec![
+                Constraint::Fill(1),
+                Constraint::Fill(1),
+                Constraint::Fill(1),
+                Constraint::Fill(1),
+                Constraint::Fill(1),
+            ])
+            .areas(signal_menu_5);
+
+        let signal_menu_5_1_choice = Line::from(vec![
+            Span::styled("21 ", Style::default().fg(app_color_info.key_text_color)),
+            Span::styled(
+                format!("({})", get_signal_from_int(21).get_display_name()),
+                Style::default().fg(app_color_info.base_app_text_color),
+            ),
+        ]);
+        let signal_menu_5_2_choice = Line::from(vec![
+            Span::styled("22 ", Style::default().fg(app_color_info.key_text_color)),
+            Span::styled(
+                format!("({})", get_signal_from_int(22).get_display_name()),
+                Style::default().fg(app_color_info.base_app_text_color),
+            ),
+        ]);
+        let signal_menu_5_3_choice = Line::from(vec![
+            Span::styled("23 ", Style::default().fg(app_color_info.key_text_color)),
+            Span::styled(
+                format!("({})", get_signal_from_int(23).get_display_name()),
+                Style::default().fg(app_color_info.base_app_text_color),
+            ),
+        ]);
+        let signal_menu_5_4_choice = Line::from(vec![
+            Span::styled("24 ", Style::default().fg(app_color_info.key_text_color)),
+            Span::styled(
+                format!("({})", get_signal_from_int(24).get_display_name()),
+                Style::default().fg(app_color_info.base_app_text_color),
+            ),
+        ]);
+        let signal_menu_5_5_choice = Line::from(vec![
+            Span::styled("25 ", Style::default().fg(app_color_info.key_text_color)),
+            Span::styled(
+                format!("({})", get_signal_from_int(25).get_display_name()),
+                Style::default().fg(app_color_info.base_app_text_color),
+            ),
+        ]);
+
+        frame.render_widget(signal_menu_5_1_choice, signal_menu_5_1_layout);
+        frame.render_widget(signal_menu_5_2_choice, signal_menu_5_2_layout);
+        frame.render_widget(signal_menu_5_3_choice, signal_menu_5_3_layout);
+        frame.render_widget(signal_menu_5_4_choice, signal_menu_5_4_layout);
+        frame.render_widget(signal_menu_5_5_choice, signal_menu_5_5_layout);
+
+        // Signal Menu SIXTH PART
+        let [signal_menu_6_1_layout, signal_menu_6_2_layout, signal_menu_6_3_layout, signal_menu_6_4_layout, signal_menu_6_5_layout] =
+            Layout::horizontal(vec![
+                Constraint::Fill(1),
+                Constraint::Fill(1),
+                Constraint::Fill(1),
+                Constraint::Fill(1),
+                Constraint::Fill(1),
+            ])
+            .areas(signal_menu_6);
+
+        let signal_menu_6_1_choice = Line::from(vec![
+            Span::styled("26 ", Style::default().fg(app_color_info.key_text_color)),
+            Span::styled(
+                format!("({})", get_signal_from_int(26).get_display_name()),
+                Style::default().fg(app_color_info.base_app_text_color),
+            ),
+        ]);
+        let signal_menu_6_2_choice = Line::from(vec![
+            Span::styled("27 ", Style::default().fg(app_color_info.key_text_color)),
+            Span::styled(
+                format!("({})", get_signal_from_int(27).get_display_name()),
+                Style::default().fg(app_color_info.base_app_text_color),
+            ),
+        ]);
+        let signal_menu_6_3_choice = Line::from(vec![
+            Span::styled("28 ", Style::default().fg(app_color_info.key_text_color)),
+            Span::styled(
+                format!("({})", get_signal_from_int(28).get_display_name()),
+                Style::default().fg(app_color_info.base_app_text_color),
+            ),
+        ]);
+        let signal_menu_6_4_choice = Line::from(vec![
+            Span::styled("29 ", Style::default().fg(app_color_info.key_text_color)),
+            Span::styled(
+                format!("({})", get_signal_from_int(29).get_display_name()),
+                Style::default().fg(app_color_info.base_app_text_color),
+            ),
+        ]);
+        let signal_menu_6_5_choice = Line::from(vec![
+            Span::styled("30 ", Style::default().fg(app_color_info.key_text_color)),
+            Span::styled(
+                format!("({})", get_signal_from_int(30).get_display_name()),
+                Style::default().fg(app_color_info.base_app_text_color),
+            ),
+        ]);
+
+        frame.render_widget(signal_menu_6_1_choice, signal_menu_6_1_layout);
+        frame.render_widget(signal_menu_6_2_choice, signal_menu_6_2_layout);
+        frame.render_widget(signal_menu_6_3_choice, signal_menu_6_3_layout);
+        frame.render_widget(signal_menu_6_4_choice, signal_menu_6_4_layout);
+        frame.render_widget(signal_menu_6_5_choice, signal_menu_6_5_layout);
     }
 }
 
@@ -712,4 +1100,41 @@ pub fn send_signal(pid: usize, signal: Signal) {
             process.kill_with(signal);
         }
     });
+}
+
+pub fn get_signal_from_int(int: u16) -> Signal {
+    match int {
+        0 => Signal::Hangup,
+        1 => Signal::Interrupt,
+        2 => Signal::Quit,
+        3 => Signal::Illegal,
+        4 => Signal::Trap,
+        5 => Signal::Abort,
+        6 => Signal::IOT,
+        7 => Signal::Bus,
+        8 => Signal::FloatingPointException,
+        9 => Signal::Kill,
+        10 => Signal::User1,
+        11 => Signal::Segv,
+        12 => Signal::User2,
+        13 => Signal::Pipe,
+        14 => Signal::Alarm,
+        15 => Signal::Term,
+        16 => Signal::Child,
+        17 => Signal::Continue,
+        18 => Signal::Stop,
+        19 => Signal::TSTP,
+        20 => Signal::TTIN,
+        21 => Signal::TTOU,
+        22 => Signal::Urgent,
+        23 => Signal::XCPU,
+        24 => Signal::XFSZ,
+        25 => Signal::VirtualAlarm,
+        26 => Signal::Profiling,
+        27 => Signal::Winch,
+        28 => Signal::IO,
+        29 => Signal::Poll,
+        30 => Signal::Sys,
+        _ => Signal::Kill,
+    }
 }

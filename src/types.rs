@@ -77,6 +77,7 @@ pub struct ProcessData {
 pub struct CurrentProcessSignalStateData {
     pub pid: String,
     pub signal: Option<Signal>,
+    pub signal_id: Option<u16>,
     pub name: String,
     pub yes_confirmation: bool,
     pub no_confirmation: bool,
@@ -506,6 +507,49 @@ impl AppPopUpType {
             AppPopUpType::KillConfirmation => " KILL ".to_string(),
             AppPopUpType::TerminateConfirmation => " TERMINATION ".to_string(),
             AppPopUpType::SignalMenu => " SIGNAL ".to_string(),
+            _ => "".to_string(),
+        }
+    }
+}
+
+pub trait SignalExt {
+    fn get_display_name(&self) -> String;
+}
+
+impl SignalExt for Signal {
+    fn get_display_name(&self) -> String {
+        match self {
+            Signal::Hangup => "SIGHUP".to_string(),
+            Signal::Interrupt => "SIGINT".to_string(),
+            Signal::Quit => "SIGQUIT".to_string(),
+            Signal::Illegal => "SIGILL".to_string(),
+            Signal::Trap => "SIGTRAP".to_string(),
+            Signal::Abort => "SIGABRT".to_string(),
+            Signal::IOT => "SIGIOT".to_string(),
+            Signal::Bus => "SIGBUS".to_string(),
+            Signal::FloatingPointException => "SIGFPE".to_string(),
+            Signal::Kill => "SIGKILL".to_string(),
+            Signal::User1 => "SIGUSR1".to_string(),
+            Signal::Segv => "SIGSEGV".to_string(),
+            Signal::User2 => "SIGUSR2".to_string(),
+            Signal::Pipe => "SIGPIPE".to_string(),
+            Signal::Alarm => "SIGALRM".to_string(),
+            Signal::Term => "SIGTERM".to_string(),
+            Signal::Child => "SIGCHLD".to_string(),
+            Signal::Continue => "SIGCONT".to_string(),
+            Signal::Stop => "SIGSTOP".to_string(),
+            Signal::TSTP => "SIGTSTP".to_string(),
+            Signal::TTIN => "SIGTTIN".to_string(),
+            Signal::TTOU => "SIGTTOU".to_string(),
+            Signal::Urgent => "SIGURG".to_string(),
+            Signal::XCPU => "SIGXCPU".to_string(),
+            Signal::XFSZ => "SIGXFSZ".to_string(),
+            Signal::VirtualAlarm => "SIGVTALRM".to_string(),
+            Signal::Profiling => "SIGPROF".to_string(),
+            Signal::Winch => "SIGWINCH".to_string(),
+            Signal::IO => "SIGIO".to_string(),
+            Signal::Poll => "SIGPOLL".to_string(),
+            Signal::Sys => "SIGSYS".to_string(),
             _ => "".to_string(),
         }
     }

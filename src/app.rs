@@ -79,6 +79,8 @@ pub struct AppColorInfo {
     pub key_text_color: Color,
     pub app_title_color: Color, // this will be used for those text in the title of each main block
     pub pop_up_color: Color,
+    pub pop_up_selected_color_bg: Color,
+    pub pop_up_blur_bg: Color,
 
     // for cpu
     pub cpu_container_selected_color: Color,
@@ -188,6 +190,10 @@ pub fn app() {
         key_text_color: Color::Rgb(94, 129, 172),   // Nord10
         app_title_color: Color::Rgb(143, 188, 187), // Frost
         pop_up_color: Color::Rgb(76, 86, 106),
+        pop_up_selected_color_bg: Color::Rgb(76, 86, 106), // will be used to indicate what was selected in the pop up
+        // "Dimming" layer background: Should be LIGHTER than main background_color
+        // to reduce contrast of the underlying text, making it appear faded/dimmed.
+        pop_up_blur_bg: Color::Rgb(70, 76, 88), // lighter Polar Knight
 
         cpu_container_selected_color: Color::Rgb(94, 129, 172),
         // CPU main block: A slightly lighter grayish-blue to contrast with the background
@@ -929,6 +935,7 @@ impl App {
                     if self.selected_container == SelectedContainer::Process
                         && self.process_show_details
                         && self.current_showing_process_detail.is_some()
+                        && self.process_selected_state.selected().is_none()
                     {
                         let (key, value) = self
                             .current_showing_process_detail
@@ -944,6 +951,7 @@ impl App {
                                 pid: program_pib,
                                 name: program_name,
                                 signal: Some(Signal::Kill),
+                                signal_id: Some(9),
                                 yes_confirmation: true,
                                 no_confirmation: false,
                             });
@@ -958,6 +966,7 @@ impl App {
                     if self.selected_container == SelectedContainer::Process
                         && self.process_show_details
                         && self.current_showing_process_detail.is_some()
+                        && self.process_selected_state.selected().is_none()
                     {
                         let (key, value) = self
                             .current_showing_process_detail
@@ -973,6 +982,7 @@ impl App {
                                 pid: program_pib,
                                 name: program_name,
                                 signal: Some(Signal::Kill),
+                                signal_id: Some(9),
                                 yes_confirmation: true,
                                 no_confirmation: false,
                             });
@@ -987,6 +997,7 @@ impl App {
                     if self.selected_container == SelectedContainer::Process
                         && self.process_show_details
                         && self.current_showing_process_detail.is_some()
+                        && self.process_selected_state.selected().is_none()
                     {
                         let (key, value) = self
                             .current_showing_process_detail
@@ -1002,6 +1013,7 @@ impl App {
                                 pid: program_pib,
                                 name: program_name,
                                 signal: Some(Signal::Term),
+                                signal_id: Some(15),
                                 yes_confirmation: true,
                                 no_confirmation: false,
                             });
@@ -1016,6 +1028,7 @@ impl App {
                     if self.selected_container == SelectedContainer::Process
                         && self.process_show_details
                         && self.current_showing_process_detail.is_some()
+                        && self.process_selected_state.selected().is_none()
                     {
                         let (key, value) = self
                             .current_showing_process_detail
@@ -1031,6 +1044,7 @@ impl App {
                                 pid: program_pib,
                                 name: program_name,
                                 signal: Some(Signal::Term),
+                                signal_id: Some(15),
                                 yes_confirmation: true,
                                 no_confirmation: false,
                             });
@@ -1045,6 +1059,7 @@ impl App {
                     if self.selected_container == SelectedContainer::Process
                         && self.process_show_details
                         && self.current_showing_process_detail.is_some()
+                        && self.process_selected_state.selected().is_none()
                     {
                         let (key, value) = self
                             .current_showing_process_detail
@@ -1053,9 +1068,20 @@ impl App {
                             .iter()
                             .next()
                             .unwrap();
-                        let program_pib = key;
+                        let program_pib = key.clone();
                         let program_name = value.name.clone();
-                        todo!()
+
+                        self.current_process_signal_state_data =
+                            Some(CurrentProcessSignalStateData {
+                                pid: program_pib,
+                                signal: None,
+                                signal_id: None,
+                                name: program_name,
+                                yes_confirmation: false,
+                                no_confirmation: true,
+                            });
+                        self.state = AppState::Popup;
+                        self.pop_up_type = AppPopUpType::SignalMenu;
                     }
                 }
             }
@@ -1065,6 +1091,7 @@ impl App {
                     if self.selected_container == SelectedContainer::Process
                         && self.process_show_details
                         && self.current_showing_process_detail.is_some()
+                        && self.process_selected_state.selected().is_none()
                     {
                         let (key, value) = self
                             .current_showing_process_detail
@@ -1073,9 +1100,20 @@ impl App {
                             .iter()
                             .next()
                             .unwrap();
-                        let program_pib = key;
+                        let program_pib = key.clone();
                         let program_name = value.name.clone();
-                        todo!()
+
+                        self.current_process_signal_state_data =
+                            Some(CurrentProcessSignalStateData {
+                                pid: program_pib,
+                                signal: None,
+                                signal_id: None,
+                                name: program_name,
+                                yes_confirmation: false,
+                                no_confirmation: true,
+                            });
+                        self.state = AppState::Popup;
+                        self.pop_up_type = AppPopUpType::SignalMenu;
                     }
                 }
             }
@@ -1304,6 +1342,38 @@ impl App {
                     .as_mut()
                     .unwrap()
                     .no_confirmation = true;
+            }
+            KeyCode::Enter => {
+                let yes_confirmation = self
+                    .current_process_signal_state_data
+                    .as_ref()
+                    .unwrap()
+                    .yes_confirmation;
+                let no_confirmation = self
+                    .current_process_signal_state_data
+                    .as_ref()
+                    .unwrap()
+                    .no_confirmation;
+
+                if yes_confirmation && !no_confirmation {
+                    let pid = self
+                        .current_process_signal_state_data
+                        .as_ref()
+                        .unwrap()
+                        .pid
+                        .parse::<usize>()
+                        .unwrap();
+                    let signal = self
+                        .current_process_signal_state_data
+                        .as_ref()
+                        .unwrap()
+                        .signal
+                        .unwrap();
+                    send_signal(pid, signal);
+                }
+                self.state = AppState::View;
+                self.pop_up_type = AppPopUpType::None;
+                self.current_process_signal_state_data = None
             }
             _ => {}
         }
