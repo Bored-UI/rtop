@@ -531,7 +531,7 @@ pub fn render_pop_up_menu(
     {
         (50, 10)
     } else {
-        (80.min(area.width), 27.min(area.height))
+        (80.min(area.width), 20.min(area.height))
     };
 
     let [_, pop_up_width, _] = Layout::horizontal(vec![
@@ -723,8 +723,8 @@ pub fn render_pop_up_menu(
                 Constraint::Length(1),
                 Constraint::Length(6),
                 Constraint::Length(1),
-                Constraint::Length(4),
-                Constraint::Fill(1),
+                Constraint::Length(3),
+                Constraint::Length(3),
             ])
             .areas(padded_pop_up);
 
@@ -1090,6 +1090,40 @@ pub fn render_pop_up_menu(
         frame.render_widget(signal_menu_6_3_choice, signal_menu_6_3_layout);
         frame.render_widget(signal_menu_6_4_choice, signal_menu_6_4_layout);
         frame.render_widget(signal_menu_6_5_choice, signal_menu_6_5_layout);
+
+        let [instruction_line_1_layout, instruction_line_2_layout, instruction_line_3_layout] =
+            Layout::vertical(vec![
+                Constraint::Length(1),
+                Constraint::Length(1),
+                Constraint::Length(1),
+            ])
+            .areas(instruction_layout);
+
+        let instruction_line_1 = Line::from(vec![
+            Span::styled("0~9   ", Style::default().fg(app_color_info.key_text_color)),
+            Span::styled(
+                "| Enter Signal ID",
+                Style::default().fg(app_color_info.base_app_text_color),
+            ),
+        ]);
+        let instruction_line_2 = Line::from(vec![
+            Span::styled("ENTER ", Style::default().fg(app_color_info.key_text_color)),
+            Span::styled(
+                "| Send Signal",
+                Style::default().fg(app_color_info.base_app_text_color),
+            ),
+        ]);
+        let instruction_line_3 = Line::from(vec![
+            Span::styled("ESC   ", Style::default().fg(app_color_info.key_text_color)),
+            Span::styled(
+                "| Abort Current Action",
+                Style::default().fg(app_color_info.base_app_text_color),
+            ),
+        ]);
+
+        frame.render_widget(instruction_line_1, instruction_line_1_layout);
+        frame.render_widget(instruction_line_2, instruction_line_2_layout);
+        frame.render_widget(instruction_line_3, instruction_line_3_layout);
     }
 }
 
