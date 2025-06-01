@@ -752,7 +752,17 @@ pub fn render_pop_up_menu(
 
         // which signal information
         let signal_info_line = Line::from(vec![Span::styled(
-            "Enter Signal ID: ",
+            format!(
+                "Enter Signal ID: {}_",
+                if current_process_signal_state_data.signal_id.is_none() {
+                    "".to_string()
+                } else {
+                    current_process_signal_state_data
+                        .signal_id
+                        .unwrap()
+                        .to_string()
+                }
+            ),
             Style::default().fg(app_color_info.base_app_text_color),
         )]);
 

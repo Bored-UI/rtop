@@ -29,7 +29,10 @@ use crate::{
         AppPopUpType, AppState, CProcessesInfo, CSysInfo, CurrentProcessSignalStateData,
         MemoryData, ProcessData, ProcessSortType, ProcessesInfo, SelectedContainer, SysInfo,
     },
-    utils::{process_processes_info, process_sys_info, render_pop_up_menu, send_signal},
+    utils::{
+        get_signal_from_int, process_processes_info, process_sys_info, render_pop_up_menu,
+        send_signal,
+    },
 };
 
 // this need to be the same as MAXIMUM_DATA_COLLECTION in types.rs
@@ -1077,8 +1080,8 @@ impl App {
                                 signal: None,
                                 signal_id: None,
                                 name: program_name,
-                                yes_confirmation: false,
-                                no_confirmation: true,
+                                yes_confirmation: true,
+                                no_confirmation: false,
                             });
                         self.state = AppState::Popup;
                         self.pop_up_type = AppPopUpType::SignalMenu;
@@ -1109,8 +1112,8 @@ impl App {
                                 signal: None,
                                 signal_id: None,
                                 name: program_name,
-                                yes_confirmation: false,
-                                no_confirmation: true,
+                                yes_confirmation: true,
+                                no_confirmation: false,
                             });
                         self.state = AppState::Popup;
                         self.pop_up_type = AppPopUpType::SignalMenu;
@@ -1355,7 +1358,15 @@ impl App {
                     .unwrap()
                     .no_confirmation;
 
-                if yes_confirmation && !no_confirmation {
+                if yes_confirmation
+                    && !no_confirmation
+                    && self
+                        .current_process_signal_state_data
+                        .as_ref()
+                        .unwrap()
+                        .signal
+                        .is_some()
+                {
                     let pid = self
                         .current_process_signal_state_data
                         .as_ref()
@@ -1374,6 +1385,97 @@ impl App {
                 self.state = AppState::View;
                 self.pop_up_type = AppPopUpType::None;
                 self.current_process_signal_state_data = None
+            }
+            KeyCode::Char(c) if c.is_ascii_digit() => {
+                if self
+                    .current_process_signal_state_data
+                    .as_ref()
+                    .unwrap()
+                    .signal_id
+                    .is_none()
+                {
+                    self.current_process_signal_state_data
+                        .as_mut()
+                        .unwrap()
+                        .signal_id = Some(c.to_digit(10).unwrap() as u16);
+                } else {
+                    let mut current_signal_id_string = self
+                        .current_process_signal_state_data
+                        .as_ref()
+                        .unwrap()
+                        .signal_id
+                        .unwrap()
+                        .to_string();
+                    current_signal_id_string.push(c);
+
+                    let new_signal_id: u16 = current_signal_id_string.parse().unwrap();
+                    if new_signal_id > 0 && new_signal_id <= 30 {
+                        self.current_process_signal_state_data
+                            .as_mut()
+                            .unwrap()
+                            .signal_id = Some(new_signal_id);
+                    }
+                }
+
+                self.current_process_signal_state_data
+                    .as_mut()
+                    .unwrap()
+                    .signal = Some(get_signal_from_int(
+                    self.current_process_signal_state_data
+                        .as_mut()
+                        .unwrap()
+                        .signal_id
+                        .unwrap(),
+                ))
+            }
+            KeyCode::Backspace => {
+                if !self
+                    .current_process_signal_state_data
+                    .as_ref()
+                    .unwrap()
+                    .signal_id
+                    .is_none()
+                {
+                    if self
+                        .current_process_signal_state_data
+                        .as_ref()
+                        .unwrap()
+                        .signal_id
+                        .unwrap()
+                        .to_string()
+                        .len()
+                        == 1
+                    {
+                        self.current_process_signal_state_data
+                            .as_mut()
+                            .unwrap()
+                            .signal_id = None;
+                        self.current_process_signal_state_data
+                            .as_mut()
+                            .unwrap()
+                            .signal = None;
+                    } else {
+                        let mut new_signal_id_string = self
+                            .current_process_signal_state_data
+                            .as_ref()
+                            .unwrap()
+                            .signal_id
+                            .unwrap()
+                            .to_string();
+                        new_signal_id_string.pop();
+
+                        self.current_process_signal_state_data
+                            .as_mut()
+                            .unwrap()
+                            .signal_id = Some(new_signal_id_string.parse::<u16>().unwrap());
+                        self.current_process_signal_state_data
+                            .as_mut()
+                            .unwrap()
+                            .signal = Some(get_signal_from_int(
+                            new_signal_id_string.parse::<u16>().unwrap(),
+                        ));
+                    }
+                }
             }
             _ => {}
         }
