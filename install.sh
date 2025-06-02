@@ -44,13 +44,13 @@ API_URL="https://api.github.com/repos/$REPO/releases/tags/$VERSION"
 DOWNLOAD_URL=$(curl -s "$API_URL" | grep "browser_download_url.*$BINARY_NAME" | cut -d '"' -f 4)
 
 if [ -z "$DOWNLOAD_URL" ]; then
-    echo "Failed to find $BINARY_NAME in the latest release of $REPO"
+    echo "Failed to find $BINARY_NAME in the $VERSION release of $REPO"
     rm -rf "$TEMP_DIR"
     exit 1
 fi
 
 # Download the binary
-echo "Downloading $BINARY_NAME from $REPO latest release..."
+echo "Downloading $BINARY_NAME from $REPO $VERSION release..."
 curl -L -o "$TEMP_DIR/$BINARY_NAME" "$DOWNLOAD_URL"
 if [ $? -ne 0 ]; then
     echo "Failed to download rtop binary"

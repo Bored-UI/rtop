@@ -39,13 +39,13 @@ try {
 }
 
 if (-not $DOWNLOAD_URL) {
-    Write-Error "Failed to find rtop-windows.exe in the latest release of $REPO"
+    Write-Error "Failed to find rtop-windows.exe in the $VERSION release of $REPO"
     Remove-Item -Path $TEMP_DIR -Recurse -Force
     exit 1
 }
 
 # Download the binary
-Write-Host "Downloading rtop-windows.exe from $REPO latest release..."
+Write-Host "Downloading rtop-windows.exe from $REPO $VERSION release..."
 try {
     Invoke-WebRequest -Uri $DOWNLOAD_URL -OutFile "$TEMP_DIR\$BINARY_NAME"
 } catch {
