@@ -947,6 +947,10 @@ impl App {
                             .iter()
                             .next()
                             .unwrap();
+                        // do nothing if the status is killed
+                        if value.status == "killed" {
+                            return;
+                        }
                         let program_pib = key.clone();
                         let program_name = value.name.clone();
                         self.current_process_signal_state_data =
@@ -978,6 +982,11 @@ impl App {
                             .iter()
                             .next()
                             .unwrap();
+                        // do nothing if the status is killed
+                        if value.status == "killed" {
+                            return;
+                        }
+
                         let program_pib = key.clone();
                         let program_name = value.name.clone();
                         self.current_process_signal_state_data =
@@ -1009,6 +1018,11 @@ impl App {
                             .iter()
                             .next()
                             .unwrap();
+                        // do nothing if the status is killed
+                        if value.status == "killed" {
+                            return;
+                        }
+
                         let program_pib = key.clone();
                         let program_name = value.name.clone();
                         self.current_process_signal_state_data =
@@ -1040,6 +1054,11 @@ impl App {
                             .iter()
                             .next()
                             .unwrap();
+                        // do nothing if the status is killed
+                        if value.status == "killed" {
+                            return;
+                        }
+
                         let program_pib = key.clone();
                         let program_name = value.name.clone();
                         self.current_process_signal_state_data =
@@ -1071,6 +1090,11 @@ impl App {
                             .iter()
                             .next()
                             .unwrap();
+                        // do nothing if the status is killed
+                        if value.status == "killed" {
+                            return;
+                        }
+
                         let program_pib = key.clone();
                         let program_name = value.name.clone();
 
@@ -1103,6 +1127,11 @@ impl App {
                             .iter()
                             .next()
                             .unwrap();
+                        // do nothing if the status is killed
+                        if value.status == "killed" {
+                            return;
+                        }
+
                         let program_pib = key.clone();
                         let program_name = value.name.clone();
 

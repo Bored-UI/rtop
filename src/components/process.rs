@@ -360,104 +360,125 @@ pub fn draw_process_info(
                             false
                         };
 
-                    // if user is currently navigating in the process list, dim the termination trigger for process detail container to act as like it was disabled
-                    let termination_instruction = if is_user_navigating_process_list {
-                        Line::from(vec![
-                            Span::styled(
-                                "T".to_string(),
-                                Style::default().fg(app_color_info.key_text_color),
-                            )
-                            .bold()
-                            .underlined()
-                            .add_modifier(Modifier::DIM),
-                            Span::styled(
-                                "erminate".to_string(),
-                                Style::default().fg(app_color_info.app_title_color),
-                            )
-                            .bold()
-                            .add_modifier(Modifier::DIM),
-                        ])
-                    } else {
-                        Line::from(vec![
-                            Span::styled(
-                                "T".to_string(),
-                                Style::default().fg(app_color_info.key_text_color),
-                            )
-                            .bold()
-                            .underlined(),
-                            Span::styled(
-                                "erminate".to_string(),
-                                Style::default().fg(app_color_info.app_title_color),
-                            )
-                            .bold(),
-                        ])
-                    };
+                    let is_process_killed_or_terminated =
+                        if let Some(hashmap) = current_showing_process_detail.as_ref() {
+                            if let Some((_, value)) = hashmap.iter().next() {
+                                if value.status == "killed".to_string() {
+                                    true
+                                } else {
+                                    false
+                                }
+                            } else {
+                                false
+                            }
+                        } else {
+                            false
+                        };
 
-                    // if user is currently navigating in the process list, dim the kill trigger for process detail container to act as like it was disabled
-                    let kill_instruction = if is_user_navigating_process_list {
-                        Line::from(vec![
-                            Span::styled(
-                                "K".to_string(),
-                                Style::default().fg(app_color_info.key_text_color),
-                            )
-                            .bold()
-                            .underlined()
-                            .add_modifier(Modifier::DIM),
-                            Span::styled(
-                                "ill".to_string(),
-                                Style::default().fg(app_color_info.app_title_color),
-                            )
-                            .bold()
-                            .add_modifier(Modifier::DIM),
-                        ])
-                    } else {
-                        Line::from(vec![
-                            Span::styled(
-                                "K".to_string(),
-                                Style::default().fg(app_color_info.key_text_color),
-                            )
-                            .bold()
-                            .underlined(),
-                            Span::styled(
-                                "ill".to_string(),
-                                Style::default().fg(app_color_info.app_title_color),
-                            )
-                            .bold(),
-                        ])
-                    };
+                    // if user is currently navigating in the process list or the process is killed/terminated,
+                    // dim the termination trigger for process detail container to act as like it was disabled
+                    let termination_instruction =
+                        if is_user_navigating_process_list || is_process_killed_or_terminated {
+                            Line::from(vec![
+                                Span::styled(
+                                    "T".to_string(),
+                                    Style::default().fg(app_color_info.key_text_color),
+                                )
+                                .bold()
+                                .underlined()
+                                .add_modifier(Modifier::DIM),
+                                Span::styled(
+                                    "erminate".to_string(),
+                                    Style::default().fg(app_color_info.app_title_color),
+                                )
+                                .bold()
+                                .add_modifier(Modifier::DIM),
+                            ])
+                        } else {
+                            Line::from(vec![
+                                Span::styled(
+                                    "T".to_string(),
+                                    Style::default().fg(app_color_info.key_text_color),
+                                )
+                                .bold()
+                                .underlined(),
+                                Span::styled(
+                                    "erminate".to_string(),
+                                    Style::default().fg(app_color_info.app_title_color),
+                                )
+                                .bold(),
+                            ])
+                        };
 
-                    // if user is currently navigating in the process list, dim the signal trigger for process detail container to act as like it was disabled
-                    let signal_instruction = if is_user_navigating_process_list {
-                        Line::from(vec![
-                            Span::styled(
-                                "S".to_string(),
-                                Style::default().fg(app_color_info.key_text_color),
-                            )
-                            .bold()
-                            .underlined()
-                            .add_modifier(Modifier::DIM),
-                            Span::styled(
-                                "ignal".to_string(),
-                                Style::default().fg(app_color_info.app_title_color),
-                            )
-                            .bold()
-                            .add_modifier(Modifier::DIM),
-                        ])
-                    } else {
-                        Line::from(vec![
-                            Span::styled(
-                                "S".to_string(),
-                                Style::default().fg(app_color_info.key_text_color),
-                            )
-                            .bold()
-                            .underlined(),
-                            Span::styled(
-                                "ignal".to_string(),
-                                Style::default().fg(app_color_info.app_title_color),
-                            )
-                            .bold(),
-                        ])
-                    };
+                    // if user is currently navigating in the process list or the process is killed/terminated,
+                    // dim the kill trigger for process detail container to act as like it was disabled
+                    let kill_instruction =
+                        if is_user_navigating_process_list || is_process_killed_or_terminated {
+                            Line::from(vec![
+                                Span::styled(
+                                    "K".to_string(),
+                                    Style::default().fg(app_color_info.key_text_color),
+                                )
+                                .bold()
+                                .underlined()
+                                .add_modifier(Modifier::DIM),
+                                Span::styled(
+                                    "ill".to_string(),
+                                    Style::default().fg(app_color_info.app_title_color),
+                                )
+                                .bold()
+                                .add_modifier(Modifier::DIM),
+                            ])
+                        } else {
+                            Line::from(vec![
+                                Span::styled(
+                                    "K".to_string(),
+                                    Style::default().fg(app_color_info.key_text_color),
+                                )
+                                .bold()
+                                .underlined(),
+                                Span::styled(
+                                    "ill".to_string(),
+                                    Style::default().fg(app_color_info.app_title_color),
+                                )
+                                .bold(),
+                            ])
+                        };
+
+                    // if user is currently navigating in the process list or the process is killed/terminated,
+                    // dim the signal trigger for process detail container to act as like it was disabled
+                    let signal_instruction =
+                        if is_user_navigating_process_list || is_process_killed_or_terminated {
+                            Line::from(vec![
+                                Span::styled(
+                                    "S".to_string(),
+                                    Style::default().fg(app_color_info.key_text_color),
+                                )
+                                .bold()
+                                .underlined()
+                                .add_modifier(Modifier::DIM),
+                                Span::styled(
+                                    "ignal".to_string(),
+                                    Style::default().fg(app_color_info.app_title_color),
+                                )
+                                .bold()
+                                .add_modifier(Modifier::DIM),
+                            ])
+                        } else {
+                            Line::from(vec![
+                                Span::styled(
+                                    "S".to_string(),
+                                    Style::default().fg(app_color_info.key_text_color),
+                                )
+                                .bold()
+                                .underlined(),
+                                Span::styled(
+                                    "ignal".to_string(),
+                                    Style::default().fg(app_color_info.app_title_color),
+                                )
+                                .bold(),
+                            ])
+                        };
 
                     // if user is currently navigating in the process list, dim the hide trigger for process detail container to act as like it was disabled
                     let hide_instruction = if is_user_navigating_process_list {
