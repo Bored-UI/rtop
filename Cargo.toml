@@ -23,6 +23,10 @@ ratatui = "0.29.0"
 chrono = "0.4.40"
 libc = "0.2.172"
 
+[profile.release]
+lto = true
+codegen-units = 1
+strip = true
 
 [target.'cfg(any(target_os = "macos", target_os = "linux"))'.dependencies]
 libproc = "0.14.10"

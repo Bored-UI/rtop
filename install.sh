@@ -39,7 +39,8 @@ TEMP_DIR=$(mktemp -d)
 
 # Fetch the latest release download URL using GitHub API
 REPO="gohyuhan/rtop" # Replace with your GitHub username and repo name
-API_URL="https://api.github.com/repos/$REPO/releases/latest"
+VERSION="v0.2.0"
+API_URL="https://api.github.com/repos/$REPO/releases/tags/$VERSION"
 DOWNLOAD_URL=$(curl -s "$API_URL" | grep "browser_download_url.*$BINARY_NAME" | cut -d '"' -f 4)
 
 if [ -z "$DOWNLOAD_URL" ]; then

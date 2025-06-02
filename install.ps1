@@ -27,7 +27,8 @@ New-Item -ItemType Directory -Force -Path $TEMP_DIR | Out-Null
 
 # Fetch the latest release download URL using GitHub API
 $REPO = "gohyuhan/rtop"
-$API_URL = "https://api.github.com/repos/$REPO/releases/latest"
+$VERSION = "v0.2.0"
+$API_URL = "https://api.github.com/repos/$REPO/releases/tags/$VERSION"
 try {
     $release = Invoke-RestMethod -Uri $API_URL
     $DOWNLOAD_URL = ($release.assets | Where-Object { $_.name -eq $SOURCE_BINARY_NAME }).browser_download_url
