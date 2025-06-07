@@ -26,7 +26,7 @@ New-Item -ItemType Directory -Force -Path $INSTALL_DIR | Out-Null
 New-Item -ItemType Directory -Force -Path $TEMP_DIR | Out-Null
 
 # Fetch the latest release download URL using GitHub API
-$REPO = "gohyuhan/rtop"
+$REPO = "Bored-UI/rtop"
 $VERSION = "v0.2.0"
 $API_URL = "https://api.github.com/repos/$REPO/releases/tags/$VERSION"
 try {

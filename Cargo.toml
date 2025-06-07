@@ -6,7 +6,7 @@ authors = ["Goh Yu Han <gohyuhan123456@gmail.com>"]
 
 description = "A lightweight, terminal-based system monitoring tool built in Rust, inspired by top and btop."
 license = "MIT"
-repository = "https://github.com/gohyuhan/rtop"
+repository = "https://github.com/Bored-UI/rtop"
 
 [dependencies]
 sysinfo = { version = "0.34.2", default-features = false, features = [
