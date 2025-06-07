@@ -41,7 +41,7 @@ TEMP_DIR=$(mktemp -d)
 REPO="Bored-UI/rtop" # Replace with your GitHub username and repo name
 VERSION="v0.2.0"
 API_URL="https://api.github.com/repos/$REPO/releases/tags/$VERSION"
-DOWNLOAD_URL=$(curl -s "$API_URL" | grep "browser_download_url.*$BINARY_NAME" | cut -d '"' -f 4)
+DOWNLOAD_URL=$(curl -s "$API_URL" | jq -r ".assets[] | select(.name == \"$BINARY_NAME\") | .browser_download_url")
 
 if [ -z "$DOWNLOAD_URL" ]; then
     echo "Failed to find $BINARY_NAME in the $VERSION release of $REPO"
