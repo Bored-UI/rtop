@@ -1,6 +1,6 @@
 # rtop
 
-A lightweight, terminal-based system monitoring tool built in Rust, inspired by top and btop.
+A lightweight, terminal-based system monitoring tool built in Rust, inspired by top.
 
 ## Installation Guide
 This guide explains how to install `rtop` on Mac, Linux, and Windows.  
