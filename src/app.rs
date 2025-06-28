@@ -20,7 +20,11 @@ use ratatui::{
 use sysinfo::Signal;
 
 use crate::{
-    components::{network::draw_network_info, process::draw_process_info},
+    components::{
+        network::draw_network_info,
+        process::draw_process_info,
+        theme::{theme::get_and_return_app_color_info, types::AppColorInfo},
+    },
     cpu::draw_cpu_info,
     disk::draw_disk_info,
     get_sys_info::{spawn_process_info_collector, spawn_system_info_collector},
@@ -73,60 +77,6 @@ struct App {
     is_init: bool,               // to indicate is this app has done initialization
     container_full_screen: bool, // to indicate is user choose to full screen the current selected container
     current_process_signal_state_data: Option<CurrentProcessSignalStateData>, // this was used to temporary save the data when user trigger the process signal related pop-up
-}
-
-pub struct AppColorInfo {
-    pub background_color: Color,
-    pub base_app_text_color: Color,
-    // key text was the key that triggers certain functionality, like c for selecting cpu container -/+ to chnage the refresh tick
-    pub key_text_color: Color,
-    pub app_title_color: Color, // this will be used for those text in the title of each main block
-    pub pop_up_color: Color,
-    pub pop_up_selected_color_bg: Color,
-    pub pop_up_blur_bg: Color,
-
-    // for cpu
-    pub cpu_container_selected_color: Color,
-    pub cpu_main_block_color: Color,
-    pub cpu_selected_color: Color,
-    pub cpu_base_graph_color: Color,
-    pub cpu_info_block_color: Color,
-    pub cpu_text_color: Color,
-
-    // for memory
-    pub memory_container_selected_color: Color,
-    pub memory_main_block_color: Color,
-    pub used_memory_base_graph_color: Color,
-    pub available_memory_base_graph_color: Color,
-    pub free_memory_base_graph_color: Color,
-    pub cached_memory_base_graph_color: Color,
-    pub swap_memory_base_graph_color: Color,
-    pub memory_text_color: Color,
-
-    // for disk
-    pub disk_container_selected_color: Color,
-    pub disk_main_block_color: Color,
-    pub disk_bytes_written_base_graph_color: Color,
-    pub disk_bytes_read_base_graph_color: Color,
-    pub disk_text_color: Color,
-
-    // for network
-    pub network_container_selected_color: Color,
-    pub network_main_block_color: Color,
-    pub network_received_base_graph_color: Color,
-    pub network_transmitted_base_graph_color: Color,
-    pub network_info_block_color: Color,
-    pub network_text_color: Color,
-
-    // for process
-    pub process_container_selected_color: Color,
-    pub process_main_block_color: Color,
-    pub process_base_graph_color: Color,
-    pub process_info_block_color: Color,
-    pub process_title_color: Color,
-    pub process_text_color: Color,
-    pub process_selected_color_bg: Color,
-    pub process_selected_color_fg: Color,
 }
 
 const MIN_HEIGHT: u16 = 25;
@@ -184,70 +134,7 @@ pub fn app() {
         current_process_signal_state_data: None,
     };
 
-    let app_color_info = AppColorInfo {
-        // Background color: A dark grayish-blue for the entire terminal
-        background_color: Color::Rgb(46, 52, 64), // Polar Knight
-        // Text color: A soft white for general text readability
-        base_app_text_color: Color::Rgb(216, 222, 233), // Snow Storm
-        // Key text color: Nord10 for key text (e.g., "C" in "Cpu")
-        key_text_color: Color::Rgb(94, 129, 172),   // Nord10
-        app_title_color: Color::Rgb(143, 188, 187), // Frost
-        pop_up_color: Color::Rgb(76, 86, 106),
-        pop_up_selected_color_bg: Color::Rgb(76, 86, 106), // will be used to indicate what was selected in the pop up
-        // "Dimming" layer background: Should be LIGHTER than main background_color
-        // to reduce contrast of the underlying text, making it appear faded/dimmed.
-        pop_up_blur_bg: Color::Rgb(70, 76, 88), // lighter Polar Knight
-
-        cpu_container_selected_color: Color::Rgb(94, 129, 172),
-        // CPU main block: A slightly lighter grayish-blue to contrast with the background
-        cpu_main_block_color: Color::Rgb(76, 86, 106),
-        // CPU selected color: A bright teal for selected CPU items in the list
-        cpu_selected_color: Color::Rgb(94, 129, 172),
-        // CPU graph color: A muted blue to represent graph lines
-        cpu_base_graph_color: Color::Rgb(129, 161, 193), // Nord Light Blue
-        // CPU info border color: A subtle silver for borders
-        cpu_info_block_color: Color::Rgb(76, 86, 106), // Nord3
-        cpu_text_color: Color::Rgb(94, 129, 172),      // color for cpu related text
-
-        memory_container_selected_color: Color::Rgb(94, 129, 172),
-        // Memory main block: A slightly lighter grayish-blue to contrast with the background
-        memory_main_block_color: Color::Rgb(76, 86, 106),
-        // Memory related graph color
-        used_memory_base_graph_color: Color::Rgb(129, 161, 193), // Nord Light Blue
-        available_memory_base_graph_color: Color::Rgb(129, 161, 193), // Nord Light Blue
-        free_memory_base_graph_color: Color::Rgb(129, 161, 193), // Nord Light Blue
-        cached_memory_base_graph_color: Color::Rgb(129, 161, 193), // Nord Light Blue
-        swap_memory_base_graph_color: Color::Rgb(129, 161, 193), // Nord Light Blue
-        memory_text_color: Color::Rgb(143, 188, 187),            // color for memory related text
-
-        disk_container_selected_color: Color::Rgb(94, 129, 172),
-        // Disk main block: A slightly lighter grayish-blue to contrast with the background
-        disk_main_block_color: Color::Rgb(76, 86, 106),
-        // Disk selected color: A bright teal for selected Disk items in the list
-        disk_bytes_written_base_graph_color: Color::Rgb(129, 161, 193), // Nord Light Blue
-        disk_bytes_read_base_graph_color: Color::Rgb(129, 161, 193),    // Nord Light Blue
-        disk_text_color: Color::Rgb(143, 188, 187), //  color for disk related text
-
-        network_container_selected_color: Color::Rgb(94, 129, 172),
-        // Network main block: A slightly lighter grayish-blue to contrast with the background
-        network_main_block_color: Color::Rgb(76, 86, 106),
-        // Network selected color: A bright teal for selected Network items in the list
-        network_received_base_graph_color: Color::Rgb(129, 161, 193), // Nord Light Blue
-        network_transmitted_base_graph_color: Color::Rgb(129, 161, 193), // Nord Light Blue
-        network_info_block_color: Color::Rgb(76, 86, 106),
-        network_text_color: Color::Rgb(143, 188, 187), //  color for network related text
-
-        process_container_selected_color: Color::Rgb(94, 129, 172),
-        // Network main block: A slightly lighter grayish-blue to contrast with the background
-        process_main_block_color: Color::Rgb(76, 86, 106),
-        // Network selected color: A bright teal for selected Process items in the list
-        process_base_graph_color: Color::Rgb(129, 161, 193), // Nord Light Blue
-        process_info_block_color: Color::Rgb(76, 86, 106),
-        process_title_color: Color::Rgb(143, 188, 187), //  color for process related title text
-        process_text_color: Color::Rgb(94, 129, 172),   //  color for process related text
-        process_selected_color_bg: Color::Rgb(76, 86, 106), // Nord3
-        process_selected_color_fg: Color::Rgb(236, 239, 244), //Nord6
-    };
+    let app_color_info = get_and_return_app_color_info();
     app.run(&mut terminal, tick_rx, process_tick_rx, app_color_info);
     disable_raw_mode().unwrap();
     restore();

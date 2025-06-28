@@ -8,7 +8,7 @@ use ratatui::{
 };
 
 use crate::{
-    app::AppColorInfo,
+    components::theme::types::AppColorInfo,
     types::MemoryData,
     utils::{get_tick_line_ui, process_to_kib_mib_gib},
 };

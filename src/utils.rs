@@ -1,4 +1,10 @@
-use std::{cmp::Ordering, collections::HashMap, thread};
+use std::{
+    cmp::Ordering,
+    collections::HashMap,
+    fs::{create_dir_all, File},
+    path::PathBuf,
+    thread,
+};
 
 use ratatui::{
     layout::{Constraint, Layout, Rect},
@@ -11,12 +17,29 @@ use ratatui::{
 use sysinfo::{Pid, Signal, System};
 
 use crate::{
-    app::AppColorInfo,
+    components::theme::types::AppColorInfo,
     types::{
         AppPopUpType, CProcessesInfo, CSysInfo, CpuData, CurrentProcessSignalStateData, DiskData,
         MemoryData, NetworkData, ProcessData, ProcessSortType, ProcessesInfo, SignalExt, SysInfo,
     },
 };
+
+pub fn get_user_directory() -> PathBuf {
+    let home_dir = if cfg!(unix) {
+        std::env::var("HOME").unwrap()
+    } else {
+        std::env::var("USERPROFILE").unwrap()
+    };
+
+    return PathBuf::from(home_dir);
+}
+
+pub fn create_file_with_dirs(path: &str) {
+    // Create all missing directories in the path
+    let _ = create_dir_all(std::path::Path::new(path).parent().unwrap());
+
+    File::create(path).unwrap();
+}
 
 pub fn process_sys_info(current_sys_info: &mut SysInfo, collected_sys_info: CSysInfo) {
     // -------------------------------------------

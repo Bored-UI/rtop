@@ -8,7 +8,7 @@ use ratatui::{
 };
 
 use crate::{
-    app::AppColorInfo,
+    components::theme::types::AppColorInfo,
     types::DiskData,
     utils::{get_tick_line_ui, process_to_kib_mib_gib},
 };
@@ -243,7 +243,7 @@ pub fn draw_disk_info(
     }
 
     let mount_point_usage = Line::from(format!("{}", mount_point))
-        .style(app_color_info.memory_text_color)
+        .style(app_color_info.disk_text_color)
         .bold();
     let mount_point_block = Block::bordered()
         .title(mount_point_label.left_aligned())
@@ -295,13 +295,13 @@ pub fn draw_disk_info(
         if actual_bytes > 0.0 { "▲" } else { "" },
         process_to_kib_mib_gib(actual_bytes),
     ))
-    .style(app_color_info.memory_text_color)
+    .style(app_color_info.disk_text_color)
     .bold();
 
     let bytes_written_block = Block::new()
         .title(bytes_written_label.left_aligned())
         .title(bytes_written_usage.right_aligned())
-        .style(app_color_info.memory_main_block_color)
+        .style(app_color_info.disk_main_block_color)
         .borders(border_type);
 
     let bytes_written_history = disk_data.bytes_written_vec.clone();
@@ -380,13 +380,13 @@ pub fn draw_disk_info(
         if actual_bytes > 0.0 { "▲" } else { "" },
         process_to_kib_mib_gib(actual_bytes)
     ))
-    .style(app_color_info.memory_text_color)
+    .style(app_color_info.disk_text_color)
     .bold();
 
     let bytes_read_block = Block::new()
         .title(bytes_read_label.left_aligned())
         .title(bytes_read_usage.right_aligned())
-        .style(app_color_info.memory_main_block_color)
+        .style(app_color_info.disk_main_block_color)
         .borders(border_type);
 
     let bytes_read_history = disk_data.bytes_read_vec.clone();

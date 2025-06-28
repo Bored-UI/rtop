@@ -8,7 +8,7 @@ use ratatui::{
     Frame,
 };
 
-use crate::{app::AppColorInfo, types::CpuData, utils::get_tick_line_ui};
+use crate::{components::theme::types::AppColorInfo, types::CpuData, utils::get_tick_line_ui};
 
 pub fn draw_cpu_info(
     tick: u64,

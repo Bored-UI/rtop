@@ -27,7 +27,7 @@ New-Item -ItemType Directory -Force -Path $TEMP_DIR | Out-Null
 
 # Fetch the latest release download URL using GitHub API
 $REPO = "Bored-UI/rtop"
-$VERSION = "v0.2.0"
+$VERSION = "v0.3.0"
 $API_URL = "https://api.github.com/repos/$REPO/releases/tags/$VERSION"
 try {
     $release = Invoke-RestMethod -Uri $API_URL

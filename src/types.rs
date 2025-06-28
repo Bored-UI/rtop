@@ -1,5 +1,11 @@
+use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use sysinfo::Signal;
+
+#[derive(Serialize, Deserialize)]
+pub struct ThemeConfig {
+    pub theme: String,
+}
 
 // the main type structture for the application
 pub struct SysInfo {
