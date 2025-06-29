@@ -1,6 +1,6 @@
 use ratatui::style::Color;
 
-use crate::components::theme::types::AppColorInfo;
+use crate::types::AppColorInfo;
 
 pub const GRUVBOX_DARK: AppColorInfo = AppColorInfo {
     background_color: Color::Rgb(29, 32, 33),

@@ -1,6 +1,6 @@
 use ratatui::style::Color;
 
-use crate::components::theme::types::AppColorInfo;
+use crate::types::AppColorInfo;
 
 pub const MATCHA_DARK_SEA: AppColorInfo = AppColorInfo {
     background_color: Color::Rgb(27, 27, 27),

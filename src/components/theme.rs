@@ -1,7 +1,7 @@
 use std::fs::{File, OpenOptions};
 
 use crate::{
-    components::theme::{
+    components::themes::{
         ayu::AYU,
         catppuccin::CATPPUCCIN_MOCHA,
         default::DEFAULT,
@@ -21,9 +21,8 @@ use crate::{
         rosepine::ROSE_PINE,
         solarized::{SOLARIZED_DARK, SOLARIZED_LIGHT},
         tokyo::{TOKYO_NIGHT, TOKYO_STORM},
-        types::AppColorInfo,
     },
-    types::ThemeConfig,
+    types::{AppColorInfo, ThemeConfig},
     utils::{create_file_with_dirs, get_user_directory},
 };
 

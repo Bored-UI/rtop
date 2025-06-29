@@ -1,6 +1,6 @@
 use ratatui::style::Color;
 
-use crate::components::theme::types::AppColorInfo;
+use crate::types::AppColorInfo;
 
 pub const ROSE_PINE: AppColorInfo = AppColorInfo {
     // Background: Dark gray-purple

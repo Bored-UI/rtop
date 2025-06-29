@@ -16,6 +16,4 @@ pub mod onedark;
 pub mod paper;
 pub mod rosepine;
 pub mod solarized;
-pub mod theme;
 pub mod tokyo;
-pub mod types;

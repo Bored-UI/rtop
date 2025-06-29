@@ -1,6 +1,6 @@
 use ratatui::style::Color;
 
-use crate::components::theme::types::AppColorInfo;
+use crate::types::AppColorInfo;
 
 pub const FLATREMIX: AppColorInfo = AppColorInfo {
     background_color: Color::Rgb(45, 45, 45),

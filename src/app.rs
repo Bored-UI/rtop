@@ -21,17 +21,17 @@ use sysinfo::Signal;
 
 use crate::{
     components::{
-        network::draw_network_info,
-        process::draw_process_info,
-        theme::{theme::get_and_return_app_color_info, types::AppColorInfo},
+        network::draw_network_info, process::draw_process_info,
+        theme::get_and_return_app_color_info,
     },
     cpu::draw_cpu_info,
     disk::draw_disk_info,
     get_sys_info::{spawn_process_info_collector, spawn_system_info_collector},
     memory::draw_memory_info,
     types::{
-        AppPopUpType, AppState, CProcessesInfo, CSysInfo, CurrentProcessSignalStateData,
-        MemoryData, ProcessData, ProcessSortType, ProcessesInfo, SelectedContainer, SysInfo,
+        AppColorInfo, AppPopUpType, AppState, CProcessesInfo, CSysInfo,
+        CurrentProcessSignalStateData, MemoryData, ProcessData, ProcessSortType, ProcessesInfo,
+        SelectedContainer, SysInfo,
     },
     utils::{
         get_signal_from_int, process_processes_info, process_sys_info, render_pop_up_menu,

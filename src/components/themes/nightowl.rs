@@ -1,6 +1,6 @@
 use ratatui::style::Color;
 
-use crate::components::theme::types::AppColorInfo;
+use crate::types::AppColorInfo;
 
 pub const NIGHT_OWL: AppColorInfo = AppColorInfo {
     background_color: Color::Rgb(1, 22, 39),

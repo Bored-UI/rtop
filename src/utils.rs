@@ -16,12 +16,10 @@ use ratatui::{
 };
 use sysinfo::{Pid, Signal, System};
 
-use crate::{
-    components::theme::types::AppColorInfo,
-    types::{
-        AppPopUpType, CProcessesInfo, CSysInfo, CpuData, CurrentProcessSignalStateData, DiskData,
-        MemoryData, NetworkData, ProcessData, ProcessSortType, ProcessesInfo, SignalExt, SysInfo,
-    },
+use crate::types::{
+    AppColorInfo, AppPopUpType, CProcessesInfo, CSysInfo, CpuData, CurrentProcessSignalStateData,
+    DiskData, MemoryData, NetworkData, ProcessData, ProcessSortType, ProcessesInfo, SignalExt,
+    SysInfo,
 };
 
 pub fn get_user_directory() -> PathBuf {

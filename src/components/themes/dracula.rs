@@ -1,6 +1,6 @@
 use ratatui::style::Color;
 
-use crate::components::theme::types::AppColorInfo;
+use crate::types::AppColorInfo;
 
 pub const DRACULA: AppColorInfo = AppColorInfo {
     background_color: Color::Rgb(40, 42, 54),

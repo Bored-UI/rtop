@@ -10,7 +10,7 @@ use components::*;
 use app::*;
 use inquire::Select;
 
-use crate::components::theme::theme::set_theme;
+use crate::components::theme::set_theme;
 
 #[derive(Parser, Debug)]
 #[command(version, about, long_about = None)]

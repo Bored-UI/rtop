@@ -1,6 +1,6 @@
 use ratatui::style::Color;
 
-use crate::components::theme::types::AppColorInfo;
+use crate::types::AppColorInfo;
 
 pub const CATPPUCCIN_MOCHA: AppColorInfo = AppColorInfo {
     background_color: Color::Rgb(30, 30, 46),

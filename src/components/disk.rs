@@ -8,8 +8,7 @@ use ratatui::{
 };
 
 use crate::{
-    components::theme::types::AppColorInfo,
-    types::DiskData,
+    types::{AppColorInfo, DiskData},
     utils::{get_tick_line_ui, process_to_kib_mib_gib},
 };
 

@@ -1,6 +1,6 @@
 use ratatui::style::Color;
 
-use crate::components::theme::types::AppColorInfo;
+use crate::types::AppColorInfo;
 
 pub const KANAGAWA_LOTUS: AppColorInfo = AppColorInfo {
     background_color: Color::Rgb(242, 236, 188),

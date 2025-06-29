@@ -10,8 +10,7 @@ use ratatui::{
 };
 
 use crate::{
-    components::theme::types::AppColorInfo,
-    types::{ProcessData, ProcessSortType},
+    types::{AppColorInfo, ProcessData, ProcessSortType},
     utils::{
         break_line_into_vectors_of_string, format_seconds, get_tick_line_ui,
         process_to_kib_mib_gib, round_to_2_decimal, sort_process,

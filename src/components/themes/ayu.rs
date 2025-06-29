@@ -1,6 +1,6 @@
 use ratatui::style::Color;
 
-use crate::components::theme::types::AppColorInfo;
+use crate::types::AppColorInfo;
 
 pub const AYU: AppColorInfo = AppColorInfo {
     background_color: Color::Rgb(11, 14, 20),
